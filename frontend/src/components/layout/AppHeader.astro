@@ -1,0 +1,67 @@
+<header class="app-header">
+  <div class="container app-header__inner">
+    <a class="wordmark" href="/dashboard">Adicara</a>
+    <nav aria-label="Navigasi dashboard">
+      <a href="/dashboard">Undangan</a>
+      <button type="button" data-logout>Keluar</button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  function cookieValue(name: string) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const item = document.cookie
+      .split('; ')
+      .find((value) => value.startsWith(prefix));
+    return item ? decodeURIComponent(item.slice(prefix.length)) : '';
+  }
+
+  document
+    .querySelector<HTMLButtonElement>('[data-logout]')
+    ?.addEventListener('click', async () => {
+      const response = await fetch('/api/v1/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-Token': cookieValue('adicara_csrf') },
+      });
+      if (response.ok || response.status === 401)
+        window.location.assign('/auth/masuk');
+    });
+</script>
+
+<style>
+  .app-header {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .app-header__inner,
+  nav {
+    display: flex;
+    min-height: 4.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+  .wordmark {
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    text-decoration: none;
+  }
+  nav {
+    min-height: auto;
+  }
+  nav a,
+  nav button {
+    color: inherit;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  nav button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+</style>

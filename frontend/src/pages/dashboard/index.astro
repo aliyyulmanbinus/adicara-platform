@@ -1,0 +1,302 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+
+export const prerender = false;
+
+interface User {
+  display_name: string;
+  email: string;
+}
+
+interface InvitationSummary {
+  id: string;
+  status: 'draft' | 'published' | 'archived';
+  slug: string;
+  title: string;
+  template_key: string;
+  updated_at: string;
+}
+
+const apiBase = import.meta.env.API_BASE_URL ?? Astro.url.origin;
+const cookie = Astro.request.headers.get('cookie') ?? '';
+let user: User | undefined;
+let invitations: InvitationSummary[] = [];
+let loadError = '';
+
+try {
+  const headers = { cookie };
+  const meResponse = await fetch(new URL('/api/v1/me', apiBase), { headers });
+  if (meResponse.status === 401 || meResponse.status === 404) {
+    return Astro.redirect('/auth/masuk');
+  }
+  if (!meResponse.ok) throw new Error(`me returned ${meResponse.status}`);
+  user = ((await meResponse.json()) as { user: User }).user;
+
+  const invitationResponse = await fetch(
+    new URL('/api/v1/invitations', apiBase),
+    {
+      headers,
+    },
+  );
+  if (!invitationResponse.ok) {
+    throw new Error(`invitations returned ${invitationResponse.status}`);
+  }
+  invitations = (
+    (await invitationResponse.json()) as { invitations: InvitationSummary[] }
+  ).invitations;
+} catch {
+  loadError = 'Data undangan belum dapat dimuat. Coba muat ulang halaman.';
+}
+---
+
+<AppLayout
+  title="Dashboard Undangan — Adicara"
+  description="Kelola undangan digital Adicara."
+>
+  <section class="dashboard-hero">
+    <div class="container dashboard-heading">
+      <div>
+        <p class="eyebrow">Ruang perayaan</p>
+        <h1>{user ? `Halo, ${user.display_name}.` : 'Undanganmu.'}</h1>
+        <p>Draft tetap privat sampai kalian memilih untuk menerbitkannya.</p>
+      </div>
+      <a class="button" href="/dashboard/undangan/baru">Buat Undangan</a>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="invitation-list-title">
+    <div class="container">
+      <div class="section-heading">
+        <h2 id="invitation-list-title">Undangan</h2>
+        <span>{invitations.length} total</span>
+      </div>
+      {
+        loadError && (
+          <p class="notice" role="alert">
+            {loadError}
+          </p>
+        )
+      }
+      {
+        !loadError && invitations.length === 0 && (
+          <div class="empty-state">
+            <h3>Belum ada undangan.</h3>
+            <p>Mulai dari detail dasar; semuanya tersimpan sebagai draft.</p>
+            <a href="/dashboard/undangan/baru">Buat undangan pertama →</a>
+          </div>
+        )
+      }
+      {
+        invitations.length > 0 && (
+          <div class="invitation-list">
+            {invitations.map((invitation) => (
+              <article data-invitation={invitation.id}>
+                <div>
+                  <p class={`status status--${invitation.status}`}>
+                    {invitation.status}
+                  </p>
+                  <h3>{invitation.title}</h3>
+                  <p class="meta">
+                    /{invitation.slug} · {invitation.template_key}
+                  </p>
+                </div>
+                <div class="actions">
+                  {invitation.status === 'published' && (
+                    <a href={`/i/${invitation.slug}`} target="_blank">
+                      Lihat
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    data-action={
+                      invitation.status === 'published'
+                        ? 'unpublish'
+                        : 'publish'
+                    }
+                  >
+                    {invitation.status === 'published'
+                      ? 'Jadikan draft'
+                      : 'Terbitkan'}
+                  </button>
+                  <button class="danger" type="button" data-action="delete">
+                    Hapus
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )
+      }
+      <p
+        class="action-status"
+        data-action-status
+        role="status"
+        aria-live="polite"
+      >
+      </p>
+    </div>
+  </section>
+</AppLayout>
+
+<script>
+  function cookieValue(name: string) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const item = document.cookie
+      .split('; ')
+      .find((value) => value.startsWith(prefix));
+    return item ? decodeURIComponent(item.slice(prefix.length)) : '';
+  }
+
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-action]')
+    .forEach((button) => {
+      button.addEventListener('click', async () => {
+        const card = button.closest<HTMLElement>('[data-invitation]');
+        const status = document.querySelector<HTMLElement>(
+          '[data-action-status]',
+        );
+        const action = button.dataset.action;
+        const id = card?.dataset.invitation;
+        if (!card || !status || !action || !id) return;
+        if (
+          action === 'delete' &&
+          !window.confirm('Hapus undangan ini secara permanen?')
+        )
+          return;
+
+        button.disabled = true;
+        status.textContent = 'Menyimpan perubahan…';
+        try {
+          const endpoint =
+            action === 'delete'
+              ? `/api/v1/invitations/${id}`
+              : `/api/v1/invitations/${id}/${action}`;
+          const response = await fetch(endpoint, {
+            method: action === 'delete' ? 'DELETE' : 'POST',
+            credentials: 'same-origin',
+            headers: { 'X-CSRF-Token': cookieValue('adicara_csrf') },
+          });
+          if (!response.ok) {
+            const payload = await response.json();
+            throw new Error(
+              payload?.error?.message ?? 'Perubahan gagal disimpan.',
+            );
+          }
+          window.location.reload();
+        } catch (error) {
+          status.textContent =
+            error instanceof Error
+              ? error.message
+              : 'Perubahan gagal disimpan.';
+          button.disabled = false;
+        }
+      });
+    });
+</script>
+
+<style>
+  .dashboard-hero {
+    padding-block: var(--space-7);
+    background: var(--color-surface);
+  }
+  .dashboard-heading,
+  .section-heading,
+  .actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+  }
+  .dashboard-heading h1 {
+    margin-bottom: var(--space-3);
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+  }
+  .dashboard-heading p:last-child,
+  .meta {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+  .section-heading {
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .section-heading h2 {
+    margin: 0;
+    font-size: 2.25rem;
+  }
+  .section-heading span {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+  .empty-state {
+    padding-block: var(--space-8);
+    text-align: center;
+  }
+  .empty-state p {
+    color: var(--color-text-muted);
+  }
+  .invitation-list article {
+    display: grid;
+    gap: var(--space-5);
+    padding-block: var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .invitation-list h3 {
+    margin-bottom: var(--space-2);
+  }
+  .status {
+    width: fit-content;
+    margin-bottom: var(--space-3);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface-muted);
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .status--published {
+    background: #dce8df;
+    color: #285238;
+  }
+  .actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .actions button,
+  .actions a {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .actions .danger {
+    color: #8e2f25;
+  }
+  .notice,
+  .action-status:not(:empty) {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    border-left: 2px solid var(--color-accent);
+    background: var(--color-surface-muted);
+  }
+  @media (max-width: 36rem) {
+    .dashboard-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+  }
+  @media (min-width: 48rem) {
+    .invitation-list article {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+    .actions {
+      justify-content: flex-end;
+    }
+  }
+</style>

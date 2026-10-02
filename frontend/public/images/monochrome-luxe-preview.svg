@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title description">
+  <title id="title">Pratinjau tema Monochrome Luxe</title>
+  <desc id="description">Undangan hitam putih kontemporer dengan nama Nara dan Arka.</desc>
+  <rect width="800" height="1000" fill="#f5f5f2"/>
+  <rect x="42" y="42" width="716" height="916" fill="none" stroke="#111" stroke-width="20"/>
+  <line x1="62" y1="500" x2="738" y2="500" stroke="#111" stroke-opacity=".18" stroke-width="2"/>
+  <rect x="126" y="186" width="548" height="628" fill="#f5f5f2"/>
+  <text x="400" y="270" fill="#555" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="6" text-anchor="middle">THE WEDDING OF</text>
+  <text x="400" y="430" fill="#111" font-family="Arial, sans-serif" font-size="116" font-weight="900" letter-spacing="-8" text-anchor="middle">NARA</text>
+  <text x="400" y="514" fill="#111" font-family="Georgia, serif" font-size="42" text-anchor="middle">×</text>
+  <text x="400" y="640" fill="#111" font-family="Arial, sans-serif" font-size="116" font-weight="900" letter-spacing="-8" text-anchor="middle">ARKA</text>
+  <rect x="281" y="710" width="238" height="52" fill="#111"/>
+  <text x="400" y="744" fill="#f5f5f2" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="4" text-anchor="middle">12 · 12 · 2027</text>
+</svg>

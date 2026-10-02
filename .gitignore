@@ -1,0 +1,24 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Frontend
+frontend/node_modules/
+frontend/node_modules.corrupt/
+frontend/dist/
+frontend/.astro/
+
+# Backend
+backend/bin/
+backend/coverage.out
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local runtime data
+.data/
+uploads/

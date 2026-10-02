@@ -1,0 +1,49 @@
+---
+import type { InvitationData } from '@/invitation-templates/types';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+
+function formatEventStart(startAt: string, timezone: string) {
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: timezone,
+  }).format(new Date(startAt));
+}
+---
+
+<section
+  id="detail-acara"
+  class="invitation-section"
+  aria-labelledby="schedule-title"
+>
+  <p class="invitation-kicker">Rangkaian acara</p>
+  <h2 id="schedule-title">Simpan tanggalnya</h2>
+  <div class="event-list">
+    {
+      data.events.map((event) => (
+        <article>
+          <p class="event-name">{event.name}</p>
+          <time datetime={event.startAt}>
+            {formatEventStart(event.startAt, event.timezone)}
+          </time>
+          <h3>{event.venueName}</h3>
+          <p>{event.venueAddress}</p>
+          {event.mapURL && (
+            <a href={event.mapURL} target="_blank" rel="noreferrer">
+              Buka peta
+            </a>
+          )}
+        </article>
+      ))
+    }
+  </div>
+</section>

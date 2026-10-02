@@ -1,0 +1,180 @@
+<footer class="site-footer">
+  <div class="container footer-top">
+    <div class="brand-col">
+      <a class="footer-wordmark" href="/">
+        <span>A</span>
+        adicara
+      </a>
+      <p>
+        Platform undangan digital untuk pernikahan, khitanan, aqiqah, ulang
+        tahun, wisuda, seminar, dan berbagai acara spesial.
+      </p>
+      <div class="store-row" aria-label="Akses aplikasi">
+        <span>App Store</span>
+        <span>Google Play</span>
+      </div>
+    </div>
+
+    <nav aria-label="Produk">
+      <h2>Produk</h2>
+      <a href="/tema">Template Undangan</a>
+      <a href="/fitur">Fitur</a>
+      <a href="/harga">Harga</a>
+      <a href="/auth/daftar">Buat Undangan</a>
+    </nav>
+
+    <nav aria-label="Panduan">
+      <h2>Panduan</h2>
+      <a href="/inspirasi">Inspirasi</a>
+      <a href="/inspirasi/cara-membuat-undangan-digital">Cara Membuat</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/auth/masuk">Masuk Dashboard</a>
+    </nav>
+
+    <div class="contact-col">
+      <h2>Kontak</h2>
+      <p>
+        Bantuan pelanggan tersedia untuk persiapan undangan digital dan acara.
+      </p>
+      <a class="footer-cta" href="/auth/daftar">Mulai Gratis</a>
+    </div>
+  </div>
+
+  <div class="container footer-bottom">
+    <p>&copy; {new Date().getFullYear()} Adicara. Dibuat di Indonesia.</p>
+    <div>
+      <a href="/#faq">Kebijakan Layanan</a>
+      <a href="/#faq">Privasi</a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--color-border);
+    background: var(--sage-50);
+    color: var(--sage-700);
+  }
+
+  .footer-top {
+    display: grid;
+    gap: 2rem;
+    padding-block: 3rem 2rem;
+  }
+
+  .footer-wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.8rem;
+    color: var(--color-text);
+    font-size: 1.45rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .footer-wordmark span {
+    display: inline-grid;
+    width: 2.1rem;
+    height: 2.1rem;
+    place-items: center;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 1rem;
+  }
+
+  .brand-col p,
+  .contact-col p,
+  .footer-bottom p {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  h2 {
+    margin: 0 0 0.85rem;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  nav {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  nav a,
+  .footer-bottom a {
+    color: var(--sage-700);
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  nav a:hover,
+  .footer-bottom a:hover {
+    color: var(--color-accent);
+  }
+
+  .store-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+
+  .store-row span {
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    color: var(--color-text);
+    font-size: 0.82rem;
+    font-weight: 850;
+  }
+
+  .footer-cta {
+    display: inline-flex;
+    width: fit-content;
+    margin-top: 0.9rem;
+    padding: 0.65rem 0.95rem;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 850;
+    text-decoration: none;
+  }
+
+  .footer-bottom {
+    display: grid;
+    gap: 0.8rem;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--color-border);
+    font-size: 0.88rem;
+  }
+
+  .footer-cta:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .footer-bottom div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  @media (min-width: 48rem) {
+    .footer-top {
+      grid-template-columns: 1.35fr 0.75fr 0.75fr 1fr;
+    }
+
+    .footer-bottom {
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
+  }
+</style>

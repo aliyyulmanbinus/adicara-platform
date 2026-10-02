@@ -1,0 +1,219 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+
+const availableFeatures = [
+  [
+    'Tema terpisah dari data',
+    'Ganti gaya visual tanpa mengisi ulang nama, jadwal, dan lokasi acara.',
+  ],
+  [
+    'Undangan server-rendered',
+    'Informasi utama tetap hadir sebagai HTML yang cepat dan mudah diakses.',
+  ],
+  [
+    'Privasi sebagai bawaan',
+    'Halaman undangan tidak diindeks mesin pencari kecuali pemilik mengizinkannya.',
+  ],
+  [
+    'Jadwal multi-acara',
+    'Susun akad, resepsi, atau rangkaian lain dalam satu halaman yang runtut.',
+  ],
+];
+
+const roadmapFeatures = [
+  ['Tamu personal', 'Sapaan per tamu melalui tautan privat.'],
+  ['RSVP', 'Konfirmasi kehadiran dan ringkasan jawaban.'],
+  ['Galeri dan cerita', 'Ruang visual untuk perjalanan menuju hari perayaan.'],
+  [
+    'Peta, kalender, dan hadiah',
+    'Aksi praktis agar tamu tidak kehilangan konteks.',
+  ],
+];
+---
+
+<MarketingLayout
+  title="Fitur Undangan Digital — Adicara"
+  description="Pelajari fondasi undangan digital Adicara dan fitur tamu yang sedang dikembangkan secara bertahap."
+  canonicalPath="/fitur"
+>
+  <section class="feature-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Fitur Adicara</p>
+        <h1>Ringkas bagi tamu, terstruktur bagi pemilik acara.</h1>
+      </div>
+      <p class="lede">
+        Adicara memusatkan informasi perayaan dalam satu alur yang mudah dibuka
+        dari ponsel dan dibangun untuk berkembang tanpa mengorbankan privasi.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="available-title">
+    <div class="container feature-layout">
+      <div class="sticky-copy">
+        <p class="eyebrow">Fondasi tersedia</p>
+        <h2 id="available-title">Bagian yang sudah bekerja.</h2>
+        <p>Fondasi ini dapat diuji pada katalog dan pratinjau tema.</p>
+      </div>
+      <div class="feature-list">
+        {
+          availableFeatures.map(([title, description], index) => (
+            <article>
+              <span>0{index + 1}</span>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section roadmap" aria-labelledby="roadmap-title">
+    <div class="container">
+      <div class="roadmap-heading">
+        <p class="eyebrow">Dalam pengembangan</p>
+        <h2 id="roadmap-title">Pengalaman tamu berikutnya.</h2>
+        <p>
+          Daftar ini adalah arah produk, bukan janji bahwa fiturnya sudah dapat
+          digunakan hari ini.
+        </p>
+      </div>
+      <div class="roadmap-grid">
+        {
+          roadmapFeatures.map(([title, description]) => (
+            <article>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section feature-cta">
+    <div class="container">
+      <h2>Lihat bagaimana fondasinya terasa.</h2>
+      <a class="button" href="/tema">Jelajahi Tema</a>
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  .feature-hero {
+    padding-block: var(--space-8);
+    background: var(--color-forest);
+    color: var(--color-white);
+  }
+
+  .feature-hero .eyebrow,
+  .feature-hero .lede {
+    color: #d2c2b1;
+  }
+
+  .hero-grid,
+  .feature-layout {
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .feature-hero h1,
+  .sticky-copy h2,
+  .roadmap-heading h2 {
+    max-width: 13ch;
+  }
+
+  .sticky-copy > p:last-child,
+  .roadmap-heading > p:last-child {
+    color: var(--color-text-muted);
+  }
+
+  .feature-list {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .feature-list article {
+    display: grid;
+    grid-template-columns: 2.5rem 1fr;
+    gap: var(--space-2) var(--space-4);
+    padding-block: var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .feature-list span {
+    color: var(--color-accent-deep);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .feature-list h3,
+  .feature-list p {
+    margin: 0;
+  }
+
+  .feature-list p {
+    grid-column: 2;
+    color: var(--color-text-muted);
+  }
+
+  .roadmap {
+    background: var(--color-surface);
+  }
+
+  .roadmap-heading {
+    margin-bottom: var(--space-7);
+  }
+
+  .roadmap-grid {
+    display: grid;
+    gap: 1px;
+    border: 1px solid var(--color-border);
+    background: var(--color-border);
+  }
+
+  .roadmap-grid article {
+    min-height: 13rem;
+    padding: var(--space-5);
+    background: var(--color-surface);
+  }
+
+  .roadmap-grid p {
+    color: var(--color-text-muted);
+  }
+
+  .feature-cta {
+    text-align: center;
+  }
+
+  .feature-cta h2 {
+    max-width: 13ch;
+    margin-inline: auto;
+  }
+
+  .feature-cta .button {
+    margin-top: var(--space-4);
+  }
+
+  @media (min-width: 48rem) {
+    .hero-grid,
+    .feature-layout {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+    }
+
+    .hero-grid {
+      align-items: end;
+    }
+
+    .sticky-copy {
+      position: sticky;
+      top: 2rem;
+    }
+
+    .roadmap-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

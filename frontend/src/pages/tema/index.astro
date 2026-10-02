@@ -1,0 +1,189 @@
+---
+import { invitationTemplates } from '@/invitation-templates/registry';
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+
+const themes = Object.values(invitationTemplates);
+const itemListSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Koleksi tema undangan digital Adicara',
+  numberOfItems: themes.length,
+  itemListElement: themes.map((theme, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: theme.name,
+    url: new URL(`/tema/${theme.key}`, Astro.site ?? Astro.url.origin).href,
+  })),
+};
+---
+
+<MarketingLayout
+  title="Tema Undangan Digital — Adicara"
+  description="Jelajahi koleksi tema undangan digital Adicara yang dirancang untuk tetap cepat, mudah dibaca, dan nyaman di ponsel."
+  canonicalPath="/tema"
+  structuredData={itemListSchema}
+>
+  <section class="catalog-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Koleksi tema</p>
+        <h1>Satu cerita, beberapa cara untuk merasakannya.</h1>
+      </div>
+      <p class="lede">
+        Pilih karakter visual yang paling dekat dengan perayaan kalian. Data
+        nama, jadwal, dan lokasi tetap sama saat tema diganti.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="catalog-title">
+    <div class="container">
+      <h2 id="catalog-title" class="visually-hidden">Daftar tema</h2>
+      <div class="theme-grid">
+        {
+          themes.map((theme, index) => (
+            <article class="theme-card">
+              <a
+                href={`/tema/${theme.key}`}
+                aria-label={`Lihat tema ${theme.name}`}
+              >
+                <img
+                  src={theme.previewImage}
+                  width="800"
+                  height="1000"
+                  alt={`Pratinjau tema undangan ${theme.name}`}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                />
+              </a>
+              <div class="theme-copy">
+                <p class="theme-meta">
+                  0{index + 1} · {theme.category}
+                </p>
+                <h3>
+                  <a href={`/tema/${theme.key}`}>{theme.name}</a>
+                </h3>
+                <p>{theme.description}</p>
+                <a class="theme-link" href={`/tema/${theme.key}`}>
+                  Buka pratinjau <span aria-hidden="true">→</span>
+                </a>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section catalog-note">
+    <div class="container note-grid">
+      <p class="eyebrow">Dibangun sebagai sistem</p>
+      <h2>Tema mengubah suasana, bukan informasi.</h2>
+      <p>
+        Semua tema memakai struktur section yang sama. Artinya, pengembangan
+        RSVP, peta, galeri, dan fitur tamu dapat dilakukan sekali lalu dipakai
+        lintas desain.
+      </p>
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  .catalog-hero {
+    padding-block: var(--space-8);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .hero-grid,
+  .note-grid {
+    display: grid;
+    gap: var(--space-6);
+    align-items: end;
+  }
+
+  .catalog-hero h1 {
+    max-width: 13ch;
+  }
+
+  .theme-grid {
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .theme-card {
+    display: grid;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+
+  .theme-card > a {
+    overflow: hidden;
+  }
+
+  .theme-card img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    transition: transform 300ms ease;
+  }
+
+  .theme-card > a:hover img {
+    transform: scale(1.015);
+  }
+
+  .theme-copy {
+    padding: var(--space-5);
+  }
+
+  .theme-meta {
+    color: var(--color-accent-deep);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .theme-copy h3 a {
+    text-decoration: none;
+  }
+
+  .theme-copy > p:not(.theme-meta) {
+    color: var(--color-text-muted);
+  }
+
+  .theme-link {
+    font-weight: 700;
+  }
+
+  .catalog-note {
+    background: var(--color-forest);
+    color: var(--color-white);
+  }
+
+  .catalog-note .eyebrow,
+  .catalog-note p:last-child {
+    color: #d2c2b1;
+  }
+
+  .catalog-note h2 {
+    max-width: 12ch;
+  }
+
+  @media (min-width: 48rem) {
+    .hero-grid {
+      grid-template-columns: 1.25fr 0.75fr;
+    }
+
+    .theme-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-5);
+    }
+
+    .theme-card:nth-child(2) {
+      transform: translateY(var(--space-6));
+    }
+
+    .note-grid {
+      grid-template-columns: 0.4fr 1fr 0.8fr;
+    }
+  }
+</style>

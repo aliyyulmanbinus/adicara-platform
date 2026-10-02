@@ -1,0 +1,110 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+---
+
+<MarketingLayout
+  title="Inspirasi Undangan dan Perayaan — Adicara"
+  description="Panduan praktis Adicara untuk menyusun informasi undangan digital yang jelas, hangat, dan mudah dipahami tamu."
+  canonicalPath="/inspirasi"
+>
+  <section class="journal-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Inspirasi</p>
+        <h1>Catatan kecil untuk perayaan yang terasa ringan.</h1>
+      </div>
+      <p class="lede">
+        Panduan praktis tentang informasi tamu, urutan acara, dan keputusan
+        digital yang sering terasa lebih rumit dari seharusnya.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="articles-title">
+    <div class="container">
+      <h2 id="articles-title" class="visually-hidden">Daftar artikel</h2>
+      <article class="featured-article">
+        <div class="article-number" aria-hidden="true">01</div>
+        <div>
+          <p class="article-meta">Panduan · 5 menit baca</p>
+          <h3>
+            <a href="/inspirasi/cara-membuat-undangan-digital">
+              Cara menyusun undangan digital yang mudah dipahami tamu
+            </a>
+          </h3>
+          <p>
+            Urutkan nama, waktu, lokasi, dan konteks acara agar tamu segera
+            menemukan hal yang mereka butuhkan.
+          </p>
+          <a class="read-link" href="/inspirasi/cara-membuat-undangan-digital">
+            Baca artikel <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  .journal-hero {
+    padding-block: var(--space-8);
+    background: var(--color-surface);
+  }
+
+  .hero-grid {
+    display: grid;
+    gap: var(--space-6);
+    align-items: end;
+  }
+
+  .journal-hero h1 {
+    max-width: 13ch;
+  }
+
+  .featured-article {
+    display: grid;
+    gap: var(--space-6);
+    padding-block: var(--space-6);
+    border-block: 1px solid var(--color-border);
+  }
+
+  .article-number {
+    color: var(--color-accent);
+    font-family: var(--font-display);
+    font-size: clamp(4rem, 14vw, 9rem);
+    line-height: 0.8;
+  }
+
+  .article-meta {
+    color: var(--color-accent-deep);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .featured-article h3 {
+    max-width: 18ch;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .featured-article h3 a {
+    text-decoration: none;
+  }
+
+  .featured-article > div:last-child > p:not(.article-meta) {
+    max-width: 38rem;
+    color: var(--color-text-muted);
+  }
+
+  .read-link {
+    font-weight: 700;
+  }
+
+  @media (min-width: 48rem) {
+    .hero-grid,
+    .featured-article {
+      grid-template-columns: 0.8fr 1.2fr;
+    }
+  }
+</style>

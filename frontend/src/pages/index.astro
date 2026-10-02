@@ -1,0 +1,1442 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Adicara',
+  slogan: 'Undangan digital untuk semua acara',
+  url: new URL('/', Astro.site ?? Astro.url.origin).href,
+};
+
+const eventTypes = [
+  ['ph-heart', 'Pernikahan'],
+  ['ph-mosque', 'Khitanan'],
+  ['ph-baby-carriage', 'Aqiqah'],
+  ['ph-buildings', 'Peresmian'],
+  ['ph-rocket-launch', 'Launching'],
+  ['ph-cake', 'Ulang Tahun'],
+  ['ph-graduation-cap', 'Wisuda'],
+  ['ph-microphone-stage', 'Seminar'],
+  ['ph-sparkle', 'Lainnya'],
+];
+
+const templateCards = [
+  ['Nara & Arka', 'Editorial Ivory', 'Rp39.000', 'ivory'],
+  ['Ayu & Rama', 'Botanical Modern', 'Rp49.000', 'botanical'],
+  ['Dina & Fajar', 'Monochrome Luxe', 'Rp59.000', 'luxe'],
+  ['Gita & Bayu', 'Soft Garden', 'Rp69.000', 'garden'],
+  ['Sinta & Jaka', 'Classic Gold', 'Rp79.000', 'gold'],
+  ['Raisa & Andra', 'Photo Story', 'Rp89.000', 'photo'],
+  ['Maya & Reno', 'Minimal Cream', 'Rp99.000', 'cream'],
+  ['Nadia & Rafi', 'Sage Serenity', 'Rp119.000', 'royal'],
+];
+
+const steps = [
+  [
+    '1',
+    'Buat undangan',
+    'Isi nama pasangan, tanggal, lokasi, foto, dan cerita singkat.',
+  ],
+  [
+    '2',
+    'Pilih tema',
+    'Gunakan template siap pakai lalu sesuaikan warna, font, dan section.',
+  ],
+  [
+    '3',
+    'Sebar link',
+    'Bagikan undangan personal ke WhatsApp, Instagram, atau keluarga besar.',
+  ],
+];
+
+const featureBlocks = [
+  [
+    'RSVP & ucapan',
+    'Tamu dapat mengirim konfirmasi hadir dan doa langsung dari halaman undangan.',
+  ],
+  [
+    'Nama tamu personal',
+    'Setiap tautan bisa menyapa tamu dengan nama yang berbeda.',
+  ],
+  [
+    'Maps & kalender',
+    'Lokasi acara, tombol arah, countdown, dan simpan tanggal dalam satu tempat.',
+  ],
+  [
+    'Galeri & musik',
+    'Tampilkan foto, video, backsound, dan cerita perjalanan dengan ritme yang halus.',
+  ],
+  [
+    'Amplop digital',
+    'Tambahkan rekening atau hadiah fisik dengan tampilan yang tetap sopan.',
+  ],
+  [
+    'Dashboard edit',
+    'Ubah konten sendiri kapan saja tanpa membuat undangan baru.',
+  ],
+];
+
+const pricing = [
+  {
+    name: 'Free',
+    price: 'Rp0',
+    description: 'Untuk coba desain dan melihat hasil awal.',
+    features: [
+      'Preview undangan',
+      'Akses tema dasar',
+      'Edit konten utama',
+      'Watermark preview',
+    ],
+  },
+  {
+    name: 'Basic',
+    price: '39.000',
+    description: 'Paket ringan untuk undangan siap sebar.',
+    featured: true,
+    features: [
+      'Tanpa masa aktif',
+      'Unlimited penerima',
+      'RSVP & ucapan',
+      'Google Maps',
+      'Musik',
+      'Galeri foto',
+    ],
+  },
+  {
+    name: 'Klasik',
+    price: '59.000',
+    description: 'Fitur lengkap untuk acara yang lebih personal.',
+    features: [
+      'Semua fitur Basic',
+      'Nama tamu personal',
+      'Amplop digital',
+      'Countdown',
+      'Love story',
+      'Custom warna',
+    ],
+  },
+];
+
+const faqs = [
+  [
+    'Apa itu undangan digital Adicara?',
+    'Adicara adalah website undangan yang bisa dibuka lewat link dan dibagikan ke tamu melalui WhatsApp, media sosial, atau pesan pribadi.',
+  ],
+  [
+    'Apakah bisa dibuat sendiri?',
+    'Bisa. Kamu bisa mengisi data acara, memilih tema, melihat preview, lalu mengaktifkan undangan saat sudah siap disebarkan.',
+  ],
+  [
+    'Apakah ada masa aktif?',
+    'Untuk paket berbayar satuan, undangan dirancang tanpa masa aktif agar tetap dapat dibuka dan diedit setelah acara selesai.',
+  ],
+  [
+    'Apakah bisa menampilkan nama tamu?',
+    'Bisa. Dashboard tamu menyiapkan link personal sehingga halaman undangan dapat menyapa penerima secara langsung.',
+  ],
+  [
+    'Apakah cocok selain pernikahan?',
+    'Cocok untuk khitanan, aqiqah, ulang tahun, wisuda, seminar, launching, peresmian, dan acara keluarga lainnya.',
+  ],
+];
+---
+
+<MarketingLayout
+  title="Adicara - Buat Undangan Digital Pernikahan dan Acara"
+  description="Buat undangan digital pernikahan dan acara dengan tema elegan, RSVP, nama tamu personal, maps, musik, galeri, dan harga terjangkau."
+  canonicalPath="/"
+  structuredData={organizationSchema}
+>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="hero-kicker">Platform Undangan Digital</p>
+        <h1>Buat Undangan Digital Gratis Untuk Pernikahan Tanpa Ribet!</h1>
+        <p class="hero-lede">
+          Undangan website yang praktis, elegan, dan siap dibagikan ke semua
+          tamu. Pilih tema, isi detail acara, lalu sebarkan link dalam hitungan
+          menit.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/auth/daftar">Buat Undangan Gratis</a
+          >
+          <a class="btn btn-light" href="/tema">Lihat Semua Tema</a>
+        </div>
+        <div class="trust-row" aria-label="Keunggulan singkat">
+          <span>Tanpa coding</span>
+          <span>Harga jelas</span>
+          <span>Mobile friendly</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="Contoh tampilan undangan digital">
+        <div class="phone phone-left">
+          <div class="phone-screen mini-cover botanical">
+            <span>The Wedding</span>
+            <strong>Nara & Arka</strong>
+            <small>12.12.2027</small>
+          </div>
+        </div>
+        <div class="phone phone-main">
+          <div class="phone-screen mini-cover ivory">
+            <span>Save The Date</span>
+            <strong>Ayu & Rama</strong>
+            <small>Sabtu, 18 Juli 2027</small>
+            <i></i>
+          </div>
+        </div>
+        <div class="phone phone-right">
+          <div class="phone-screen mini-cover luxe">
+            <span>Reception</span>
+            <strong>Dina & Fajar</strong>
+            <small>Grand Ballroom</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="event-strip" aria-label="Jenis acara">
+    <div class="container">
+      <p>
+        Untuk Pernikahan, Khitanan, Aqiqah, Peresmian, Launching, Ulang Tahun,
+        Wisuda, Seminar, dan acara spesial lainnya.
+      </p>
+      <div class="event-list">
+        {
+          eventTypes.map(([icon, label]) => (
+            <a href="/tema">
+              <span class="event-icon" aria-hidden="true">
+                <i class={`ph-duotone ${icon}`} />
+              </span>
+              {label}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section templates" id="tema">
+    <div class="container section-head center">
+      <p class="pill">Pilihan template</p>
+      <h2>Ratusan inspirasi tema undangan digital</h2>
+      <p>
+        Mulai dari desain minimalis, floral, elegan, sampai modern. Semua
+        template dibuat responsif untuk layar ponsel.
+      </p>
+    </div>
+    <div class="container template-grid">
+      {
+        templateCards.map(([names, theme, price, tone]) => (
+          <article class={`template-card ${tone}`}>
+            <div class="template-thumb">
+              <span>{theme}</span>
+              <strong>{names}</strong>
+              <small>12.12.2027</small>
+            </div>
+            <div class="template-body">
+              <h3>{theme}</h3>
+              <p>Mulai {price}</p>
+              <a href="/tema">Lihat Tema</a>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+    <div class="center more-action">
+      <a class="btn btn-primary" href="/tema">Lihat Semua Template</a>
+    </div>
+  </section>
+
+  <section class="section how">
+    <div class="container section-head center">
+      <p class="pill">Cara membuat</p>
+      <h2>Undangan digital siap disebar dalam 3 langkah</h2>
+    </div>
+    <div class="container step-grid">
+      {
+        steps.map(([number, title, description]) => (
+          <article>
+            <span>{number}</span>
+            <h3>{title}</h3>
+            <p>{description}</p>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section stats-band">
+    <div class="container stats-grid">
+      <div>
+        <p class="pill">Dipercaya banyak acara</p>
+        <h2>Undangan digital dengan fitur lengkap dan harga ramah.</h2>
+      </div>
+      <div class="stats">
+        <strong>1.405.000+</strong>
+        <span>undangan digital dibuat</span>
+      </div>
+      <div class="stats">
+        <strong>4,5 juta+</strong>
+        <span>tamu undangan terjangkau</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section feature-showcase" id="fitur">
+    <div class="container showcase-grid">
+      <div class="phone tall-phone">
+        <div class="phone-screen invite-preview">
+          <span>Dear, Bapak/Ibu/Saudara/i</span>
+          <strong>Nara & Arka</strong>
+          <p>Sabtu, 12 Desember 2027</p>
+          <button>Konfirmasi Kehadiran</button>
+        </div>
+      </div>
+      <div>
+        <p class="pill">Semua fitur penting</p>
+        <h2>
+          Kelola undangan, tamu, RSVP, dan cerita acara dari satu dashboard.
+        </h2>
+        <div class="feature-list">
+          {
+            featureBlocks.map(([title, description]) => (
+              <article>
+                <span class="feature-icon" aria-hidden="true">
+                  <i class="ph-duotone ph-check-circle" />
+                </span>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section editor-band">
+    <div class="container editor-grid">
+      <div>
+        <p class="pill">Edit sendiri</p>
+        <h2>Ubah warna, font, section, dan urutan konten sesuai gaya acara.</h2>
+        <p>
+          Desain undangan dapat disesuaikan tanpa memindahkan data acara. Cocok
+          untuk pasangan yang ingin tampilan rapi tapi tetap fleksibel.
+        </p>
+        <a class="btn btn-primary" href="/auth/daftar">Mulai Buat Sekarang</a>
+      </div>
+      <div class="editor-panel" aria-label="Contoh panel editor">
+        <div class="toolbar">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="color-row">
+          <i style="--swatch: var(--sage-400)"></i>
+          <i style="--swatch: #f8c24d"></i>
+          <i style="--swatch: #ef6f6c"></i>
+          <i style="--swatch: var(--sage-400)"></i>
+          <i style="--swatch: var(--sage-800)"></i>
+        </div>
+        <div class="editor-canvas">
+          <div class="mini-phone"></div>
+          <div class="form-lines">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section sage-feature">
+    <div class="container sage-grid">
+      <div>
+        <p class="pill light">Fitur melimpah</p>
+        <h2>Undangan online dengan semua yang dibutuhkan acara modern.</h2>
+      </div>
+      <div class="check-columns">
+        {
+          [
+            'Akses seluruh tema',
+            'Ubah nama tamu',
+            'Tanpa masa aktif',
+            'RSVP dan ucapan',
+            'Lokasi Maps',
+            'Unlimited penerima',
+            'Countdown',
+            'Save to Calendar',
+            'Galeri foto',
+            'Virtual gift',
+            'Panel admin',
+            'Video streaming',
+            'Auto scroll',
+            'Custom musik',
+            'Love story',
+            'Custom warna',
+          ].map((item) => (
+            <span>
+              <i class="ph-duotone ph-check-circle" aria-hidden="true" />
+              {item}
+            </span>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section pricing-section" id="harga">
+    <div class="container section-head center">
+      <p class="pill">Harga terjangkau</p>
+      <h2>Pilih paket undangan digital sesuai kebutuhan</h2>
+      <p>
+        Mulai gratis untuk coba desain, lalu aktifkan saat undangan siap
+        disebar.
+      </p>
+    </div>
+    <div class="container pricing-grid">
+      {
+        pricing.map((plan) => (
+          <article class:list={['price-card', { featured: plan.featured }]}>
+            <h3>{plan.name}</h3>
+            <p>{plan.description}</p>
+            <strong>{plan.price}</strong>
+            <a class="btn btn-primary" href="/auth/daftar">
+              Pilih Paket
+            </a>
+            <ul>
+              {plan.features.map((feature) => (
+                <li>
+                  <i class="ph-duotone ph-check-circle" aria-hidden="true" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section reseller" id="mulai">
+    <div class="container reseller-card">
+      <div>
+        <p class="pill light">Peluang usaha</p>
+        <h2>Mau jadi reseller undangan digital?</h2>
+        <p>
+          Bangun layanan undangan online dengan brand sendiri, template rapi,
+          dan workflow dashboard yang mudah dipakai.
+        </p>
+      </div>
+      <a class="btn btn-warning" href="/auth/daftar">Gabung Sekarang</a>
+    </div>
+  </section>
+
+  <section class="section testimonials" id="inspirasi">
+    <div class="container section-head center">
+      <p class="pill">Testimoni pelanggan</p>
+      <h2>Dipakai untuk berbagai momen bahagia</h2>
+    </div>
+    <div class="container testimonial-grid">
+      {
+        [
+          [
+            'Nara & Arka',
+            'Tampilannya bersih, link mudah dibagikan, dan keluarga langsung paham cara RSVP.',
+          ],
+          [
+            'Ayu & Rama',
+            'Tema bisa diganti tanpa input ulang. Sangat membantu saat konsep acara berubah.',
+          ],
+          [
+            'Dina & Fajar',
+            'Undangan mobile-nya ringan dan tetap terlihat elegan di ponsel orang tua.',
+          ],
+        ].map(([name, quote]) => (
+          <article>
+            <div class="avatar" />
+            <p>“{quote}”</p>
+            <strong>{name}</strong>
+            <span class="rating" aria-label="Rating 5 dari 5">
+              {Array.from({ length: 5 }, () => (
+                <i class="ph-duotone ph-star" aria-hidden="true" />
+              ))}
+            </span>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="section seo-copy">
+    <div class="container copy-grid">
+      <div>
+        <h2>Kenapa memilih Adicara untuk undangan digital?</h2>
+        <p>
+          Adicara membantu calon pengantin dan penyelenggara acara membuat
+          undangan digital yang cepat, rapi, serta mudah dibagikan. Semua
+          informasi penting seperti jadwal, lokasi, galeri, RSVP, ucapan, dan
+          tautan personal tamu disusun dalam halaman yang nyaman dibuka dari
+          ponsel.
+        </p>
+      </div>
+      <div class="mini-stats">
+        <span><strong>5 menit</strong> mulai buat undangan</span>
+        <span><strong>24 jam</strong> akses dashboard</span>
+        <span><strong>100%</strong> responsif mobile</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section faq-section" id="faq">
+    <div class="container section-head center">
+      <p class="pill">FAQ</p>
+      <h2>Pertanyaan yang sering ditanyakan</h2>
+    </div>
+    <div class="container faq-list">
+      {
+        faqs.map(([question, answer], index) => (
+          <details open={index === 0}>
+            <summary>{question}</summary>
+            <p>{answer}</p>
+          </details>
+        ))
+      }
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  :global(body) {
+    background: #ffffff;
+    color: var(--color-text);
+  }
+
+  .hero {
+    overflow: hidden;
+    padding: 4rem 0 3rem;
+    background:
+      radial-gradient(circle at 10% 0%, rgb(64 88 60 / 18%), transparent 28rem),
+      linear-gradient(180deg, var(--sage-50) 0%, #ffffff 82%);
+  }
+
+  .hero-grid,
+  .showcase-grid,
+  .editor-grid,
+  .sage-grid,
+  .copy-grid {
+    display: grid;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .hero-copy {
+    text-align: center;
+  }
+
+  .hero-kicker,
+  .pill {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 0.75rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    background: var(--sage-100);
+    color: var(--color-accent);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+
+  .pill.light {
+    background: rgb(255 255 255 / 16%);
+    color: #ffffff;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    max-width: 12ch;
+    margin: 0 auto 1rem;
+    color: var(--color-text);
+    font-size: clamp(2.4rem, 7vw, 4.7rem);
+    font-weight: 700;
+    line-height: 1.02;
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: clamp(1.8rem, 4.8vw, 3rem);
+    font-weight: 650;
+    line-height: 1.12;
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--color-text);
+    font-size: 1.08rem;
+    font-weight: 650;
+  }
+
+  .hero-lede,
+  .section-head p,
+  .editor-grid p,
+  .reseller-card p,
+  .seo-copy p,
+  .faq-list p {
+    color: var(--color-text-muted);
+  }
+
+  .hero-lede {
+    max-width: 42rem;
+    margin: 0 auto;
+    font-size: 1.08rem;
+  }
+
+  .hero-actions,
+  .more-action {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.4rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    min-height: 2.85rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.15rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: 0.92rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.8rem 1.6rem rgb(64 88 60 / 18%);
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .btn-light {
+    border-color: var(--color-border);
+    background: #ffffff;
+    color: var(--color-accent);
+  }
+
+  .btn-warning {
+    background: var(--sage-100);
+    color: var(--sage-900);
+  }
+
+  .btn-warning:hover {
+    background: var(--sage-200);
+  }
+
+  .btn:focus-visible {
+    outline: 3px solid var(--sage-400);
+    outline-offset: 4px;
+  }
+
+  .template-body a:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .event-list a:hover {
+    border-color: var(--sage-400);
+    background: var(--sage-50);
+  }
+
+  .event-list a:focus-visible {
+    outline: 3px solid var(--sage-400);
+    outline-offset: 3px;
+  }
+
+  .btn-light:hover {
+    background: var(--sage-100);
+    border-color: var(--sage-400);
+  }
+
+  .invite-preview button:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .reseller-card .pill {
+    color: #ffffff;
+  }
+
+  .trust-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.88rem;
+  }
+
+  .trust-row span {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: #ffffff;
+  }
+
+  .hero-visual {
+    position: relative;
+    display: grid;
+    min-height: 30rem;
+    place-items: center;
+  }
+
+  .phone {
+    position: relative;
+    border: 0.45rem solid var(--sage-900);
+    border-radius: 2rem;
+    background: var(--sage-900);
+    box-shadow: 0 1.3rem 2.8rem rgb(64 88 60 / 22%);
+  }
+
+  .phone::before {
+    position: absolute;
+    z-index: 2;
+    top: 0.45rem;
+    left: 50%;
+    width: 3.4rem;
+    height: 0.38rem;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: var(--sage-900);
+    content: '';
+  }
+
+  .phone-main {
+    z-index: 2;
+    width: min(58vw, 15.5rem);
+    aspect-ratio: 9 / 18;
+  }
+
+  .phone-left,
+  .phone-right {
+    position: absolute;
+    width: min(38vw, 10rem);
+    aspect-ratio: 9 / 18;
+  }
+
+  .phone-left {
+    left: 1rem;
+    transform: rotate(-8deg);
+  }
+
+  .phone-right {
+    right: 1rem;
+    transform: rotate(8deg);
+  }
+
+  .phone-screen {
+    display: grid;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 1.45rem;
+    background: #ffffff;
+  }
+
+  .mini-cover {
+    align-content: center;
+    justify-items: center;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .mini-cover span,
+  .mini-cover small {
+    color: rgb(255 255 255 / 78%);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  .mini-cover strong {
+    max-width: 8ch;
+    margin: 1rem 0;
+    color: #ffffff;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-style: normal;
+    line-height: 0.95;
+  }
+
+  .mini-cover i {
+    width: 72%;
+    height: 5.5rem;
+    margin-top: 1rem;
+    border-radius: var(--radius-lg);
+    background: rgb(255 255 255 / 22%);
+  }
+
+  .ivory {
+    background: linear-gradient(160deg, #caa27d, #785645);
+  }
+
+  .botanical {
+    background: linear-gradient(160deg, var(--sage-400), var(--sage-700));
+  }
+
+  .luxe {
+    background: linear-gradient(160deg, var(--sage-600), var(--sage-900));
+  }
+
+  .event-strip {
+    padding: 1.2rem 0 1.5rem;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--sage-50);
+    text-align: center;
+  }
+
+  .event-strip p {
+    margin: 0 auto 1rem;
+    color: var(--sage-700);
+    font-weight: 700;
+  }
+
+  .event-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .event-list a {
+    display: grid;
+    gap: 0.25rem;
+    justify-items: center;
+    padding: 0.8rem 0.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    color: var(--sage-700);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .event-icon {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    place-items: center;
+    color: var(--color-accent);
+    font-size: 1.65rem;
+  }
+
+  .event-icon::before {
+    position: absolute;
+    z-index: -1;
+    width: 2.65rem;
+    height: 2.15rem;
+    transform: rotate(-8deg);
+    border-radius: 48% 52% 42% 58% / 55% 42% 58% 45%;
+    background: var(--sage-100);
+    content: '';
+  }
+
+  .event-list a:nth-child(3n + 2) .event-icon::before {
+    transform: rotate(9deg);
+    background: #fff0ca;
+  }
+
+  .event-list a:nth-child(3n) .event-icon::before {
+    transform: rotate(-3deg);
+    background: var(--sage-100);
+  }
+
+  .section {
+    padding: 4.25rem 0;
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  .section-head {
+    max-width: 46rem;
+    margin: 0 auto 2rem;
+  }
+
+  .section-head .pill {
+    margin-inline: auto;
+  }
+
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .template-card {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    box-shadow: 0 0.65rem 1.6rem rgb(64 88 60 / 8%);
+  }
+
+  .template-thumb {
+    display: grid;
+    min-height: 15rem;
+    align-content: center;
+    justify-items: center;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .template-thumb span,
+  .template-thumb small {
+    color: rgb(255 255 255 / 75%);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .template-thumb strong {
+    max-width: 8ch;
+    margin: 0.9rem 0;
+    color: #ffffff;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-style: normal;
+    line-height: 1;
+  }
+
+  .template-card.botanical .template-thumb,
+  .template-card.garden .template-thumb {
+    background: linear-gradient(150deg, var(--sage-400), var(--sage-700));
+  }
+
+  .template-card.luxe .template-thumb,
+  .template-card.royal .template-thumb {
+    background: linear-gradient(150deg, var(--sage-600), var(--sage-900));
+  }
+
+  .template-card.gold .template-thumb,
+  .template-card.ivory .template-thumb,
+  .template-card.cream .template-thumb {
+    background: linear-gradient(150deg, #d5b48b, #8d654b);
+  }
+
+  .template-card.photo .template-thumb {
+    background: linear-gradient(150deg, #dd7e6b, #622c58);
+  }
+
+  .template-body {
+    padding: 0.85rem;
+  }
+
+  .template-body p {
+    margin: 0.15rem 0 0.7rem;
+    color: var(--color-accent);
+    font-size: 0.86rem;
+    font-weight: 900;
+  }
+
+  .template-body a {
+    display: block;
+    padding: 0.52rem;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 850;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  .how {
+    background: var(--sage-50);
+  }
+
+  .step-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .step-grid article {
+    padding: 1.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    text-align: center;
+  }
+
+  .step-grid span {
+    display: inline-grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    place-items: center;
+    margin-bottom: 0.85rem;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #ffffff;
+    font-weight: 900;
+  }
+
+  .step-grid p,
+  .feature-list p {
+    margin: 0.45rem 0 0;
+    color: var(--color-text-muted);
+  }
+
+  .stats-band {
+    background: linear-gradient(135deg, var(--sage-700), var(--sage-600));
+    color: #ffffff;
+  }
+
+  .stats-band h2,
+  .stats strong {
+    color: #ffffff;
+  }
+
+  .stats-grid {
+    display: grid;
+    gap: 1.25rem;
+    align-items: center;
+  }
+
+  .stats {
+    padding: 1.2rem;
+    border: 1px solid rgb(255 255 255 / 28%);
+    border-radius: var(--radius-md);
+    background: rgb(255 255 255 / 12%);
+    text-align: center;
+  }
+
+  .stats strong {
+    display: block;
+    font-size: clamp(2rem, 7vw, 3.8rem);
+    font-weight: 950;
+  }
+
+  .feature-showcase {
+    background: #ffffff;
+  }
+
+  .tall-phone {
+    width: min(78vw, 17rem);
+    aspect-ratio: 9 / 18;
+    margin-inline: auto;
+  }
+
+  .invite-preview {
+    align-content: center;
+    justify-items: center;
+    padding: 1.2rem;
+    background: linear-gradient(180deg, var(--sage-50), #ffffff);
+    text-align: center;
+  }
+
+  .invite-preview span {
+    color: var(--sage-700);
+    font-size: 0.76rem;
+    font-weight: 800;
+  }
+
+  .invite-preview strong {
+    max-width: 8ch;
+    margin: 1.4rem 0 0.4rem;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: 2.6rem;
+    font-style: normal;
+    line-height: 0.95;
+  }
+
+  .invite-preview p {
+    color: var(--color-text-muted);
+  }
+
+  .invite-preview button {
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-weight: 850;
+  }
+
+  .feature-list {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 1.4rem;
+  }
+
+  .feature-list article {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--sage-50);
+  }
+
+  .feature-list .feature-icon {
+    display: grid;
+    width: 1.65rem;
+    height: 1.65rem;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--sage-100);
+    color: var(--color-accent);
+    font-size: 1.25rem;
+  }
+
+  .editor-band {
+    background: var(--sage-50);
+  }
+
+  .editor-panel {
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: #ffffff;
+    box-shadow: 0 1rem 2.2rem rgb(64 88 60 / 12%);
+  }
+
+  .toolbar,
+  .color-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .toolbar span {
+    width: 4rem;
+    height: 0.8rem;
+    border-radius: 999px;
+    background: var(--sage-100);
+  }
+
+  .color-row i {
+    width: 1.8rem;
+    height: 1.8rem;
+    border: 3px solid #ffffff;
+    border-radius: 50%;
+    background: var(--swatch);
+    box-shadow: 0 0 0 1px var(--color-border);
+  }
+
+  .editor-canvas {
+    display: grid;
+    grid-template-columns: 0.8fr 1fr;
+    gap: 1rem;
+    align-items: center;
+    min-height: 15rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--sage-50);
+  }
+
+  .mini-phone {
+    width: 100%;
+    max-width: 8rem;
+    aspect-ratio: 9 / 16;
+    margin-inline: auto;
+    border: 0.35rem solid var(--sage-900);
+    border-radius: 1.2rem;
+    background: linear-gradient(155deg, #d6b692, #7c5842);
+  }
+
+  .form-lines {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .form-lines span {
+    height: 1.6rem;
+    border-radius: var(--radius-md);
+    background: #ffffff;
+  }
+
+  .sage-feature {
+    background: var(--sage-100);
+  }
+
+  .sage-grid {
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--sage-700), var(--sage-600));
+    color: #ffffff;
+  }
+
+  .sage-grid h2 {
+    color: #ffffff;
+  }
+
+  .check-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .check-columns span {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 750;
+  }
+
+  .check-columns i {
+    flex: 0 0 auto;
+    font-size: 1.15rem;
+  }
+
+  .pricing-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .price-card {
+    padding: 1.35rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    box-shadow: 0 0.7rem 1.6rem rgb(64 88 60 / 7%);
+  }
+
+  .price-card.featured {
+    border-color: var(--color-accent);
+    box-shadow: 0 1rem 2rem rgb(64 88 60 / 18%);
+  }
+
+  .price-card > p {
+    min-height: 3.4rem;
+    color: var(--color-text-muted);
+  }
+
+  .price-card strong {
+    display: block;
+    margin: 1rem 0;
+    color: var(--color-accent);
+    font-size: 2.4rem;
+    font-weight: 950;
+  }
+
+  .price-card ul {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    color: var(--sage-700);
+    font-size: 0.92rem;
+    list-style: none;
+  }
+
+  .price-card li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .price-card li i {
+    flex: 0 0 auto;
+    color: var(--color-accent);
+    font-size: 1.15rem;
+  }
+
+  .reseller {
+    padding-top: 0;
+  }
+
+  .reseller-card {
+    display: grid;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    background: var(--sage-800);
+    color: #ffffff;
+  }
+
+  .reseller-card h2,
+  .reseller-card p {
+    color: #ffffff;
+  }
+
+  .testimonial-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .testimonial-grid article {
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+  }
+
+  .avatar {
+    width: 3.4rem;
+    height: 3.4rem;
+    margin-bottom: 0.9rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-accent), #f5c66b);
+  }
+
+  .testimonial-grid p {
+    color: var(--sage-700);
+  }
+
+  .testimonial-grid .rating {
+    display: block;
+    color: #f5a400;
+  }
+
+  .rating i + i {
+    margin-left: 0.14rem;
+  }
+
+  .seo-copy {
+    background: var(--sage-50);
+  }
+
+  .mini-stats {
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .mini-stats span {
+    display: grid;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    color: var(--color-text-muted);
+  }
+
+  .mini-stats strong {
+    color: var(--color-accent);
+    font-size: 1.4rem;
+  }
+
+  .faq-list {
+    max-width: 52rem;
+  }
+
+  .faq-list details {
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+  }
+
+  .faq-list summary {
+    cursor: pointer;
+    padding: 1rem;
+    color: var(--color-text);
+    font-weight: 850;
+  }
+
+  .faq-list p {
+    margin: 0;
+    padding: 0 1rem 1rem;
+  }
+
+  @media (min-width: 44rem) {
+    .event-list {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .template-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .step-grid,
+    .pricing-grid,
+    .testimonial-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stats-grid {
+      grid-template-columns: 1.4fr 0.8fr 0.8fr;
+    }
+
+    .reseller-card {
+      grid-template-columns: 1fr auto;
+    }
+  }
+
+  @media (min-width: 56rem) {
+    .hero {
+      padding: 5.25rem 0 4rem;
+    }
+
+    .hero-grid,
+    .showcase-grid,
+    .editor-grid,
+    .sage-grid,
+    .copy-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero-copy {
+      text-align: left;
+    }
+
+    h1,
+    .hero-lede {
+      margin-inline: 0;
+    }
+
+    .hero-actions,
+    .trust-row {
+      justify-content: flex-start;
+    }
+
+    .phone-left {
+      left: 3rem;
+    }
+
+    .phone-right {
+      right: 2rem;
+    }
+  }
+
+  @media (max-width: 30rem) {
+    .template-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .phone-left,
+    .phone-right {
+      opacity: 0.72;
+    }
+
+    .check-columns,
+    .editor-canvas {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

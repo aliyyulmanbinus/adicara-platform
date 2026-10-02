@@ -1,0 +1,24 @@
+---
+import type { InvitationData } from '@/invitation-templates/types';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+---
+
+<section class="invitation-section" aria-labelledby="host-title">
+  <p class="invitation-kicker">Mempelai</p>
+  <h2 id="host-title">Dua cerita, satu perjalanan</h2>
+  <div class="host-list">
+    {
+      data.hosts.map((host) => (
+        <article>
+          <p class="host-role">{host.role}</p>
+          <h3>{host.name}</h3>
+        </article>
+      ))
+    }
+  </div>
+</section>

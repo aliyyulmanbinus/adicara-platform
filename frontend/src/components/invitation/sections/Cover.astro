@@ -1,0 +1,27 @@
+---
+import type { InvitationData } from '@/invitation-templates/types';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+const event = data.events[0];
+const eventDate = event
+  ? new Intl.DateTimeFormat('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: event.timezone,
+    }).format(new Date(event.startAt))
+  : undefined;
+---
+
+<section class="invitation-cover" aria-labelledby="invitation-title">
+  <p class="invitation-kicker">Dengan penuh kebahagiaan</p>
+  <h1 id="invitation-title">
+    {data.hosts.map((host) => host.name).join(' & ')}
+  </h1>
+  {eventDate && <p class="invitation-date">{eventDate}</p>}
+  <a class="invitation-action" href="#detail-acara">Lihat detail acara</a>
+</section>

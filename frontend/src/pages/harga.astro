@@ -1,0 +1,148 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+---
+
+<MarketingLayout
+  title="Harga Undangan Digital — Adicara"
+  description="Informasi harga Adicara sedang disusun berdasarkan cakupan fitur dan dukungan yang nyata, tanpa diskon atau paket semu."
+  canonicalPath="/harga"
+>
+  <section class="pricing-hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">Harga</p>
+        <h1>Jelas sebelum kalian memilih.</h1>
+      </div>
+      <p class="lede">
+        Paket Adicara masih disusun. Kami akan menerbitkan harga ketika batas
+        fitur, masa aktif, dan dukungan sudah dapat dijelaskan dengan lengkap.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="principles-title">
+    <div class="container pricing-card">
+      <div>
+        <p class="eyebrow">Belum tersedia untuk pembelian</p>
+        <h2 id="principles-title">Tidak ada angka pengisi.</h2>
+      </div>
+      <div class="pricing-copy">
+        <p>
+          Kami tidak menampilkan harga coret, potongan waktu terbatas, atau
+          perbandingan paket sebelum produknya benar-benar siap digunakan.
+        </p>
+        <p>
+          Ketika harga diumumkan, halaman ini akan menjelaskan apa yang
+          termasuk, batas penggunaan, dan bantuan yang tersedia.
+        </p>
+        <a class="button button--secondary" href="/tema">Lihat Tema Saat Ini</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section principles">
+    <div class="container principles-grid">
+      <article>
+        <span>01</span>
+        <h3>Cakupan transparan</h3>
+        <p>
+          Setiap paket akan menyebutkan fitur dan batasnya tanpa istilah kabur.
+        </p>
+      </article>
+      <article>
+        <span>02</span>
+        <h3>Tanpa urgensi buatan</h3>
+        <p>
+          Keputusan untuk momen penting tidak perlu didorong hitung mundur semu.
+        </p>
+      </article>
+      <article>
+        <span>03</span>
+        <h3>Dukungan yang terukur</h3>
+        <p>
+          Jalur bantuan akan dinyatakan sesuai kapasitas yang benar-benar
+          tersedia.
+        </p>
+      </article>
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  .pricing-hero {
+    padding-block: var(--space-8);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .hero-grid,
+  .pricing-card {
+    display: grid;
+    gap: var(--space-7);
+    align-items: end;
+  }
+
+  .pricing-hero h1,
+  .pricing-card h2 {
+    max-width: 11ch;
+  }
+
+  .pricing-card {
+    padding: var(--space-6);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+
+  .pricing-copy p {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+  }
+
+  .pricing-copy .button {
+    margin-top: var(--space-4);
+  }
+
+  .principles {
+    padding-top: 0;
+  }
+
+  .principles-grid {
+    display: grid;
+    gap: 1px;
+    border: 1px solid var(--color-border);
+    background: var(--color-border);
+  }
+
+  .principles-grid article {
+    padding: var(--space-5);
+    background: var(--color-background);
+  }
+
+  .principles-grid span {
+    color: var(--color-accent-deep);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .principles-grid h3 {
+    margin-top: var(--space-6);
+  }
+
+  .principles-grid p {
+    color: var(--color-text-muted);
+  }
+
+  @media (min-width: 48rem) {
+    .hero-grid,
+    .pricing-card {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pricing-card {
+      padding: var(--space-8);
+    }
+
+    .principles-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title description">
+  <title id="title">Pratinjau tema Botanical Modern</title>
+  <desc id="description">Undangan hijau lembut dengan bentuk organik dan nama Nara dan Arka.</desc>
+  <rect width="800" height="1000" fill="#edf1e8"/>
+  <circle cx="85" cy="140" r="170" fill="#cad8c6"/>
+  <circle cx="740" cy="870" r="225" fill="#e4c7b8"/>
+  <path d="M105 82c120 38 191 120 212 245M692 918c-115-35-188-115-218-238" fill="none" stroke="#52705e" stroke-width="3"/>
+  <path d="M188 170c-56-10-91 13-105 64 56 10 91-13 105-64Zm66 78c-53-17-91 1-112 50 53 17 91-1 112-50ZM611 793c59 5 92-22 100-77-59-5-92 22-100 77Zm-69-71c57 14 96-6 114-59-57-14-96 6-114 59Z" fill="#78917d"/>
+  <rect x="74" y="70" width="652" height="860" rx="310" fill="none" stroke="#183329" stroke-opacity=".42" stroke-width="2"/>
+  <text x="400" y="335" fill="#a94f31" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="5" text-anchor="middle">THE WEDDING OF</text>
+  <text x="400" y="455" fill="#183329" font-family="Georgia, serif" font-size="92" text-anchor="middle">Nara</text>
+  <text x="400" y="525" fill="#a94f31" font-family="Georgia, serif" font-size="46" font-style="italic" text-anchor="middle">&amp;</text>
+  <text x="400" y="625" fill="#183329" font-family="Georgia, serif" font-size="92" text-anchor="middle">Arka</text>
+  <line x1="315" y1="690" x2="485" y2="690" stroke="#183329" stroke-opacity=".35"/>
+  <text x="400" y="744" fill="#587064" font-family="Arial, sans-serif" font-size="20" letter-spacing="4" text-anchor="middle">12 · 12 · 2027</text>
+</svg>

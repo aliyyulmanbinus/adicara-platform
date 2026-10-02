@@ -1,0 +1,170 @@
+---
+import {
+  invitationTemplates,
+  type RegisteredTemplateKey,
+} from '@/invitation-templates/registry';
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+import { demoInvitation } from '@/lib/demo-invitation';
+
+export function getStaticPaths() {
+  return Object.keys(invitationTemplates).map((slug) => ({ params: { slug } }));
+}
+
+const slug = Astro.params.slug as RegisteredTemplateKey;
+const theme = invitationTemplates[slug]!;
+const Theme = theme.component;
+const previewData = { ...demoInvitation, templateKey: theme.key };
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Tema',
+      item: new URL('/tema', Astro.site ?? Astro.url.origin).href,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: theme.name,
+      item: new URL(`/tema/${theme.key}`, Astro.site ?? Astro.url.origin).href,
+    },
+  ],
+};
+---
+
+<MarketingLayout
+  title={`${theme.name} — Tema Undangan Digital Adicara`}
+  description={`${theme.description} Lihat pratinjau lengkap tema undangan digital ${theme.name}.`}
+  canonicalPath={`/tema/${theme.key}`}
+  structuredData={breadcrumbSchema}
+>
+  <section class="theme-hero">
+    <div class="container hero-grid">
+      <div>
+        <a class="back-link" href="/tema">← Semua tema</a>
+        <p class="eyebrow">{theme.category} · Versi {theme.version}</p>
+        <h1>{theme.name}</h1>
+      </div>
+      <div>
+        <p class="lede">{theme.description}</p>
+        <a class="button" href="/#mulai">Gunakan Tema Ini</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="preview-section" aria-labelledby="preview-title">
+    <div class="container preview-heading">
+      <p class="eyebrow">Pratinjau lengkap</p>
+      <h2 id="preview-title">Lihat alurnya dari sampul hingga penutup.</h2>
+      <p>
+        Konten berikut adalah data contoh. Nama, tanggal, dan lokasi dapat
+        diganti tanpa mengubah struktur tema.
+      </p>
+    </div>
+    <div class="preview-shell">
+      <Theme data={previewData} />
+    </div>
+  </section>
+
+  <section class="section theme-details">
+    <div class="container detail-grid">
+      <div>
+        <p class="eyebrow">Cakupan tema</p>
+        <h2>Struktur yang sudah didukung.</h2>
+      </div>
+      <ul>
+        {theme.supportedSections.map((section) => <li>{section}</li>)}
+      </ul>
+    </div>
+  </section>
+</MarketingLayout>
+
+<style>
+  .theme-hero {
+    padding-block: var(--space-8);
+  }
+
+  .hero-grid,
+  .detail-grid {
+    display: grid;
+    gap: var(--space-6);
+    align-items: end;
+  }
+
+  .theme-hero h1 {
+    max-width: 11ch;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: var(--space-7);
+    color: var(--color-text-muted);
+  }
+
+  .hero-grid .button {
+    margin-top: var(--space-4);
+  }
+
+  .preview-section {
+    padding-block: var(--space-7) var(--space-8);
+    background: #d9d0c4;
+  }
+
+  .preview-heading {
+    display: grid;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+
+  .preview-heading h2 {
+    max-width: 15ch;
+  }
+
+  .preview-heading p:last-child {
+    max-width: 36rem;
+  }
+
+  .preview-shell {
+    width: min(calc(100% - 2rem), 58rem);
+    max-height: 62rem;
+    overflow-y: auto;
+    margin-inline: auto;
+    border: 0.75rem solid #27231f;
+    border-radius: 1.5rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .theme-details h2 {
+    max-width: 13ch;
+  }
+
+  .theme-details ul {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--color-border);
+    list-style: none;
+  }
+
+  .theme-details li {
+    padding-block: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  @media (min-width: 48rem) {
+    .hero-grid,
+    .detail-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .preview-heading {
+      grid-template-columns: 0.35fr 1fr 0.8fr;
+      align-items: end;
+    }
+  }
+</style>

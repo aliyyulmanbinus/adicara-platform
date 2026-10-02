@@ -1,0 +1,15 @@
+---
+import SectionRenderer from '@/components/invitation/shared/SectionRenderer.astro';
+import type { InvitationData } from '@/invitation-templates/types';
+import './theme.css';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+---
+
+<article class="editorial-invitation">
+  <SectionRenderer data={data} />
+</article>

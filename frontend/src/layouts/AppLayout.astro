@@ -1,0 +1,16 @@
+---
+import AppHeader from '@/components/layout/AppHeader.astro';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const props = Astro.props;
+---
+
+<BaseLayout {...props} noindex={true}>
+  <AppHeader />
+  <main id="main-content"><slot /></main>
+</BaseLayout>

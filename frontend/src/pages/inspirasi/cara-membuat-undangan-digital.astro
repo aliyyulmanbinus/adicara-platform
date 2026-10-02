@@ -1,0 +1,212 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+
+const canonicalURL = new URL(
+  '/inspirasi/cara-membuat-undangan-digital',
+  Astro.site ?? Astro.url.origin,
+).href;
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: 'Cara menyusun undangan digital yang mudah dipahami tamu',
+  description:
+    'Panduan menyusun nama, jadwal, lokasi, dan konteks undangan digital agar mudah dipahami tamu.',
+  datePublished: '2026-10-02',
+  dateModified: '2026-10-02',
+  inLanguage: 'id-ID',
+  mainEntityOfPage: canonicalURL,
+  author: { '@type': 'Organization', name: 'Adicara' },
+  publisher: { '@type': 'Organization', name: 'Adicara' },
+};
+---
+
+<MarketingLayout
+  title="Cara Membuat Undangan Digital yang Jelas — Adicara"
+  description="Panduan menyusun nama, jadwal, lokasi, dan konteks undangan digital agar tamu mudah menemukan informasi penting."
+  canonicalPath="/inspirasi/cara-membuat-undangan-digital"
+  structuredData={articleSchema}
+>
+  <article>
+    <header class="article-hero">
+      <div class="article-container">
+        <a class="back-link" href="/inspirasi">← Semua inspirasi</a>
+        <p class="eyebrow">Panduan · 5 menit baca</p>
+        <h1>Cara menyusun undangan digital yang mudah dipahami tamu</h1>
+        <p class="lede">
+          Undangan yang baik tidak harus panjang. Ia hanya perlu menjawab
+          pertanyaan tamu dalam urutan yang alami.
+        </p>
+        <p class="published">Diterbitkan 2 Oktober 2026 · Adicara</p>
+      </div>
+    </header>
+
+    <div class="article-container article-body">
+      <p class="opening">
+        Saat membuka undangan, tamu biasanya mencari tiga hal terlebih dahulu:
+        siapa yang mengundang, kapan acaranya, dan di mana lokasinya. Susunan
+        halaman sebaiknya mengikuti kebutuhan itu sebelum menambahkan cerita
+        atau elemen dekoratif.
+      </p>
+
+      <h2>1. Mulai dari identitas acara</h2>
+      <p>
+        Tampilkan nama pihak yang merayakan, jenis acara, dan tanggal utama di
+        bagian awal. Hindari kalimat pembuka yang terlalu panjang hingga
+        informasi pokok terdorong jauh ke bawah layar.
+      </p>
+
+      <h2>2. Pisahkan setiap rangkaian</h2>
+      <p>
+        Bila akad dan resepsi berlangsung pada waktu berbeda, buat keduanya
+        sebagai entri terpisah. Cantumkan hari, tanggal, jam, zona waktu bila
+        tamu berada di banyak wilayah, nama tempat, dan alamat singkat.
+      </p>
+
+      <h2>3. Beri konteks pada lokasi</h2>
+      <p>
+        Nama gedung saja sering belum cukup. Tambahkan kota atau penanda area,
+        kemudian sediakan tautan peta yang langsung menuju lokasi resmi. Periksa
+        kembali pin dari ponsel sebelum membagikan undangan.
+      </p>
+
+      <aside>
+        <p class="eyebrow">Daftar periksa singkat</p>
+        <ul>
+          <li>Nama dan peran ditulis konsisten.</li>
+          <li>Tanggal serta jam memakai format yang mudah dibaca.</li>
+          <li>Setiap acara memiliki lokasi yang jelas.</li>
+          <li>Tautan peta sudah diuji pada ponsel.</li>
+          <li>Informasi privat hanya dibagikan kepada tamu yang tepat.</li>
+        </ul>
+      </aside>
+
+      <h2>4. Letakkan tindakan setelah konteks</h2>
+      <p>
+        Tombol RSVP, peta, atau simpan ke kalender lebih berguna setelah tamu
+        memahami acaranya. Gunakan label yang langsung menjelaskan hasil,
+        misalnya “Konfirmasi kehadiran” atau “Buka peta”.
+      </p>
+
+      <h2>5. Periksa sebagai tamu</h2>
+      <p>
+        Buka undangan dari tautan baru pada layar kecil. Pastikan teks dapat
+        dipindai, urutan acara logis, dan informasi penting tetap terbaca tanpa
+        bergantung pada animasi atau suara.
+      </p>
+
+      <div class="article-cta">
+        <h2>Pilih suasana setelah informasinya siap.</h2>
+        <p>
+          Di Adicara, konten acara dipisahkan dari tema sehingga gaya visual
+          dapat diganti tanpa menyusun detail dari awal.
+        </p>
+        <a class="button" href="/tema">Lihat Koleksi Tema</a>
+      </div>
+    </div>
+  </article>
+</MarketingLayout>
+
+<style>
+  .article-container {
+    width: min(calc(100% - 2rem), 48rem);
+    margin-inline: auto;
+  }
+
+  .article-hero {
+    padding-block: var(--space-8);
+    background: var(--color-surface);
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-bottom: var(--space-7);
+    color: var(--color-text-muted);
+  }
+
+  .article-hero h1 {
+    max-width: 12ch;
+    font-size: clamp(2.8rem, 9vw, 5.5rem);
+  }
+
+  .published {
+    margin-top: var(--space-6);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+
+  .article-body {
+    padding-block: var(--space-8);
+  }
+
+  .article-body > p,
+  .article-body > h2,
+  .article-body > aside {
+    max-width: 42rem;
+    margin-inline: auto;
+  }
+
+  .article-body > p {
+    color: var(--color-text-muted);
+    font-size: 1.08rem;
+  }
+
+  .article-body .opening {
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    line-height: 1.4;
+  }
+
+  .article-body > h2 {
+    margin-top: var(--space-7);
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+  }
+
+  aside {
+    margin-block: var(--space-7);
+    padding: var(--space-6);
+    border-left: 3px solid var(--color-accent);
+    background: var(--color-surface-muted);
+  }
+
+  aside ul {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+
+  aside li + li {
+    margin-top: var(--space-2);
+  }
+
+  .article-cta {
+    margin-top: var(--space-8);
+    padding: var(--space-6);
+    background: var(--color-forest);
+    color: var(--color-white);
+  }
+
+  .article-cta h2 {
+    max-width: 13ch;
+  }
+
+  .article-cta p {
+    color: #d8d6d0;
+  }
+
+  .article-cta .button {
+    margin-top: var(--space-4);
+    border-color: var(--color-white);
+    background: var(--color-white);
+    color: var(--color-text);
+  }
+
+  @media (min-width: 48rem) {
+    .article-container {
+      width: min(calc(100% - 4rem), 48rem);
+    }
+
+    .article-cta {
+      padding: var(--space-7);
+    }
+  }
+</style>

@@ -1,0 +1,65 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: ci
+    strategy:
+      matrix:
+        app: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.app }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}-${{ matrix.app }}:main
+          build-args: |
+            PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: publish
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          script: |
+            cd /opt/adicara
+            export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
+            export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
+            echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
+            docker compose -f deploy/docker-compose.prod.yml pull
+            docker compose -f deploy/docker-compose.prod.yml up -d
+            curl --fail --retry 10 --retry-delay 3 http://127.0.0.1:8080/readyz
+

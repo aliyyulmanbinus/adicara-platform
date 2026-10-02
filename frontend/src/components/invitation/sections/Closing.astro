@@ -1,0 +1,15 @@
+---
+import type { InvitationData } from '@/invitation-templates/types';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+---
+
+<section class="invitation-closing" aria-labelledby="closing-title">
+  <p class="invitation-kicker">Sampai bertemu</p>
+  <h2 id="closing-title">Kehadiran Anda akan melengkapi hari kami.</h2>
+  <p>{data.hosts.map((host) => host.name).join(' & ')}</p>
+</section>

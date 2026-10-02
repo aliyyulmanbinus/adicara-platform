@@ -1,0 +1,35 @@
+---
+import { getInvitationTemplate } from '@/invitation-templates/registry';
+import InvitationLayout from '@/layouts/InvitationLayout.astro';
+import { getPublishedInvitation } from '@/lib/api/invitations';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+let invitation = null;
+
+try {
+  invitation = slug ? await getPublishedInvitation(slug) : null;
+} catch {
+  return new Response('Layanan undangan sedang tidak tersedia.', {
+    status: 503,
+  });
+}
+
+if (!invitation) {
+  return new Response('Undangan tidak ditemukan.', { status: 404 });
+}
+
+const template = getInvitationTemplate(invitation.templateKey);
+const Template = template.component;
+const isPersonalized = Astro.url.searchParams.has('guest');
+---
+
+<InvitationLayout
+  title={`${invitation.title} | Adicara`}
+  description={`Undangan digital ${invitation.title}. Lihat detail acara dan lokasi.`}
+  canonicalPath={`/i/${invitation.slug}`}
+  noindex={isPersonalized || !invitation.allowIndexing}
+>
+  <Template data={invitation} />
+</InvitationLayout>

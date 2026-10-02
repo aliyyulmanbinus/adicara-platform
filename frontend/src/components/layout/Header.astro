@@ -1,0 +1,173 @@
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="wordmark" href="/" aria-label="Adicara, kembali ke beranda">
+      <span class="logo-mark">A</span>
+      <span>adicara</span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="Navigasi utama">
+      <a href="/tema">Tema</a>
+      <a href="/fitur">Fitur</a>
+      <a href="/harga">Harga</a>
+      <a href="/inspirasi">Inspirasi</a>
+      <a href="/#faq">FAQ</a>
+    </nav>
+
+    <div class="desktop-actions">
+      <a class="login-link" href="/auth/masuk">Masuk</a>
+      <a class="header-button" href="/auth/daftar">Buat Undangan</a>
+    </div>
+
+    <details class="mobile-menu">
+      <summary aria-label="Buka menu navigasi">Menu</summary>
+      <nav aria-label="Navigasi seluler">
+        <a href="/tema">Tema</a>
+        <a href="/fitur">Fitur</a>
+        <a href="/harga">Harga</a>
+        <a href="/inspirasi">Inspirasi</a>
+        <a href="/#faq">FAQ</a>
+        <a href="/auth/masuk">Masuk</a>
+        <a class="header-button" href="/auth/daftar">Buat Undangan</a>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    z-index: 20;
+    top: 0;
+    border-bottom: 1px solid var(--color-border);
+    background: rgb(255 255 255 / 92%);
+    backdrop-filter: blur(16px);
+  }
+
+  .header-inner {
+    display: flex;
+    min-height: 4.25rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    text-decoration: none;
+  }
+
+  .logo-mark {
+    display: inline-grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 1rem;
+  }
+
+  .desktop-nav,
+  .desktop-actions {
+    display: none;
+  }
+
+  .header-button {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: #ffffff;
+    font-size: 0.86rem;
+    font-weight: 850;
+    text-decoration: none;
+  }
+
+  .mobile-menu {
+    position: relative;
+  }
+
+  .header-button:hover {
+    background: var(--color-accent-deep);
+  }
+
+  .mobile-menu summary {
+    cursor: pointer;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    font-weight: 850;
+    list-style: none;
+  }
+
+  .mobile-menu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu nav {
+    position: absolute;
+    top: calc(100% + 1rem);
+    right: 0;
+    display: grid;
+    min-width: 14rem;
+    gap: 0.65rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #ffffff;
+    box-shadow: 0 1rem 2rem rgb(64 88 60 / 16%);
+  }
+
+  .mobile-menu nav a:not(.header-button) {
+    color: var(--sage-700);
+    font-weight: 750;
+    text-decoration: none;
+  }
+
+  @media (min-width: 58rem) {
+    .desktop-nav,
+    .desktop-actions {
+      display: flex;
+      align-items: center;
+    }
+
+    .desktop-nav {
+      gap: 1.35rem;
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .desktop-nav a,
+    .login-link {
+      color: var(--sage-700);
+      text-decoration: none;
+    }
+
+    .desktop-nav a:hover,
+    .login-link:hover {
+      color: var(--color-accent);
+    }
+
+    .desktop-actions {
+      gap: 1rem;
+    }
+
+    .login-link {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .mobile-menu {
+      display: none;
+    }
+  }
+</style>

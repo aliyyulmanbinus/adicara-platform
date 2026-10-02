@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Pratinjau tema Editorial Ivory</title>
+  <desc id="desc">Undangan warna gading dengan tipografi hitam bergaya editorial.</desc>
+  <rect width="800" height="1000" fill="#e8dfd2"/>
+  <rect x="34" y="34" width="732" height="932" fill="#f5f0e7" stroke="#8b5f42"/>
+  <path d="M86 160V86h74M640 914h74v-74" fill="none" stroke="#8b5f42" stroke-width="2"/>
+  <text x="400" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" letter-spacing="7" fill="#8b5f42">THE WEDDING OF</text>
+  <text x="400" y="430" text-anchor="middle" font-family="Georgia, serif" font-size="76" font-style="italic" fill="#28231f">Nara</text>
+  <text x="400" y="505" text-anchor="middle" font-family="Georgia, serif" font-size="38" fill="#8b5f42">&amp;</text>
+  <text x="400" y="625" text-anchor="middle" font-family="Georgia, serif" font-size="76" font-style="italic" fill="#28231f">Arka</text>
+  <line x1="280" y1="700" x2="520" y2="700" stroke="#bbae9e"/>
+  <text x="400" y="755" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" letter-spacing="4" fill="#6f675e">12 · 12 · 2027</text>
+</svg>
+

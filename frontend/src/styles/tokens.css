@@ -1,0 +1,47 @@
+:root {
+  --sage-50: #f5f8f3;
+  --sage-100: #e8efe5;
+  --sage-200: #d1dfce;
+  --sage-300: #b3c8ad;
+  --sage-400: #97b394;
+  --sage-500: #789773;
+  --sage-600: #526e4d;
+  --sage-700: #40583c;
+  --sage-800: #30432e;
+  --sage-900: #233121;
+  --color-background: var(--sage-50);
+  --color-surface: #fffefb;
+  --color-surface-muted: var(--sage-100);
+  --color-text: var(--sage-900);
+  --color-text-muted: #616c5e;
+  --color-border: var(--sage-200);
+  --color-accent: var(--sage-600);
+  --color-accent-deep: var(--sage-700);
+  --color-forest: var(--sage-800);
+  --color-white: #ffffff;
+
+  --font-display:
+    'Fredoka Variable', Fredoka, ui-rounded, 'Arial Rounded MT Bold',
+    ui-sans-serif, system-ui, sans-serif;
+  --font-body:
+    'Nunito Sans Variable', 'Nunito Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  --radius-sm: 0.35rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 1.5rem 4rem rgb(48 67 46 / 8%);
+  --content-width: 72rem;
+  --transition: 180ms ease;
+}

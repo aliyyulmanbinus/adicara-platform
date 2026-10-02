@@ -1,0 +1,331 @@
+---
+import AppLayout from '@/layouts/AppLayout.astro';
+---
+
+<AppLayout
+  title="Buat Undangan — Adicara"
+  description="Buat draft undangan digital Adicara."
+>
+  <section class="editor-hero">
+    <div class="editor-container">
+      <a href="/dashboard">← Kembali ke dashboard</a>
+      <p class="eyebrow">Undangan baru</p>
+      <h1>Mulai dari informasi yang paling penting.</h1>
+      <p>
+        Form terstruktur ini membuat draft; kalian dapat menerbitkannya dari
+        dashboard.
+      </p>
+    </div>
+  </section>
+
+  <section class="editor-container editor-section">
+    <form data-invitation-form>
+      <fieldset>
+        <legend>Dasar acara</legend>
+        <label
+          >Judul undangan <input
+            name="title"
+            required
+            minlength="3"
+            maxlength="160"
+            placeholder="Pernikahan Nara & Arka"
+          /></label
+        >
+        <label
+          >Slug publik <input
+            name="slug"
+            required
+            minlength="3"
+            maxlength="100"
+            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+            placeholder="nara-dan-arka"
+          /></label
+        >
+        <label
+          >Jenis acara <input
+            name="event_type"
+            required
+            value="wedding"
+            pattern="[a-z][a-z0-9-]+"
+          /></label
+        >
+        <label>
+          Tema
+          <select name="template_key" required>
+            <option value="editorial-ivory">Editorial Ivory</option>
+            <option value="botanical-modern">Botanical Modern</option>
+            <option value="monochrome-luxe">Monochrome Luxe</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Orang</legend>
+        <div class="two-columns">
+          <label
+            >Nama pertama <input
+              name="host_one_name"
+              required
+              maxlength="120"
+            /></label
+          >
+          <label
+            >Peran <input
+              name="host_one_role"
+              required
+              maxlength="120"
+              value="Mempelai wanita"
+            /></label
+          >
+          <label
+            >Nama kedua <input
+              name="host_two_name"
+              required
+              maxlength="120"
+            /></label
+          >
+          <label
+            >Peran <input
+              name="host_two_role"
+              required
+              maxlength="120"
+              value="Mempelai pria"
+            /></label
+          >
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Acara utama</legend>
+        <label
+          >Nama acara <input
+            name="event_name"
+            required
+            maxlength="120"
+            value="Akad nikah"
+          /></label
+        >
+        <label
+          >Waktu (WIB) <input
+            name="start_at"
+            type="datetime-local"
+            required
+          /></label
+        >
+        <label
+          >Nama tempat <input
+            name="venue_name"
+            required
+            maxlength="160"
+          /></label
+        >
+        <label
+          >Alamat <textarea
+            name="venue_address"
+            required
+            maxlength="500"
+            rows="3"></textarea></label
+        >
+        <label
+          >Tautan peta (opsional) <input
+            name="map_url"
+            type="url"
+            placeholder="https://maps.google.com/…"
+          /></label
+        >
+      </fieldset>
+
+      <label class="checkbox"
+        ><input name="allow_indexing" type="checkbox" /> Izinkan mesin pencari mengindeks
+        undangan setelah diterbitkan</label
+      >
+      <p class="form-status" data-form-status role="status" aria-live="polite">
+      </p>
+      <button class="button" type="submit">Simpan Draft</button>
+    </form>
+  </section>
+</AppLayout>
+
+<script>
+  function cookieValue(name: string) {
+    const prefix = `${encodeURIComponent(name)}=`;
+    const item = document.cookie
+      .split('; ')
+      .find((value) => value.startsWith(prefix));
+    return item ? decodeURIComponent(item.slice(prefix.length)) : '';
+  }
+
+  const form = document.querySelector<HTMLFormElement>(
+    '[data-invitation-form]',
+  );
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const values = new FormData(form);
+    const status = form.querySelector<HTMLElement>('[data-form-status]');
+    const button = form.querySelector<HTMLButtonElement>(
+      'button[type="submit"]',
+    );
+    if (!status || !button) return;
+
+    const localStart = String(values.get('start_at'));
+    const payload = {
+      event_type: values.get('event_type'),
+      slug: values.get('slug'),
+      title: values.get('title'),
+      template_key: values.get('template_key'),
+      allow_indexing: values.get('allow_indexing') === 'on',
+      hosts: [
+        {
+          name: values.get('host_one_name'),
+          role: values.get('host_one_role'),
+        },
+        {
+          name: values.get('host_two_name'),
+          role: values.get('host_two_role'),
+        },
+      ],
+      events: [
+        {
+          name: values.get('event_name'),
+          start_at: `${localStart}:00+07:00`,
+          timezone: 'Asia/Jakarta',
+          venue_name: values.get('venue_name'),
+          venue_address: values.get('venue_address'),
+          map_url: values.get('map_url') || undefined,
+        },
+      ],
+    };
+
+    status.textContent = 'Menyimpan draft…';
+    button.disabled = true;
+    try {
+      const response = await fetch('/api/v1/invitations', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': cookieValue('adicara_csrf'),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (response.status === 401) {
+        window.location.assign('/auth/masuk');
+        return;
+      }
+      if (!response.ok) {
+        const body = await response.json();
+        throw new Error(body?.error?.message ?? 'Draft belum dapat disimpan.');
+      }
+      window.location.assign('/dashboard');
+    } catch (error) {
+      status.textContent =
+        error instanceof Error ? error.message : 'Draft belum dapat disimpan.';
+      button.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .editor-container {
+    width: min(calc(100% - 2rem), 48rem);
+    margin-inline: auto;
+  }
+  .editor-hero {
+    padding-block: var(--space-7);
+    background: var(--color-surface);
+  }
+  .editor-hero > div > a {
+    display: inline-block;
+    margin-bottom: var(--space-6);
+    color: var(--color-text-muted);
+  }
+  .editor-hero h1 {
+    max-width: 13ch;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+  }
+  .editor-hero p:last-child {
+    color: var(--color-text-muted);
+  }
+  .editor-section {
+    padding-block: var(--space-7);
+  }
+  form,
+  fieldset,
+  label {
+    display: grid;
+  }
+  form {
+    gap: var(--space-6);
+  }
+  fieldset {
+    gap: var(--space-4);
+    margin: 0;
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  legend {
+    padding-inline: var(--space-2);
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+  }
+  label {
+    gap: var(--space-2);
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
+    color: var(--color-text);
+  }
+  textarea {
+    resize: vertical;
+  }
+  .two-columns {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+  .checkbox input {
+    width: 1.1rem;
+    min-height: 1.1rem;
+    margin-top: 0.25rem;
+  }
+  .form-status {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+  .form-status:not(:empty) {
+    padding: var(--space-3);
+    border-left: 2px solid var(--color-accent);
+    background: var(--color-surface-muted);
+  }
+  .button {
+    cursor: pointer;
+  }
+  @media (min-width: 38rem) {
+    .two-columns {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 48rem) {
+    .editor-container {
+      width: min(calc(100% - 4rem), 48rem);
+    }
+    fieldset {
+      padding: var(--space-6);
+    }
+  }
+</style>

@@ -1,0 +1,32 @@
+---
+import Closing from '@/components/invitation/sections/Closing.astro';
+import Cover from '@/components/invitation/sections/Cover.astro';
+import EventSchedule from '@/components/invitation/sections/EventSchedule.astro';
+import Hosts from '@/components/invitation/sections/Hosts.astro';
+import type {
+  InvitationData,
+  InvitationSectionID,
+} from '@/invitation-templates/types';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+const sectionComponents = {
+  cover: Cover,
+  hosts: Hosts,
+  schedule: EventSchedule,
+  closing: Closing,
+};
+const sections = data.sections
+  .filter((section) => section.enabled && section.id in sectionComponents)
+  .sort((a, b) => a.order - b.order);
+---
+
+{
+  sections.map((section) => {
+    const Section = sectionComponents[section.id as InvitationSectionID];
+    return <Section data={data} />;
+  })
+}
