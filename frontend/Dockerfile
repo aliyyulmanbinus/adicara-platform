@@ -6,7 +6,7 @@ RUN npm ci
 COPY . .
 ARG PUBLIC_SITE_URL=http://localhost:8080
 ENV PUBLIC_SITE_URL=$PUBLIC_SITE_URL
-RUN npm run build && npm prune --omit=dev
+RUN PUBLIC_SITE_URL="${PUBLIC_SITE_URL:-http://localhost:8080}" npm run build && npm prune --omit=dev
 
 FROM node:24-alpine AS runtime
 ENV HOST=0.0.0.0
@@ -20,4 +20,3 @@ COPY --from=build --chown=adicara:adicara /app/package.json ./package.json
 USER adicara
 EXPOSE 4321
 CMD ["node", "./dist/server/entry.mjs"]
-

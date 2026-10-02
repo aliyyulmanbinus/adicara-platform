@@ -39,7 +39,7 @@ jobs:
             ghcr.io/${{ github.repository }}-${{ matrix.app }}:${{ github.sha }}
             ghcr.io/${{ github.repository }}-${{ matrix.app }}:main
           build-args: |
-            PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL }}
+            PUBLIC_SITE_URL=${{ vars.PUBLIC_SITE_URL || 'http://localhost:8080' }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,4 +62,3 @@ jobs:
             docker compose -f deploy/docker-compose.prod.yml pull
             docker compose -f deploy/docker-compose.prod.yml up -d
             curl --fail --retry 10 --retry-delay 3 http://127.0.0.1:8080/readyz
-

@@ -15,7 +15,8 @@
 
 Required secrets: `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, dan `VPS_PORT`. Required repository variable: `PUBLIC_SITE_URL`.
 
+Isi `PUBLIC_SITE_URL` di Settings > Secrets and variables > Actions > Variables dengan origin HTTPS website produksi, misalnya `https://example.com` (ganti dengan domain sebenarnya). Variable ini digunakan saat build untuk canonical URL, sitemap, dan robots.txt. Bila belum diisi, workflow memakai `http://localhost:8080` agar build tidak gagal karena URL kosong; URL cadangan ini bukan URL kanonis produksi. Setelah mengganti variable, jalankan workflow kembali untuk membangun ulang image.
+
 ## Catatan keamanan
 
 Gunakan deployment user non-root dengan akses minimum. Jangan memasukkan `.env` produksi atau private key ke repository. Pertimbangkan PAT read-only di VPS bila package privat tidak dapat ditarik dengan kredensial workflow sementara.
-

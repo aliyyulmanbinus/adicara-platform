@@ -2,7 +2,7 @@ import node from '@astrojs/node';
 import sitemap from '@astrojs/sitemap';
 import { defineConfig } from 'astro/config';
 
-const site = process.env.PUBLIC_SITE_URL ?? 'http://localhost:4321';
+const site = process.env.PUBLIC_SITE_URL?.trim() || 'http://localhost:4321';
 
 export default defineConfig({
   site,
