@@ -27,14 +27,14 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
 
-	cookieSecure, err := strconv.ParseBool(envOrDefault("COOKIE_SECURE", "false"))
+	cookieDefault := "false"
+	if envOrDefault("APP_ENV", "development") == "production" {
+		cookieDefault = "true"
+	}
+	cookieSecure, err := strconv.ParseBool(envOrDefault("COOKIE_SECURE", cookieDefault))
 	if err != nil {
 		return Config{}, fmt.Errorf("COOKIE_SECURE must be true or false")
 	}
-	if envOrDefault("APP_ENV", "development") == "production" {
-		cookieSecure = true
-	}
-
 	return Config{
 		Port:            port,
 		DatabaseURL:     databaseURL,

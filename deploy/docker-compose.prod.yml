@@ -35,7 +35,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       APP_ENV: production
-      COOKIE_SECURE: "true"
+      COOKIE_SECURE: "${COOKIE_SECURE:-true}"
     networks: [private]
     depends_on:
       migrate:
@@ -63,7 +63,7 @@ services:
   nginx:
     image: nginx:1.29-alpine
     ports:
-      - "127.0.0.1:8080:80"
+      - "${NGINX_BIND_ADDRESS:-127.0.0.1}:${NGINX_HTTP_PORT:-8080}:80"
     volumes:
       - ./nginx/adicara.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [private]

@@ -46,19 +46,60 @@ jobs:
     needs: publish
     environment: production
     steps:
+      - name: Validate SSH configuration
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+        run: |
+          missing=0
+          for name in VPS_HOST VPS_USER VPS_SSH_KEY; do
+            value="${!name}"
+            if [[ -z "${value//[[:space:]]/}" ]]; then
+              echo "::error::Missing secret ${name}. Configure it in repository Actions secrets or in the production environment secrets."
+              missing=1
+            fi
+          done
+          if [[ ! "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]; then
+            echo "::error::VPS_PORT must be a numeric SSH port. Defaults to 22 when unset."
+            missing=1
+          elif (( 10#$VPS_PORT < 1 || 10#$VPS_PORT > 65535 )); then
+            echo "::error::VPS_PORT must be between 1 and 65535."
+            missing=1
+          fi
+          exit "$missing"
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          script_stop: true
+          port: ${{ secrets.VPS_PORT || '22' }}
           script: |
+            set -eu
+            if ! command -v docker >/dev/null 2>&1; then
+              echo 'Docker is not installed. Follow docs/devops/vps-deployment.md to prepare the VPS.' >&2
+              exit 1
+            fi
+            docker compose version
+            docker info >/dev/null
+            if [ ! -f /opt/adicara/deploy/docker-compose.prod.yml ]; then
+              echo 'Repository is missing at /opt/adicara. Follow docs/devops/vps-deployment.md.' >&2
+              exit 1
+            fi
+            if [ ! -f /opt/adicara/.env ]; then
+              echo 'Production configuration /opt/adicara/.env is missing.' >&2
+              exit 1
+            fi
             cd /opt/adicara
             export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
             export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
-            docker compose -f deploy/docker-compose.prod.yml pull
-            docker compose -f deploy/docker-compose.prod.yml up -d
-            curl --fail --retry 10 --retry-delay 3 http://127.0.0.1:8080/readyz
+            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml config --quiet
+            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml pull
+            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml up -d
+            nginx_binding=$(docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml port nginx 80)
+            health_port="${nginx_binding##*:}"
+            curl --fail --retry 10 --retry-delay 3 --retry-connrefused "http://127.0.0.1:${health_port}/readyz"
