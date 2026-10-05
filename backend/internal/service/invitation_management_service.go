@@ -22,6 +22,7 @@ var supportedTemplates = map[string]struct{}{
 	"editorial-ivory":  {},
 	"botanical-modern": {},
 	"monochrome-luxe":  {},
+	"batak-senja":      {},
 }
 
 type InvitationManagementRepository interface {

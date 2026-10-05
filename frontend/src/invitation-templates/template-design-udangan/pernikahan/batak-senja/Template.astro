@@ -1,0 +1,657 @@
+---
+import type {
+  InvitationData,
+  InvitationEvent,
+} from '@/invitation-templates/types';
+import './theme.css';
+
+interface Props {
+  data: InvitationData;
+}
+
+const { data } = Astro.props;
+const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+const bride = data.hosts[0]?.name ?? 'Mempelai Wanita';
+const groom = data.hosts[1]?.name ?? 'Mempelai Pria';
+const pair = `${firstName(bride)} & ${firstName(groom)}`;
+const ceremony = data.events[0];
+const reception = data.events[1] ?? ceremony;
+const guest =
+  Astro.url.searchParams.get('to') ??
+  Astro.url.searchParams.get('guest') ??
+  'Tamu Undangan';
+const asset = '/template-design-udangan/pernikahan/batak-senja';
+const isPreview = data.id === 'preview-adicara';
+const bridePhoto =
+  data.hosts[0]?.photoURL ?? (isPreview ? `${asset}/couple-garden.webp` : null);
+const groomPhoto =
+  data.hosts[1]?.photoURL ?? (isPreview ? `${asset}/couple-garden.webp` : null);
+const galleryImages =
+  data.galleryImages ??
+  (isPreview
+    ? [
+        `${asset}/couple-ulos.webp`,
+        `${asset}/couple-garden.webp`,
+        `${asset}/couple-ulos.webp`,
+        `${asset}/couple-ulos.webp`,
+        `${asset}/couple-garden.webp`,
+      ]
+    : []);
+
+const dateLabel = (event?: InvitationEvent) =>
+  event
+    ? new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: event.timezone,
+      }).format(new Date(event.startAt))
+    : 'Tanggal akan diumumkan';
+const timeLabel = (event?: InvitationEvent) =>
+  event
+    ? new Intl.DateTimeFormat('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: event.timezone,
+      })
+        .format(new Date(event.startAt))
+        .replace('.', ':')
+    : '--:--';
+const calendarURL = (event?: InvitationEvent) => {
+  if (!event) return '#';
+  const format = (value: string) =>
+    new Date(value)
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '');
+  const end =
+    event.endAt ??
+    new Date(
+      new Date(event.startAt).getTime() + 2 * 60 * 60 * 1000,
+    ).toISOString();
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `${event.name} — ${pair}`,
+    dates: `${format(event.startAt)}/${format(end)}`,
+    details: `Undangan pernikahan ${pair}`,
+    location: `${event.venueName}, ${event.venueAddress}`,
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+};
+const mapsURL =
+  reception?.mapURL ??
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${reception?.venueName ?? ''} ${reception?.venueAddress ?? ''}`)}`;
+const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${reception?.venueName ?? ''} ${reception?.venueAddress ?? ''}`)}&output=embed`;
+---
+
+<article class="bi-invitation" aria-label={`Undangan pernikahan ${pair}`}>
+  <div class="bi-stage">
+    <div class="bi-progress" aria-hidden="true">
+      <span class="bi-progress-fill"></span>
+    </div>
+
+    <div class="bi-cover">
+      <div class="bi-cover-copy">
+        <p class="bi-kicker">The wedding of</p>
+        <h1>{firstName(bride)}<span>&</span>{firstName(groom)}</h1>
+        <p class="bi-recipient-label">Kepada Yth.</p>
+        <p class="bi-recipient">{guest}</p>
+        <button class="bi-pill bi-open" type="button"
+          >Buka Undangan <i
+            class="ph-duotone ph-envelope-open"
+            aria-hidden="true"></i></button
+        >
+      </div>
+    </div>
+
+    <div class="bi-slides" aria-live="polite">
+      <section
+        class="bi-slide bi-slide--landscape is-active"
+        data-label="Opening"
+        data-icon="ph-house-line"
+        aria-label="Opening"
+      >
+        <div class="bi-opening-copy bi-entrance">
+          <p class="bi-small-cap">Dengan penuh syukur</p>
+          <h2>By the Grace<br />of the Lord</h2>
+          <span class="bi-divider" aria-hidden="true">✦</span>
+          <p>
+            Tanpa mengurangi rasa hormat, kami bermaksud mengundang
+            Bapak/Ibu/Saudara/i untuk hadir dalam perayaan pernikahan kami.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--rose"
+        data-label="Salam"
+        data-icon="ph-hands-praying"
+        aria-label="Salam"
+      >
+        <div class="bi-arch bi-entrance">
+          <p class="bi-arch-flourish" aria-hidden="true">❦</p>
+          <p>
+            Dengan hati penuh sukacita, kami mengundang Anda untuk menjadi
+            bagian dari hari istimewa kami.
+          </p>
+          <span class="bi-divider" aria-hidden="true">✦</span>
+          <h2>{pair}</h2>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--rose"
+        data-label="Quote"
+        data-icon="ph-quotes"
+        aria-label="Kutipan"
+      >
+        <div class="bi-arch bi-entrance">
+          <p class="bi-arch-flourish" aria-hidden="true">❦</p>
+          <blockquote>
+            “Demikianlah mereka bukan lagi dua, melainkan satu. Karena itu, apa
+            yang telah dipersatukan Allah, tidak boleh diceraikan manusia.”
+          </blockquote>
+          <strong>Matius 19:6</strong>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--burgundy"
+        data-label="Mempelai"
+        data-icon="ph-heart"
+        aria-label="Mempelai"
+      >
+        <div class="bi-couple bi-entrance">
+          <p class="bi-small-cap">The happy couple</p>
+          <h2>{bride}</h2>
+          <span class="bi-and">&</span>
+          <h2>{groom}</h2>
+          <div class="bi-portraits">
+            <div class="bi-portrait bi-portrait--bride">
+              {
+                bridePhoto ? (
+                  <img
+                    src={bridePhoto}
+                    alt={`Potret ${bride}`}
+                    width="1024"
+                    height="1536"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span>{firstName(bride).slice(0, 1)}</span>
+                )
+              }
+            </div>
+            <div class="bi-portrait bi-portrait--groom">
+              {
+                groomPhoto ? (
+                  <img
+                    src={groomPhoto}
+                    alt={`Potret ${groom}`}
+                    width="1024"
+                    height="1536"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span>{firstName(groom).slice(0, 1)}</span>
+                )
+              }
+            </div>
+          </div>
+          <p class="bi-couple-note">Dua hati, satu perjalanan baru.</p>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--linen"
+        data-label={ceremony?.name ?? 'Acara Utama'}
+        data-icon="ph-calendar-heart"
+        aria-label={ceremony?.name ?? 'Acara Utama'}
+      >
+        <div class="bi-event bi-entrance">
+          <p class="bi-small-cap">Rangkaian acara</p>
+          <h2>{ceremony?.name ?? 'Akad Nikah'}</h2>
+          <p class="bi-event-date">{dateLabel(ceremony)}</p>
+          <p class="bi-event-time">{timeLabel(ceremony)} WIB — Selesai</p>
+          <span class="bi-divider" aria-hidden="true">✦</span>
+          <p class="bi-event-place">
+            {ceremony?.venueName}<small>{ceremony?.venueAddress}</small>
+          </p>
+          <div
+            class="bi-countdown"
+            data-date={ceremony?.startAt}
+            aria-label="Hitung mundur acara"
+          >
+            <div><strong data-unit="days">--</strong><span>hari</span></div><div
+            >
+              <strong data-unit="hours">--</strong><span>jam</span>
+            </div><div>
+              <strong data-unit="minutes">--</strong><span>menit</span>
+            </div><div>
+              <strong data-unit="seconds">--</strong><span>detik</span>
+            </div>
+          </div>
+          <a
+            class="bi-pill bi-pill--light"
+            href={calendarURL(ceremony)}
+            target="_blank"
+            rel="noopener noreferrer">Add to Calendar</a
+          >
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--linen"
+        data-label="Resepsi"
+        data-icon="ph-calendar-check"
+        aria-label="Resepsi"
+      >
+        <div class="bi-event bi-entrance">
+          <p class="bi-small-cap">Mari merayakan bersama</p>
+          <h2>{reception?.name ?? 'Resepsi dan Adat'}</h2>
+          <p class="bi-event-date">{dateLabel(reception)}</p>
+          <p class="bi-event-time">{timeLabel(reception)} WIB — Selesai</p>
+          <span class="bi-divider" aria-hidden="true">✦</span>
+          <p class="bi-event-place">
+            {reception?.venueName}<small>{reception?.venueAddress}</small>
+          </p>
+          <div
+            class="bi-countdown"
+            data-date={reception?.startAt}
+            aria-label="Hitung mundur acara"
+          >
+            <div><strong data-unit="days">--</strong><span>hari</span></div><div
+            >
+              <strong data-unit="hours">--</strong><span>jam</span>
+            </div><div>
+              <strong data-unit="minutes">--</strong><span>menit</span>
+            </div><div>
+              <strong data-unit="seconds">--</strong><span>detik</span>
+            </div>
+          </div>
+          <a
+            class="bi-pill bi-pill--light"
+            href={calendarURL(reception)}
+            target="_blank"
+            rel="noopener noreferrer">Add to Calendar</a
+          >
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--linen"
+        data-label="Map"
+        data-icon="ph-map-pin"
+        aria-label="Lokasi Acara"
+      >
+        <div class="bi-map-content bi-entrance">
+          <p class="bi-small-cap">Temukan kami di</p>
+          <h2>Lokasi Acara</h2>
+          <p>{reception?.venueName}<small>{reception?.venueAddress}</small></p>
+          <div class="bi-map-frame">
+            <iframe
+              src={mapEmbed}
+              title={`Peta ${reception?.venueName}`}
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+          <a
+            class="bi-pill bi-pill--light"
+            href={mapsURL}
+            target="_blank"
+            rel="noopener noreferrer"
+            ><i class="ph-duotone ph-map-pin" aria-hidden="true"></i> Petunjuk ke
+            Lokasi</a
+          >
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--burgundy"
+        data-label="Galeri"
+        data-icon="ph-camera"
+        aria-label="Galeri"
+      >
+        <div class="bi-gallery bi-entrance">
+          <p class="bi-small-cap">Potret kisah kami</p>
+          <h2>Galeri</h2>
+          {
+            galleryImages.length > 0 ? (
+              <div class="bi-gallery-grid">
+                {galleryImages.slice(0, 5).map((image, imageIndex) => (
+                  <img
+                    class:list={{ 'bi-gallery-wide': imageIndex === 0 }}
+                    src={image}
+                    alt={`Galeri ${pair}, foto ${imageIndex + 1}`}
+                    width="1024"
+                    height="1024"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div class="bi-gallery-empty">
+                <>
+                  <i class="ph-duotone ph-camera" aria-hidden="true" />
+                  <p>Galeri foto akan segera hadir.</p>
+                </>
+              </div>
+            )
+          }
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--burgundy"
+        data-label="RSVP"
+        data-icon="ph-check-circle"
+        aria-label="RSVP"
+      >
+        <div class="bi-rsvp bi-entrance">
+          <p class="bi-small-cap">Kami menantikan Anda</p>
+          <h2>Konfirmasi Kehadiran</h2>
+          <p>Kehadiran Anda akan menyempurnakan kebahagiaan kami.</p>
+          <form class="bi-rsvp-form">
+            <label
+              >Nama tamu<input
+                name="name"
+                type="text"
+                value={guest === 'Tamu Undangan' ? '' : guest}
+                placeholder="Nama Anda"
+                required
+              /></label
+            >
+            <label
+              >Kehadiran<select name="attendance" required
+                ><option value="">Pilih kehadiran</option><option value="hadir"
+                  >Ya, saya hadir</option
+                ><option value="tidak">Maaf, belum dapat hadir</option></select
+              ></label
+            >
+            <label
+              >Ucapan<textarea
+                name="message"
+                rows="3"
+                placeholder="Tulis doa dan ucapan..."></textarea></label
+            >
+            <button class="bi-pill bi-pill--gold" type="submit"
+              >Kirim Konfirmasi</button
+            >
+            <small>Pratinjau: konfirmasi tersimpan di perangkat ini.</small>
+            <p class="bi-rsvp-result" role="status" hidden></p>
+          </form>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--rose"
+        data-label="Doa"
+        data-icon="ph-hands-praying"
+        aria-label="Doa"
+      >
+        <div class="bi-arch bi-arch--prayer bi-entrance">
+          <p class="bi-arch-flourish" aria-hidden="true">❦</p>
+          <h2>Doa untuk<br />Pengantin</h2>
+          <blockquote>
+            “Hendaklah kamu ramah seorang terhadap yang lain, penuh kasih mesra
+            dan saling mengampuni.”
+          </blockquote>
+          <strong>Efesus 4:32</strong>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--burgundy"
+        data-label="Gift"
+        data-icon="ph-gift"
+        aria-label="Hadiah"
+      >
+        <div class="bi-gift bi-entrance">
+          <p class="bi-small-cap">Tanda kasih</p>
+          <h2>Kirim Hadiah</h2>
+          <p>Doa restu Anda merupakan karunia yang sangat berarti bagi kami.</p>
+          <p>
+            Jika Anda ingin memberikan hadiah, informasi pengiriman akan
+            ditampilkan di sini ketika pasangan menyediakannya.
+          </p>
+          <button class="bi-pill bi-pill--gold bi-gift-button" type="button"
+            >Kirim Angpao</button
+          >
+          <p class="bi-gift-result" role="status" hidden>
+            Informasi hadiah belum tersedia.
+          </p>
+        </div>
+      </section>
+
+      <section
+        class="bi-slide bi-slide--landscape bi-slide--closing"
+        data-label="Terima Kasih"
+        data-icon="ph-heart-straight"
+        aria-label="Terima Kasih"
+      >
+        <div class="bi-closing bi-entrance">
+          <p>
+            Merupakan kebahagiaan dan kehormatan bagi kami apabila
+            Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
+          </p>
+          <p>Hormat kami yang berbahagia,</p>
+          <h2>{pair}</h2>
+          <small>made with love<br /><strong>adicara</strong></small>
+        </div>
+      </section>
+    </div>
+
+    <button
+      class="bi-music"
+      type="button"
+      aria-label="Bisukan musik"
+      aria-pressed="false"
+      ><i class="ph-fill ph-music-notes" aria-hidden="true"></i></button
+    >
+  </div>
+  <nav class="bi-nav" aria-label="Navigasi halaman undangan" hidden>
+    <button class="bi-nav-item" data-direction="previous" type="button"
+      ><i aria-hidden="true"></i><span></span></button
+    >
+    <button
+      class="bi-nav-item"
+      data-direction="current"
+      type="button"
+      aria-current="page"><i aria-hidden="true"></i><span></span></button
+    >
+    <button class="bi-nav-item" data-direction="next" type="button"
+      ><i aria-hidden="true"></i><span></span></button
+    >
+  </nav>
+</article>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.bi-invitation').forEach((root) => {
+    const slides = [...root.querySelectorAll<HTMLElement>('.bi-slide')];
+    const cover = root.querySelector<HTMLElement>('.bi-cover')!;
+    const nav = root.querySelector<HTMLElement>('.bi-nav')!;
+    const progress = root.querySelector<HTMLElement>('.bi-progress-fill')!;
+    let index = 0;
+    let timer: number | undefined;
+    let opened = false;
+    const duration = 5000;
+
+    const updateNav = () => {
+      const items = [
+        ...nav.querySelectorAll<HTMLButtonElement>('.bi-nav-item'),
+      ];
+      [index - 1, index, index + 1].forEach((target, position) => {
+        const item = items[position];
+        const slide = slides[target];
+        if (!item) return;
+        item.hidden = !slide;
+        if (!slide) return;
+        item.dataset.target = String(target);
+        item.querySelector('span')!.textContent = slide.dataset.label ?? '';
+        item.querySelector('i')!.className =
+          `ph-duotone ${slide.dataset.icon ?? 'ph-circle'}`;
+        if (position === 1) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+      });
+    };
+
+    const schedule = () => {
+      window.clearTimeout(timer);
+      progress.style.transition = 'none';
+      progress.style.width = '0%';
+      if (index >= slides.length - 1 || document.hidden) return;
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          progress.style.transition = `width ${duration}ms linear`;
+          progress.style.width = '100%';
+        }),
+      );
+      timer = window.setTimeout(() => show(index + 1), duration);
+    };
+
+    const show = (next: number) => {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((slide, position) => {
+        const active = position === index;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', String(!active));
+        slide.inert = !active;
+      });
+      updateNav();
+      schedule();
+    };
+
+    root
+      .querySelector<HTMLButtonElement>('.bi-open')
+      ?.addEventListener('click', () => {
+        opened = true;
+        cover.classList.add('is-open');
+        nav.hidden = false;
+        root.classList.add('is-opened');
+        show(0);
+        void startMusic();
+        window.setTimeout(() => {
+          cover.hidden = true;
+        }, 700);
+      });
+    nav.addEventListener('click', (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        '.bi-nav-item',
+      );
+      if (button?.dataset.target) show(Number(button.dataset.target));
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (opened) schedule();
+    });
+    root.addEventListener('keydown', (event) => {
+      if (!opened || !(event instanceof KeyboardEvent)) return;
+      if (event.key === 'ArrowRight') show(index + 1);
+      if (event.key === 'ArrowLeft') show(index - 1);
+    });
+
+    const updateCountdowns = () => {
+      root
+        .querySelectorAll<HTMLElement>('.bi-countdown')
+        .forEach((countdown) => {
+          const difference = Math.max(
+            0,
+            new Date(countdown.dataset.date ?? '').getTime() - Date.now(),
+          );
+          if (!Number.isFinite(difference)) return;
+          const values = {
+            days: Math.floor(difference / 86400000),
+            hours: Math.floor(difference / 3600000) % 24,
+            minutes: Math.floor(difference / 60000) % 60,
+            seconds: Math.floor(difference / 1000) % 60,
+          };
+          Object.entries(values).forEach(([unit, value]) => {
+            const node = countdown.querySelector(`[data-unit="${unit}"]`);
+            if (node) node.textContent = String(value).padStart(2, '0');
+          });
+        });
+    };
+    updateCountdowns();
+    window.setInterval(updateCountdowns, 1000);
+
+    root
+      .querySelector<HTMLFormElement>('.bi-rsvp-form')
+      ?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const form = event.currentTarget as HTMLFormElement;
+        if (!form.reportValidity()) return;
+        const formData = new FormData(form);
+        const response = {
+          name: String(formData.get('name') ?? ''),
+          attendance: String(formData.get('attendance') ?? ''),
+          message: String(formData.get('message') ?? ''),
+        };
+        try {
+          localStorage.setItem(
+            `adicara-rsvp-${location.pathname}`,
+            JSON.stringify(response),
+          );
+        } catch {
+          /* Storage may be unavailable. */
+        }
+        const result = form.querySelector<HTMLElement>('.bi-rsvp-result')!;
+        result.textContent = `Terima kasih, ${response.name}. Konfirmasi tersimpan di perangkat ini.`;
+        result.hidden = false;
+      });
+    root
+      .querySelector<HTMLButtonElement>('.bi-gift-button')
+      ?.addEventListener('click', () => {
+        root.querySelector<HTMLElement>('.bi-gift-result')!.hidden = false;
+      });
+
+    const music = root.querySelector<HTMLButtonElement>('.bi-music')!;
+    let context: AudioContext | undefined;
+    let master: GainNode | undefined;
+    let musicTimer: number | undefined;
+    let muted = false;
+    let note = 0;
+    const melody = [392, 440, 523.25, 440, 349.23, 392, 440, 329.63];
+    const playNote = () => {
+      if (!context || !master) return;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = melody[note++ % melody.length]!;
+      gain.gain.setValueAtTime(0.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.028, context.currentTime + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 1.2);
+      oscillator.connect(gain).connect(master);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 1.25);
+    };
+    const startMusic = async () => {
+      try {
+        context ??= new AudioContext();
+        if (!master) {
+          master = context.createGain();
+          master.gain.value = muted ? 0 : 1;
+          master.connect(context.destination);
+        }
+        await context.resume();
+        if (musicTimer === undefined) {
+          playNote();
+          musicTimer = window.setInterval(playNote, 750);
+        }
+      } catch {
+        music.disabled = true;
+        music.setAttribute('aria-label', 'Musik tidak tersedia');
+      }
+    };
+    music.addEventListener('click', () => {
+      muted = !muted;
+      if (context && master) {
+        master.gain.setTargetAtTime(muted ? 0 : 1, context.currentTime, 0.03);
+      }
+      music.setAttribute('aria-pressed', String(muted));
+      music.setAttribute(
+        'aria-label',
+        muted ? 'Nyalakan musik' : 'Bisukan musik',
+      );
+    });
+  });
+</script>

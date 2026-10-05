@@ -4,6 +4,8 @@ import EditorialIvoryTemplate from './editorial-ivory/Template.astro';
 import { editorialIvoryConfig } from './editorial-ivory/config';
 import MonochromeLuxeTemplate from './monochrome-luxe/Template.astro';
 import { monochromeLuxeConfig } from './monochrome-luxe/config';
+import BatakSenjaTemplate from './template-design-udangan/pernikahan/batak-senja/Template.astro';
+import { batakSenjaConfig } from './template-design-udangan/pernikahan/batak-senja/config';
 
 export const invitationTemplates = {
   [editorialIvoryConfig.key]: {
@@ -17,6 +19,10 @@ export const invitationTemplates = {
   [monochromeLuxeConfig.key]: {
     ...monochromeLuxeConfig,
     component: MonochromeLuxeTemplate,
+  },
+  [batakSenjaConfig.key]: {
+    ...batakSenjaConfig,
+    component: BatakSenjaTemplate,
   },
 } as const;
 
