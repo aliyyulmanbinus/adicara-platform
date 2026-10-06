@@ -20,7 +20,7 @@ func NewInvitationRepository(pool *pgxpool.Pool) *InvitationRepository {
 
 func (r *InvitationRepository) FindPublishedBySlug(ctx context.Context, slug string) (domain.Invitation, error) {
 	const invitationQuery = `
-		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at
+		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at
 		FROM invitations
 		WHERE slug = $1 AND status = 'published'`
 
@@ -33,6 +33,7 @@ func (r *InvitationRepository) FindPublishedBySlug(ctx context.Context, slug str
 		&invitation.Title,
 		&invitation.TemplateKey,
 		&invitation.AllowIndexing,
+		&invitation.DesignData,
 		&invitation.CreatedAt,
 		&invitation.UpdatedAt,
 	)
@@ -54,6 +55,10 @@ func (r *InvitationRepository) FindPublishedBySlug(ctx context.Context, slug str
 
 	invitation.Hosts = hosts
 	invitation.Events = events
+	invitation.Media, err = r.findMedia(ctx, invitation.ID)
+	if err != nil {
+		return domain.Invitation{}, err
+	}
 	return invitation, nil
 }
 
@@ -117,4 +122,22 @@ func (r *InvitationRepository) findEvents(ctx context.Context, invitationID stri
 		return nil, fmt.Errorf("iterate invitation events: %w", err)
 	}
 	return events, nil
+}
+
+func (r *InvitationRepository) findMedia(ctx context.Context, invitationID string) ([]domain.InvitationMedia, error) {
+	rows, err := r.pool.Query(ctx, `SELECT id::text, kind, position FROM invitation_media WHERE invitation_id = $1 ORDER BY kind, position`, invitationID)
+	if err != nil {
+		return nil, fmt.Errorf("query invitation media: %w", err)
+	}
+	defer rows.Close()
+	media := make([]domain.InvitationMedia, 0)
+	for rows.Next() {
+		var item domain.InvitationMedia
+		if err := rows.Scan(&item.ID, &item.Kind, &item.Position); err != nil {
+			return nil, fmt.Errorf("scan invitation media: %w", err)
+		}
+		item.URL = "/api/v1/media/" + item.ID
+		media = append(media, item)
+	}
+	return media, rows.Err()
 }

@@ -61,7 +61,7 @@ import AppLayout from '@/layouts/AppLayout.astro';
       </fieldset>
 
       <fieldset>
-        <legend>Orang</legend>
+        <legend>Mempelai</legend>
         <div class="two-columns">
           <label
             >Nama pertama <input
@@ -97,7 +97,7 @@ import AppLayout from '@/layouts/AppLayout.astro';
       </fieldset>
 
       <fieldset>
-        <legend>Acara utama</legend>
+        <legend>Acara pertama</legend>
         <label
           >Nama acara <input
             name="event_name"
@@ -107,10 +107,16 @@ import AppLayout from '@/layouts/AppLayout.astro';
           /></label
         >
         <label
-          >Waktu (WIB) <input
+          >Mulai (WIB) <input
             name="start_at"
             type="datetime-local"
             required
+          /></label
+        >
+        <label
+          >Berakhir (opsional, WIB) <input
+            name="end_at"
+            type="datetime-local"
           /></label
         >
         <label
@@ -132,6 +138,222 @@ import AppLayout from '@/layouts/AppLayout.astro';
             name="map_url"
             type="url"
             placeholder="https://maps.google.com/…"
+          /></label
+        >
+      </fieldset>
+
+      <fieldset data-batak-fields hidden disabled>
+        <legend>Acara kedua — Resepsi dan Adat</legend>
+        <p>
+          Batak Senja menampilkan dua halaman acara. Isi keduanya agar jadwal
+          dan peta berbeda.
+        </p>
+        <label
+          >Nama acara <input
+            name="event_two_name"
+            value="Resepsi dan Adat"
+            required
+            maxlength="120"
+          /></label
+        >
+        <div class="two-columns">
+          <label
+            >Mulai (WIB) <input
+              name="event_two_start_at"
+              type="datetime-local"
+              required
+            /></label
+          >
+          <label
+            >Berakhir (opsional, WIB) <input
+              name="event_two_end_at"
+              type="datetime-local"
+            /></label
+          >
+        </div>
+        <label
+          >Nama tempat <input
+            name="event_two_venue_name"
+            required
+            maxlength="160"
+          /></label
+        >
+        <label
+          >Alamat <textarea
+            name="event_two_venue_address"
+            required
+            maxlength="500"
+            rows="3"></textarea></label
+        >
+        <label
+          >Tautan peta (opsional) <input
+            name="event_two_map_url"
+            type="url"
+            placeholder="https://maps.google.com/…"
+          /></label
+        >
+      </fieldset>
+
+      <fieldset data-batak-fields hidden disabled>
+        <legend>Foto undangan</legend>
+        <p>
+          JPEG, PNG, atau WebP; maksimal 5 MB per foto. Unggah dua potret dan
+          hingga lima foto galeri. Foto tersimpan di database dan tampil saat
+          undangan diterbitkan.
+        </p>
+        <div class="two-columns">
+          <label
+            >Potret mempelai pertama <input
+              name="bride_photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            /></label
+          >
+          <label
+            >Potret mempelai kedua <input
+              name="groom_photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            /></label
+          >
+        </div>
+        <label
+          >Galeri (maksimal 5 foto) <input
+            name="gallery_photos"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+          /></label
+        >
+      </fieldset>
+
+      <fieldset data-batak-fields hidden disabled>
+        <legend>Teks dan identitas Batak Senja</legend>
+        <p>Kolom yang dibiarkan kosong menggunakan teks bawaan template.</p>
+        <div class="two-columns">
+          <label
+            >Orang tua mempelai pertama <input
+              name="bride_parents"
+              maxlength="240"
+              placeholder="Putri dari Bapak ... dan Ibu ..."
+            /></label
+          >
+          <label
+            >Orang tua mempelai kedua <input
+              name="groom_parents"
+              maxlength="240"
+              placeholder="Putra dari Bapak ... dan Ibu ..."
+            /></label
+          >
+          <label
+            >Instagram mempelai pertama <input
+              name="bride_instagram"
+              maxlength="80"
+              pattern="@?[A-Za-z0-9._]+"
+              placeholder="namaakun"
+            /></label
+          >
+          <label
+            >Instagram mempelai kedua <input
+              name="groom_instagram"
+              maxlength="80"
+              pattern="@?[A-Za-z0-9._]+"
+              placeholder="namaakun"
+            /></label
+          >
+        </div>
+        <label
+          >Judul opening <input
+            name="opening_heading"
+            maxlength="120"
+            placeholder="By the Grace of the Lord"
+          /></label
+        >
+        <label
+          >Pengantar opening <textarea
+            name="opening_text"
+            maxlength="1000"
+            rows="3"></textarea></label
+        >
+        <label
+          >Salam <textarea name="greeting_text" maxlength="1000" rows="3"
+          ></textarea></label
+        >
+        <label
+          >Kutipan <textarea name="quote_text" maxlength="1000" rows="3"
+          ></textarea></label
+        >
+        <label
+          >Sumber kutipan <input
+            name="quote_source"
+            maxlength="120"
+            placeholder="Matius 19:6"
+          /></label
+        >
+        <label
+          >Catatan pasangan <input
+            name="couple_note"
+            maxlength="240"
+            placeholder="Dua hati, satu perjalanan baru."
+          /></label
+        >
+        <label
+          >Pengantar RSVP <textarea name="rsvp_text" maxlength="500" rows="2"
+          ></textarea></label
+        >
+        <label
+          >Judul doa <input
+            name="prayer_title"
+            maxlength="120"
+            placeholder="Doa untuk Pengantin"
+          /></label
+        >
+        <label
+          >Isi doa <textarea name="prayer_text" maxlength="1000" rows="3"
+          ></textarea></label
+        >
+        <label
+          >Sumber doa <input
+            name="prayer_source"
+            maxlength="120"
+            placeholder="Efesus 4:32"
+          /></label
+        >
+        <label
+          >Pesan hadiah <textarea name="gift_text" maxlength="1000" rows="3"
+          ></textarea></label
+        >
+        <div class="two-columns">
+          <label
+            >Bank / dompet digital <input
+              name="gift_bank"
+              maxlength="120"
+            /></label
+          >
+          <label
+            >Nomor rekening <input
+              name="gift_account_number"
+              maxlength="80"
+            /></label
+          >
+        </div>
+        <label
+          >Nama pemilik rekening <input
+            name="gift_account_name"
+            maxlength="120"
+          /></label
+        >
+        <label
+          >Pesan penutup <textarea name="closing_text" maxlength="1000" rows="3"
+          ></textarea></label
+        >
+        <label
+          >URL musik (opsional, file audio HTTPS) <input
+            name="music_url"
+            type="url"
+            maxlength="1000"
+            pattern="https://.+"
+            placeholder="https://contoh.com/musik.mp3"
           /></label
         >
       </fieldset>
@@ -159,6 +381,22 @@ import AppLayout from '@/layouts/AppLayout.astro';
   const form = document.querySelector<HTMLFormElement>(
     '[data-invitation-form]',
   );
+  const template = form?.querySelector<HTMLSelectElement>(
+    '[name="template_key"]',
+  );
+  const batakFields = form?.querySelectorAll<HTMLFieldSetElement>(
+    '[data-batak-fields]',
+  );
+  const toggleThemeFields = () => {
+    const active = template?.value === 'batak-senja';
+    batakFields?.forEach((fieldset) => {
+      fieldset.hidden = !active;
+      fieldset.disabled = !active;
+    });
+  };
+  template?.addEventListener('change', toggleThemeFields);
+  toggleThemeFields();
+  let draftId: string | undefined;
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
@@ -169,7 +407,96 @@ import AppLayout from '@/layouts/AppLayout.astro';
     );
     if (!status || !button) return;
 
-    const localStart = String(values.get('start_at'));
+    const batak = values.get('template_key') === 'batak-senja';
+    const localTime = (name: string) => {
+      const value = String(values.get(name) ?? '');
+      return value ? `${value}:00+07:00` : undefined;
+    };
+    const eventData = (prefix: string) => ({
+      name: values.get(`${prefix}name`),
+      start_at: localTime(`${prefix}start_at`),
+      end_at: localTime(`${prefix}end_at`),
+      timezone: 'Asia/Jakarta',
+      venue_name: values.get(`${prefix}venue_name`),
+      venue_address: values.get(`${prefix}venue_address`),
+      map_url: values.get(`${prefix}map_url`) || undefined,
+    });
+    const designKeys = [
+      'opening_heading',
+      'opening_text',
+      'greeting_text',
+      'quote_text',
+      'quote_source',
+      'bride_parents',
+      'groom_parents',
+      'bride_instagram',
+      'groom_instagram',
+      'couple_note',
+      'rsvp_text',
+      'prayer_title',
+      'prayer_text',
+      'prayer_source',
+      'gift_text',
+      'gift_bank',
+      'gift_account_name',
+      'gift_account_number',
+      'closing_text',
+      'music_url',
+    ];
+    const designData = Object.fromEntries(
+      designKeys
+        .map((key) => [key, String(values.get(key) ?? '').trim()])
+        .filter(([, value]) => value),
+    );
+    const portraits = [
+      { kind: 'bride', file: values.get('bride_photo') },
+      { kind: 'groom', file: values.get('groom_photo') },
+    ];
+    const gallery = [
+      ...(form.querySelector<HTMLInputElement>('[name="gallery_photos"]')
+        ?.files ?? []),
+    ];
+    if (batak && gallery.length > 5) {
+      status.textContent = 'Maksimal lima foto galeri.';
+      return;
+    }
+    const images = batak
+      ? [
+          ...portraits.map(({ kind, file }) => ({ kind, position: 0, file })),
+          ...gallery.map((file, position) => ({
+            kind: 'gallery',
+            position,
+            file,
+          })),
+        ].filter(
+          (item): item is { kind: string; position: number; file: File } =>
+            item.file instanceof File && item.file.size > 0,
+        )
+      : [];
+    if (
+      images.some(
+        ({ file }) =>
+          file.size > 5 * 1024 * 1024 ||
+          !['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+      )
+    ) {
+      status.textContent =
+        'Setiap foto harus berupa JPEG, PNG, atau WebP berukuran maksimal 5 MB.';
+      return;
+    }
+    const events = [
+      eventData('event_'),
+      ...(batak ? [eventData('event_two_')] : []),
+    ];
+    if (
+      events.some(
+        (item) => item.end_at && item.start_at && item.end_at <= item.start_at,
+      )
+    ) {
+      status.textContent =
+        'Waktu berakhir harus setelah waktu mulai pada setiap acara.';
+      return;
+    }
     const payload = {
       event_type: values.get('event_type'),
       slug: values.get('slug'),
@@ -186,30 +513,25 @@ import AppLayout from '@/layouts/AppLayout.astro';
           role: values.get('host_two_role'),
         },
       ],
-      events: [
-        {
-          name: values.get('event_name'),
-          start_at: `${localStart}:00+07:00`,
-          timezone: 'Asia/Jakarta',
-          venue_name: values.get('venue_name'),
-          venue_address: values.get('venue_address'),
-          map_url: values.get('map_url') || undefined,
-        },
-      ],
+      events,
+      design_data: batak ? designData : {},
     };
 
     status.textContent = 'Menyimpan draft…';
     button.disabled = true;
     try {
-      const response = await fetch('/api/v1/invitations', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': cookieValue('adicara_csrf'),
+      const response = await fetch(
+        draftId ? `/api/v1/invitations/${draftId}` : '/api/v1/invitations',
+        {
+          method: draftId ? 'PATCH' : 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': cookieValue('adicara_csrf'),
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
       if (response.status === 401) {
         window.location.assign('/auth/masuk');
         return;
@@ -217,6 +539,27 @@ import AppLayout from '@/layouts/AppLayout.astro';
       if (!response.ok) {
         const body = await response.json();
         throw new Error(body?.error?.message ?? 'Draft belum dapat disimpan.');
+      }
+      const saved = (await response.json()) as { id: string };
+      draftId = saved.id;
+      for (const [index, { kind, position, file }] of images.entries()) {
+        status.textContent = `Mengunggah foto ${index + 1} dari ${images.length}…`;
+        const media = new FormData();
+        media.set('kind', kind);
+        media.set('position', String(position));
+        media.set('image', file);
+        const uploaded = await fetch(`/api/v1/invitations/${draftId}/media`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'X-CSRF-Token': cookieValue('adicara_csrf') },
+          body: media,
+        });
+        if (!uploaded.ok) {
+          const body = await uploaded.json().catch(() => null);
+          throw new Error(
+            `Draft tersimpan, tetapi foto ${index + 1} gagal diunggah: ${body?.error?.message ?? 'coba lagi'}.`,
+          );
+        }
       }
       window.location.assign('/dashboard');
     } catch (error) {

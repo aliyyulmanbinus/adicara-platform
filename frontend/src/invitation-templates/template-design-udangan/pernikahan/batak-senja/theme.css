@@ -405,11 +405,11 @@
     400 5rem/1 'Great Vibes',
     cursive;
 }
-.bi-portrait--bride img {
+.bi-portrait--bride .bi-sample-portrait {
   object-position: 72% center;
   transform: scale(1.65);
 }
-.bi-portrait--groom img {
+.bi-portrait--groom .bi-sample-portrait {
   object-position: 23% center;
   transform: scale(1.65);
 }
@@ -418,6 +418,26 @@
   font:
     400 1.8rem/1.2 'Great Vibes',
     cursive !important;
+}
+
+.bi-parent {
+  margin: 0.25rem 0;
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  color: #f6e5d1;
+}
+.bi-instagram {
+  color: #f5d7a2;
+  font-size: 0.85rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.bi-opening-copy p,
+.bi-arch p,
+.bi-arch blockquote,
+.bi-rsvp p,
+.bi-gift p,
+.bi-closing p {
+  white-space: pre-line;
 }
 
 .bi-event h2,

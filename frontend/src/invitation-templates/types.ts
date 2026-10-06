@@ -32,6 +32,7 @@ export interface InvitationData {
   hosts: InvitationHost[];
   events: InvitationEvent[];
   galleryImages?: string[];
+  designData?: Record<string, string>;
   sections: InvitationSectionConfig[];
 }
 

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/domain"
 )
@@ -17,12 +18,23 @@ var (
 
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 var eventTypePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{1,49}$`)
+var instagramPattern = regexp.MustCompile(`^@?[A-Za-z0-9._]+$`)
 
 var supportedTemplates = map[string]struct{}{
 	"editorial-ivory":  {},
 	"botanical-modern": {},
 	"monochrome-luxe":  {},
 	"batak-senja":      {},
+}
+
+var designFields = map[string]int{
+	"opening_heading": 120, "opening_text": 1000, "greeting_text": 1000,
+	"quote_text": 1000, "quote_source": 120, "bride_parents": 240,
+	"groom_parents": 240, "bride_instagram": 80, "groom_instagram": 80,
+	"couple_note": 240, "prayer_title": 120, "prayer_text": 1000,
+	"prayer_source": 120, "gift_text": 1000, "gift_bank": 120,
+	"gift_account_name": 120, "gift_account_number": 80,
+	"closing_text": 1000, "rsvp_text": 500, "music_url": 1000,
 }
 
 type InvitationManagementRepository interface {
@@ -87,7 +99,7 @@ func (s *InvitationManagementService) Publish(ctx context.Context, userID, invit
 	input := domain.InvitationWrite{
 		EventType: invitation.EventType, Slug: invitation.Slug, Title: invitation.Title,
 		TemplateKey: invitation.TemplateKey, AllowIndexing: invitation.AllowIndexing,
-		Hosts: invitation.Hosts, Events: invitation.Events,
+		Hosts: invitation.Hosts, Events: invitation.Events, DesignData: invitation.DesignData,
 	}
 	if err := validateInvitation(input); err != nil {
 		return domain.Invitation{}, err
@@ -103,6 +115,9 @@ func (s *InvitationManagementService) Unpublish(ctx context.Context, userID, inv
 }
 
 func normalizeInvitation(input domain.InvitationWrite) domain.InvitationWrite {
+	if input.DesignData == nil {
+		input.DesignData = map[string]string{}
+	}
 	input.EventType = strings.ToLower(strings.TrimSpace(input.EventType))
 	input.Slug = strings.ToLower(strings.TrimSpace(input.Slug))
 	input.Title = strings.TrimSpace(input.Title)
@@ -117,6 +132,9 @@ func normalizeInvitation(input domain.InvitationWrite) domain.InvitationWrite {
 		input.Events[index].VenueName = strings.TrimSpace(input.Events[index].VenueName)
 		input.Events[index].VenueAddress = strings.TrimSpace(input.Events[index].VenueAddress)
 		input.Events[index].MapURL = strings.TrimSpace(input.Events[index].MapURL)
+	}
+	for key, value := range input.DesignData {
+		input.DesignData[key] = strings.TrimSpace(value)
 	}
 	return input
 }
@@ -151,6 +169,9 @@ func validateInvitation(input domain.InvitationWrite) error {
 			return ErrInvalidInvitation
 		}
 	}
+	if err := validateDesignData(input.DesignData); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -179,11 +200,18 @@ func normalizeUpdate(input *domain.InvitationUpdate) {
 		value := normalizeInvitation(domain.InvitationWrite{Events: *input.Events}).Events
 		input.Events = &value
 	}
+	if input.DesignData != nil {
+		value := *input.DesignData
+		for key, text := range value {
+			value[key] = strings.TrimSpace(text)
+		}
+		input.DesignData = &value
+	}
 }
 
 func validateUpdate(input domain.InvitationUpdate) error {
 	if input.EventType == nil && input.Slug == nil && input.Title == nil && input.TemplateKey == nil &&
-		input.AllowIndexing == nil && input.Hosts == nil && input.Events == nil {
+		input.AllowIndexing == nil && input.Hosts == nil && input.Events == nil && input.DesignData == nil {
 		return ErrInvalidInvitation
 	}
 	if input.EventType != nil && !eventTypePattern.MatchString(*input.EventType) {
@@ -201,14 +229,39 @@ func validateUpdate(input domain.InvitationUpdate) error {
 		}
 	}
 	if input.Hosts != nil {
-		probe := domain.InvitationWrite{EventType: "wedding", Slug: "valid-slug", Title: "Valid title", TemplateKey: "editorial-ivory", Hosts: *input.Hosts, Events: []domain.InvitationEvent{{Name: "Event", Timezone: "Asia/Jakarta", VenueName: "Venue", VenueAddress: "Address"}}}
-		if validateInvitation(probe) != nil {
+		if len(*input.Hosts) < 1 || len(*input.Hosts) > 10 {
 			return ErrInvalidInvitation
+		}
+		for _, host := range *input.Hosts {
+			if len(host.Name) < 1 || len(host.Name) > 120 || len(host.Role) < 1 || len(host.Role) > 120 {
+				return ErrInvalidInvitation
+			}
 		}
 	}
 	if input.Events != nil {
 		probe := domain.InvitationWrite{EventType: "wedding", Slug: "valid-slug", Title: "Valid title", TemplateKey: "editorial-ivory", Hosts: []domain.InvitationHost{{Name: "Host", Role: "Host"}}, Events: *input.Events}
 		if validateInvitation(probe) != nil {
+			return ErrInvalidInvitation
+		}
+	}
+	if input.DesignData != nil {
+		if err := validateDesignData(*input.DesignData); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateDesignData(data map[string]string) error {
+	for key, value := range data {
+		limit, ok := designFields[key]
+		if !ok || utf8.RuneCountInString(value) > limit {
+			return ErrInvalidInvitation
+		}
+		if key == "music_url" && value != "" && (!validHTTPURL(value) || !strings.HasPrefix(strings.ToLower(value), "https://")) {
+			return ErrInvalidInvitation
+		}
+		if (key == "bride_instagram" || key == "groom_instagram") && value != "" && !instagramPattern.MatchString(value) {
 			return ErrInvalidInvitation
 		}
 	}

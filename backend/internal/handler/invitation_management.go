@@ -33,6 +33,7 @@ type invitationWriteRequest struct {
 	AllowIndexing bool                     `json:"allow_indexing"`
 	Hosts         []domain.InvitationHost  `json:"hosts"`
 	Events        []domain.InvitationEvent `json:"events"`
+	DesignData    map[string]string        `json:"design_data"`
 }
 
 type invitationUpdateRequest struct {
@@ -43,6 +44,7 @@ type invitationUpdateRequest struct {
 	AllowIndexing *bool                     `json:"allow_indexing"`
 	Hosts         *[]domain.InvitationHost  `json:"hosts"`
 	Events        *[]domain.InvitationEvent `json:"events"`
+	DesignData    *map[string]string        `json:"design_data"`
 }
 
 func NewInvitationManagementHandler(service InvitationManager, auth *AuthHandler) *InvitationManagementHandler {
@@ -168,13 +170,13 @@ func (h *InvitationManagementHandler) internalError(w http.ResponseWriter, r *ht
 func (r invitationWriteRequest) toDomain() domain.InvitationWrite {
 	return domain.InvitationWrite{
 		EventType: r.EventType, Slug: r.Slug, Title: r.Title, TemplateKey: r.TemplateKey,
-		AllowIndexing: r.AllowIndexing, Hosts: r.Hosts, Events: r.Events,
+		AllowIndexing: r.AllowIndexing, Hosts: r.Hosts, Events: r.Events, DesignData: r.DesignData,
 	}
 }
 
 func (r invitationUpdateRequest) toDomain() domain.InvitationUpdate {
 	return domain.InvitationUpdate{
 		EventType: r.EventType, Slug: r.Slug, Title: r.Title, TemplateKey: r.TemplateKey,
-		AllowIndexing: r.AllowIndexing, Hosts: r.Hosts, Events: r.Events,
+		AllowIndexing: r.AllowIndexing, Hosts: r.Hosts, Events: r.Events, DesignData: r.DesignData,
 	}
 }

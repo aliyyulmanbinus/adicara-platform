@@ -71,6 +71,7 @@ func run() error {
 		authHandler,
 		handler.NewInvitationManagementHandler(managementService, authHandler),
 		handler.NewGuestHandler(guestService, authHandler),
+		handler.NewInvitationMediaHandler(repository, authHandler),
 	)
 
 	serverErrors := make(chan error, 1)

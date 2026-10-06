@@ -7,6 +7,8 @@ interface InvitationResponse {
   title: string;
   template_key: string;
   allow_indexing: boolean;
+  design_data?: Record<string, string>;
+  media?: Array<{ id: string; kind: string; position: number; url: string }>;
   hosts: Array<{ name: string; role: string }>;
   events: Array<{
     name: string;
@@ -52,6 +54,9 @@ export async function getPublishedInvitation(
     throw new Error(`Invitation API returned ${response.status}`);
 
   const invitation = (await response.json()) as InvitationResponse;
+  const media = invitation.media ?? [];
+  const mediaURL = (kind: string, position = 0) =>
+    media.find((item) => item.kind === kind && item.position === position)?.url;
   return {
     id: invitation.id,
     eventType: invitation.event_type,
@@ -59,7 +64,15 @@ export async function getPublishedInvitation(
     title: invitation.title,
     templateKey: invitation.template_key,
     allowIndexing: invitation.allow_indexing,
-    hosts: invitation.hosts,
+    hosts: invitation.hosts.map((host, index) => ({
+      ...host,
+      photoURL: mediaURL(index === 0 ? 'bride' : 'groom'),
+    })),
+    galleryImages: media
+      .filter((item) => item.kind === 'gallery')
+      .sort((a, b) => a.position - b.position)
+      .map((item) => item.url),
+    designData: invitation.design_data ?? {},
     events: invitation.events.map((event) => ({
       name: event.name,
       startAt: event.start_at,

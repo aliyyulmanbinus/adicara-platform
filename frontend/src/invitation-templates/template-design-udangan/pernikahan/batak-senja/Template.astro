@@ -14,6 +14,12 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 const bride = data.hosts[0]?.name ?? 'Mempelai Wanita';
 const groom = data.hosts[1]?.name ?? 'Mempelai Pria';
 const pair = `${firstName(bride)} & ${firstName(groom)}`;
+const copy = (key: string, fallback: string) =>
+  data.designData?.[key]?.trim() || fallback;
+const instagramURL = (handle: string) =>
+  handle
+    ? `https://www.instagram.com/${encodeURIComponent(handle.replace(/^@/, ''))}/`
+    : '';
 const ceremony = data.events[0];
 const reception = data.events[1] ?? ceremony;
 const guest =
@@ -114,11 +120,15 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
       >
         <div class="bi-opening-copy bi-entrance">
           <p class="bi-small-cap">Dengan penuh syukur</p>
-          <h2>By the Grace<br />of the Lord</h2>
+          <h2>{copy('opening_heading', 'By the Grace of the Lord')}</h2>
           <span class="bi-divider" aria-hidden="true">✦</span>
           <p>
-            Tanpa mengurangi rasa hormat, kami bermaksud mengundang
-            Bapak/Ibu/Saudara/i untuk hadir dalam perayaan pernikahan kami.
+            {
+              copy(
+                'opening_text',
+                'Tanpa mengurangi rasa hormat, kami bermaksud mengundang Bapak/Ibu/Saudara/i untuk hadir dalam perayaan pernikahan kami.',
+              )
+            }
           </p>
         </div>
       </section>
@@ -132,8 +142,12 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         <div class="bi-arch bi-entrance">
           <p class="bi-arch-flourish" aria-hidden="true">❦</p>
           <p>
-            Dengan hati penuh sukacita, kami mengundang Anda untuk menjadi
-            bagian dari hari istimewa kami.
+            {
+              copy(
+                'greeting_text',
+                'Dengan hati penuh sukacita, kami mengundang Anda untuk menjadi bagian dari hari istimewa kami.',
+              )
+            }
           </p>
           <span class="bi-divider" aria-hidden="true">✦</span>
           <h2>{pair}</h2>
@@ -149,10 +163,14 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         <div class="bi-arch bi-entrance">
           <p class="bi-arch-flourish" aria-hidden="true">❦</p>
           <blockquote>
-            “Demikianlah mereka bukan lagi dua, melainkan satu. Karena itu, apa
-            yang telah dipersatukan Allah, tidak boleh diceraikan manusia.”
+            “{
+              copy(
+                'quote_text',
+                'Demikianlah mereka bukan lagi dua, melainkan satu. Karena itu, apa yang telah dipersatukan Allah, tidak boleh diceraikan manusia.',
+              )
+            }”
           </blockquote>
-          <strong>Matius 19:6</strong>
+          <strong>{copy('quote_source', 'Matius 19:6')}</strong>
         </div>
       </section>
 
@@ -165,14 +183,51 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         <div class="bi-couple bi-entrance">
           <p class="bi-small-cap">The happy couple</p>
           <h2>{bride}</h2>
+          {
+            data.designData?.bride_parents && (
+              <p class="bi-parent">{data.designData.bride_parents}</p>
+            )
+          }
+          {
+            data.designData?.bride_instagram && (
+              <a
+                class="bi-instagram"
+                href={instagramURL(data.designData.bride_instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                @{data.designData.bride_instagram.replace(/^@/, '')}
+              </a>
+            )
+          }
           <span class="bi-and">&</span>
           <h2>{groom}</h2>
+          {
+            data.designData?.groom_parents && (
+              <p class="bi-parent">{data.designData.groom_parents}</p>
+            )
+          }
+          {
+            data.designData?.groom_instagram && (
+              <a
+                class="bi-instagram"
+                href={instagramURL(data.designData.groom_instagram)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                @{data.designData.groom_instagram.replace(/^@/, '')}
+              </a>
+            )
+          }
           <div class="bi-portraits">
             <div class="bi-portrait bi-portrait--bride">
               {
                 bridePhoto ? (
                   <img
                     src={bridePhoto}
+                    class:list={{
+                      'bi-sample-portrait': !data.hosts[0]?.photoURL,
+                    }}
                     alt={`Potret ${bride}`}
                     width="1024"
                     height="1536"
@@ -188,6 +243,9 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
                 groomPhoto ? (
                   <img
                     src={groomPhoto}
+                    class:list={{
+                      'bi-sample-portrait': !data.hosts[1]?.photoURL,
+                    }}
                     alt={`Potret ${groom}`}
                     width="1024"
                     height="1536"
@@ -199,7 +257,9 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
               }
             </div>
           </div>
-          <p class="bi-couple-note">Dua hati, satu perjalanan baru.</p>
+          <p class="bi-couple-note">
+            {copy('couple_note', 'Dua hati, satu perjalanan baru.')}
+          </p>
         </div>
       </section>
 
@@ -351,7 +411,14 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         <div class="bi-rsvp bi-entrance">
           <p class="bi-small-cap">Kami menantikan Anda</p>
           <h2>Konfirmasi Kehadiran</h2>
-          <p>Kehadiran Anda akan menyempurnakan kebahagiaan kami.</p>
+          <p>
+            {
+              copy(
+                'rsvp_text',
+                'Kehadiran Anda akan menyempurnakan kebahagiaan kami.',
+              )
+            }
+          </p>
           <form class="bi-rsvp-form">
             <label
               >Nama tamu<input
@@ -392,12 +459,16 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
       >
         <div class="bi-arch bi-arch--prayer bi-entrance">
           <p class="bi-arch-flourish" aria-hidden="true">❦</p>
-          <h2>Doa untuk<br />Pengantin</h2>
+          <h2>{copy('prayer_title', 'Doa untuk Pengantin')}</h2>
           <blockquote>
-            “Hendaklah kamu ramah seorang terhadap yang lain, penuh kasih mesra
-            dan saling mengampuni.”
+            “{
+              copy(
+                'prayer_text',
+                'Hendaklah kamu ramah seorang terhadap yang lain, penuh kasih mesra dan saling mengampuni.',
+              )
+            }”
           </blockquote>
-          <strong>Efesus 4:32</strong>
+          <strong>{copy('prayer_source', 'Efesus 4:32')}</strong>
         </div>
       </section>
 
@@ -410,16 +481,30 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         <div class="bi-gift bi-entrance">
           <p class="bi-small-cap">Tanda kasih</p>
           <h2>Kirim Hadiah</h2>
-          <p>Doa restu Anda merupakan karunia yang sangat berarti bagi kami.</p>
           <p>
-            Jika Anda ingin memberikan hadiah, informasi pengiriman akan
-            ditampilkan di sini ketika pasangan menyediakannya.
+            {
+              copy(
+                'gift_text',
+                'Doa restu Anda merupakan karunia yang sangat berarti bagi kami.',
+              )
+            }
+          </p>
+          <p>
+            {
+              data.designData?.gift_bank && data.designData?.gift_account_number
+                ? 'Ketuk tombol untuk melihat informasi hadiah.'
+                : 'Informasi hadiah belum tersedia.'
+            }
           </p>
           <button class="bi-pill bi-pill--gold bi-gift-button" type="button"
             >Kirim Angpao</button
           >
           <p class="bi-gift-result" role="status" hidden>
-            Informasi hadiah belum tersedia.
+            {
+              data.designData?.gift_bank && data.designData?.gift_account_number
+                ? `${data.designData.gift_bank} · ${data.designData.gift_account_number} · ${data.designData.gift_account_name ?? ''}`
+                : 'Informasi hadiah belum tersedia.'
+            }
           </p>
         </div>
       </section>
@@ -432,8 +517,12 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
       >
         <div class="bi-closing bi-entrance">
           <p>
-            Merupakan kebahagiaan dan kehormatan bagi kami apabila
-            Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
+            {
+              copy(
+                'closing_text',
+                'Merupakan kebahagiaan dan kehormatan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.',
+              )
+            }
           </p>
           <p>Hormat kami yang berbahagia,</p>
           <h2>{pair}</h2>
@@ -441,6 +530,16 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
         </div>
       </section>
     </div>
+    {
+      data.designData?.music_url && (
+        <audio
+          class="bi-custom-audio"
+          src={data.designData.music_url}
+          loop
+          preload="none"
+        />
+      )
+    }
 
     <button
       class="bi-music"
@@ -605,6 +704,8 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
       });
 
     const music = root.querySelector<HTMLButtonElement>('.bi-music')!;
+    const customAudio =
+      root.querySelector<HTMLAudioElement>('.bi-custom-audio');
     let context: AudioContext | undefined;
     let master: GainNode | undefined;
     let musicTimer: number | undefined;
@@ -626,6 +727,11 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
     };
     const startMusic = async () => {
       try {
+        if (customAudio) {
+          customAudio.muted = muted;
+          await customAudio.play();
+          return;
+        }
         context ??= new AudioContext();
         if (!master) {
           master = context.createGain();
@@ -644,6 +750,7 @@ const mapEmbed = `https://maps.google.com/maps?q=${encodeURIComponent(`${recepti
     };
     music.addEventListener('click', () => {
       muted = !muted;
+      if (customAudio) customAudio.muted = muted;
       if (context && master) {
         master.gain.setTargetAtTime(muted ? 0 : 1, context.currentTime, 0.03);
       }
