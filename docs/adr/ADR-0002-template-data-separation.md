@@ -26,3 +26,7 @@ Store event data in normalized backend entities. Map API responses into a shared
 
 New themes can focus on CSS and composition. Shared section changes affect all compatible themes, so component contracts require care. Theme-specific capabilities must be declared explicitly in registry metadata.
 
+## Update (2026-10-04)
+
+The backend entities this decision refers to (invitations, hosts, events, guests, RSVPs) currently do not exist because the invitation module was removed from the backend. The decision stands for the rebuilt module; the frontend `InvitationData` contract and template registry are unchanged.
+

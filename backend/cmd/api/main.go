@@ -4,107 +4,83 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log/slog"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/app"
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/config"
-	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/handler"
-	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/repository/postgres"
-	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/server"
-	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/service"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+const sessionCleanupInterval = time.Hour
+
 func main() {
-	healthcheck := flag.Bool("healthcheck", false, "check the API liveness endpoint")
+	healthcheck := flag.Bool("healthcheck", false, "probe /healthz on the local listener and exit (used by Docker)")
 	flag.Parse()
 
 	if *healthcheck {
-		if err := checkHealth(); err != nil {
+		if err := probeHealth(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 		return
 	}
 
-	if err := run(); err != nil {
-		slog.Error("application stopped", "error", err)
-		os.Exit(1)
-	}
-}
-
-func run() error {
-	cfg, err := config.Load()
+	a, err := app.Build(context.Background())
 	if err != nil {
-		return fmt.Errorf("load configuration: %w", err)
+		log.Fatal(err)
 	}
+	defer a.Pool.Close()
 
-	level := slog.LevelInfo
-	if cfg.LogLevel == "debug" {
-		level = slog.LevelDebug
-	}
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	runCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
-	if err != nil {
-		return fmt.Errorf("create database pool: %w", err)
+	go a.RunSessionCleanup(runCtx, sessionCleanupInterval)
+
+	srv := &http.Server{
+		Addr:              a.Config.HTTPAddr,
+		Handler:           a.Handler,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
-	defer pool.Close()
-
-	repository := postgres.NewInvitationRepository(pool)
-	invitationService := service.NewInvitationService(repository)
-	authService := service.NewAuthService(postgres.NewAuthRepository(pool), cfg.SessionTTL)
-	authHandler := handler.NewAuthHandler(authService, cfg.CookieSecure)
-	managementService := service.NewInvitationManagementService(repository)
-	guestService := service.NewGuestService(postgres.NewGuestRepository(pool))
-	httpServer := server.New(
-		fmt.Sprintf(":%d", cfg.Port),
-		handler.NewHealthHandler(pool),
-		handler.NewInvitationHandler(invitationService),
-		authHandler,
-		handler.NewInvitationManagementHandler(managementService, authHandler),
-		handler.NewGuestHandler(guestService, authHandler),
-	)
-
-	serverErrors := make(chan error, 1)
 	go func() {
-		slog.Info("API listening", "address", httpServer.Addr)
-		serverErrors <- httpServer.ListenAndServe()
+		log.Printf("adicara-api listening on %s", a.Config.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
-		defer cancel()
-		return httpServer.Shutdown(shutdownCtx)
-	case err := <-serverErrors:
-		if err == http.ErrServerClosed {
-			return nil
-		}
-		return err
-	}
+	<-runCtx.Done()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_ = srv.Shutdown(shutdownCtx)
 }
 
-func checkHealth() error {
-	client := &http.Client{Timeout: 2 * time.Second}
-	request, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/healthz", nil)
+// probeHealth asks the already-running server on this host for /healthz, so
+// the container is only "healthy" when the API answers and Postgres is up.
+func probeHealth() error {
+	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	response, err := client.Do(request)
+
+	addr := cfg.HTTPAddr
+	if strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + addr
+	}
+
+	client := http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get("http://" + addr + "/healthz")
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("health endpoint returned %s", response.Status)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("healthz returned %d", resp.StatusCode)
 	}
+
 	return nil
 }

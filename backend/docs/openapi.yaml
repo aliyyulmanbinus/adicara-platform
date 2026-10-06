@@ -1,0 +1,388 @@
+openapi: 3.0.3
+info:
+  title: Adicara API
+  description: Backend API untuk platform Adicara (Auth, Health, Profile).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Backend run directly (`go run ./cmd/api`)
+  - url: /api
+    description: >-
+      Same-origin through Nginx (browser, production). Nginx drops the `/api` prefix, so
+      `/api/v1/auth/login` reaches the backend as `/v1/auth/login`. Only `/api/v1/*` is
+      forwarded; `/healthz` is not under `/api`.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: >-
+                Machine-readable. Auth codes: invalid_json, invalid_input, invalid_email,
+                invalid_username, weak_password, password_too_long, email_taken,
+                username_taken, unauthorized, account_inactive, not_found, rate_limited, internal.
+              example: weak_password
+            message:
+              type: string
+              description: English, for logs. Clients should map `code` to their own text.
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+          nullable: true
+        role_id:
+          type: integer
+          example: 2
+        status:
+          type: string
+          example: active
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          description: Access token lifetime in seconds.
+          example: 900
+  responses:
+    BadRequest:
+      description: Invalid input (see `error.code`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: >-
+        Missing/invalid credentials or token. For a bearer token this also covers an account
+        that was deactivated or deleted, and a token issued before the account's last password
+        change; the signature alone is not enough. The code is `unauthorized` in every case
+        (never 403) so that a client that signs the user out on 401 ends at the login form,
+        where `account_inactive` is explained.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: >-
+        Too many attempts from this client IP. The IP is read from `X-Real-IP`, and only
+        when the connection comes from a trusted proxy (`TRUSTED_PROXIES`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+security:
+  - bearerAuth: []
+
+paths:
+  /healthz:
+    servers:
+      - url: /
+        description: Not under `/api`; Nginx serves it at the root.
+    get:
+      summary: Health Check
+      operationId: healthCheck
+      description: Liveness/Readiness probe.
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+        '503':
+          description: Postgres cannot be reached (`error.code` = database_unavailable).
+
+  /v1/auth/register:
+    post:
+      summary: Register User
+      operationId: registerUser
+      description: >-
+        Mendaftarkan akun baru (role customer). Tidak mengembalikan token; panggil
+        `/v1/auth/login` setelahnya. Dibatasi `AUTH_RATE_LIMIT` per IP per menit.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - username
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                  description: Case-insensitive, stored lowercase. Must contain a dot in the domain.
+                  example: user@example.com
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+                  pattern: '^[a-z0-9._]+$'
+                  description: Trimmed and lowercased by the server.
+                  example: myusername
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 72
+                  description: At least one letter and one digit. Max is 72 *bytes* (bcrypt).
+                  example: PasswordYangKuat123
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: email_taken or username_taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/auth/login:
+    post:
+      summary: Login User
+      operationId: loginUser
+      description: >-
+        Masuk dengan email **atau** username (kirim salah satu; `email` dipakai jika keduanya ada).
+        Dibatasi `AUTH_RATE_LIMIT` per IP per menit.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                username:
+                  type: string
+                  example: myusername
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+                  tokens:
+                    $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: account_inactive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/auth/refresh:
+    post:
+      summary: Refresh Session
+      operationId: refreshSession
+      description: >-
+        Menukar refresh token dengan pasangan token baru. Refresh token **dirotasi**: token yang
+        dikirim langsung hangus, sehingga memakainya dua kali menghasilkan 401. Klien yang
+        mengirim beberapa request bersamaan harus menyatukannya menjadi satu panggilan refresh.
+
+        **Deteksi pencurian.** Jika token yang sudah dirotasi dikirim lagi **lebih dari 10 detik**
+        setelah dirotasi, token itu dianggap bocor: respons tetap 401 dan **semua** refresh session
+        pengguna dicabut (pemilik harus login ulang). Dalam 10 detik pertama hanya ditolak dengan
+        401 (kemungkinan besar dua request klien yang berpacu). Token yang dicabut lewat logout atau
+        ganti password tidak memicu ini. Akun yang dinonaktifkan atau sudah dihapus mendapat 401.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: New token pair
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/auth/logout:
+    post:
+      summary: Logout User
+      operationId: logoutUser
+      description: >-
+        Mencabut sesi refresh token di database. Access token yang sudah terbit tetap valid
+        sampai kedaluwarsa (logout tidak mengubah `password_changed_at`). Token yang sudah
+        kedaluwarsa/tidak valid menghasilkan 401.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /v1/auth/password:
+    post:
+      summary: Change Password
+      operationId: changePassword
+      description: >-
+        Mengubah password akun yang sedang login dan mencabut **semua** refresh session.
+        Access token yang terbit sebelum perubahan ini juga langsung tidak berlaku (401),
+        termasuk yang dipakai untuk memanggil endpoint ini. Token yang terbit pada detik yang
+        sama dengan perubahan tetap diterima. Aturan `new_password` sama dengan register.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - new_password
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 72
+      responses:
+        '204':
+          description: Password changed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/me:
+    get:
+      summary: Get Profile
+      operationId: getProfile
+      description: >-
+        Mengambil data profil user yang sedang login. Access token dicocokkan dengan database
+        pada setiap permintaan (akun harus ada dan aktif).
+      responses:
+        '200':
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                          username:
+                            type: string
+                          name:
+                            type: string
+                            nullable: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      summary: Update Profile
+      operationId: updateProfile
+      description: Mengubah nama user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Nama Baru
+      responses:
+        '200':
+          description: Profile updated successfully (`data` = id, email, username, name)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
