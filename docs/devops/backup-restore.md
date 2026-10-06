@@ -23,8 +23,8 @@ Simpan backup terenkripsi di lokasi terpisah dari VPS. Rekomendasi awal: backup 
    pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL" adicara.dump
    ```
 
-5. Jalankan migrasi menuju versi aplikasi target.
-6. Periksa `/readyz` dan lakukan smoke test undangan.
+5. Jalankan backend versi target. Migrasi yang belum ter-apply dijalankan otomatis saat start (atau manual dengan `/adicara-migrate up`).
+6. Periksa `/healthz` dan lakukan smoke test: login dengan akun yang ada, lalu buka `/dashboard`.
 
 ## Verifikasi
 

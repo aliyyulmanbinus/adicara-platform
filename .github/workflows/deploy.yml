@@ -79,27 +79,101 @@ jobs:
           port: ${{ secrets.VPS_PORT || '22' }}
           script: |
             set -eu
+            APP_DIR=/opt/adicara
             if ! command -v docker >/dev/null 2>&1; then
               echo 'Docker is not installed. Follow docs/devops/vps-deployment.md to prepare the VPS.' >&2
               exit 1
             fi
             docker compose version
             docker info >/dev/null
-            if [ ! -f /opt/adicara/deploy/docker-compose.prod.yml ]; then
+            if [ ! -f "$APP_DIR/deploy/docker-compose.prod.yml" ]; then
               echo 'Repository is missing at /opt/adicara. Follow docs/devops/vps-deployment.md.' >&2
               exit 1
             fi
-            if [ ! -f /opt/adicara/.env ]; then
+            if [ ! -f "$APP_DIR/.env" ]; then
               echo 'Production configuration /opt/adicara/.env is missing.' >&2
               exit 1
             fi
-            cd /opt/adicara
-            export FRONTEND_IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
-            export BACKEND_IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
+            cd "$APP_DIR"
+
+            # 1. Bring the checkout (compose file, nginx config) to the commit being
+            #    deployed. Without this, changes outside the images never reach the server.
+            if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+              echo 'Tracked files in /opt/adicara were edited on the server; refusing to overwrite them:' >&2
+              git status --short --untracked-files=no >&2
+              echo 'Review them with git diff, discard with git checkout -- . and re-run the deploy.' >&2
+              exit 1
+            fi
+            if ! git fetch origin '${{ github.sha }}'; then
+              echo 'git fetch failed. If the repository is private, give the server read-only Git credentials (docs/devops/vps-deployment.md).' >&2
+              exit 1
+            fi
+            git reset --hard '${{ github.sha }}'
+
+            COMPOSE="docker compose --env-file $APP_DIR/.env -f deploy/docker-compose.prod.yml"
+            LAST_GOOD="$APP_DIR/.deploy-last-good"
+            NEW_FRONTEND='ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}'
+            NEW_BACKEND='ghcr.io/${{ github.repository }}-backend:${{ github.sha }}'
+
+            # Backend (through nginx) and frontend must both answer.
+            healthy() {
+              curl --fail --silent --show-error --max-time 10 --retry 20 --retry-delay 3 --retry-connrefused "http://127.0.0.1:$1/healthz" >/dev/null &&
+                curl --fail --silent --show-error --max-time 10 --retry 5 --retry-delay 3 --retry-connrefused "http://127.0.0.1:$1/" >/dev/null
+            }
+
+            # nginx reads its config only at start; apply a changed file in place.
+            # Retried briefly because the container may have only just been created.
+            reload_nginx() {
+              tries=0
+              while [ "$tries" -lt 5 ]; do
+                $COMPOSE exec -T nginx nginx -t && $COMPOSE exec -T nginx nginx -s reload && return 0
+                tries=$((tries + 1))
+                sleep 2
+              done
+              return 1
+            }
+
+            # Start the stack with the given images; succeeds only if it comes up healthy.
+            start_stack() {
+              export FRONTEND_IMAGE="$1" BACKEND_IMAGE="$2"
+              $COMPOSE up -d --remove-orphans || return 1
+              reload_nginx || return 1
+              binding=$($COMPOSE port nginx 80) || return 1
+              healthy "${binding##*:}"
+            }
+
+            # 2. Pull before touching anything running: a failed pull changes nothing.
+            #    Only our own images: pulling postgres/nginx too would recreate the
+            #    database container whenever upstream publishes a new minor version.
             echo '${{ secrets.GITHUB_TOKEN }}' | docker login ghcr.io -u '${{ github.actor }}' --password-stdin
-            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml config --quiet
-            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml pull
-            docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml up -d
-            nginx_binding=$(docker compose --env-file /opt/adicara/.env -f deploy/docker-compose.prod.yml port nginx 80)
-            health_port="${nginx_binding##*:}"
-            curl --fail --retry 10 --retry-delay 3 --retry-connrefused "http://127.0.0.1:${health_port}/readyz"
+            export FRONTEND_IMAGE="$NEW_FRONTEND" BACKEND_IMAGE="$NEW_BACKEND"
+            $COMPOSE config --quiet
+            $COMPOSE pull frontend backend
+
+            # 3. Switch over.
+            if start_stack "$NEW_FRONTEND" "$NEW_BACKEND"; then
+              printf 'FRONTEND_IMAGE=%s\nBACKEND_IMAGE=%s\n' "$NEW_FRONTEND" "$NEW_BACKEND" > "$LAST_GOOD"
+              docker image prune -af --filter 'until=168h' >/dev/null 2>&1 || true
+              echo 'Deployed ${{ github.sha }}'
+              exit 0
+            fi
+
+            # 4. Failed: show why, and put the last good version back if there is one.
+            echo 'Deploy of ${{ github.sha }} failed; diagnostics follow.' >&2
+            $COMPOSE ps >&2 || true
+            $COMPOSE logs --no-color --tail=80 backend frontend nginx >&2 || true
+            if [ -f "$LAST_GOOD" ]; then
+              PREV_FRONTEND=$(sed -n 's/^FRONTEND_IMAGE=//p' "$LAST_GOOD")
+              PREV_BACKEND=$(sed -n 's/^BACKEND_IMAGE=//p' "$LAST_GOOD")
+              if [ -n "$PREV_FRONTEND" ] && [ -n "$PREV_BACKEND" ]; then
+                echo "Rolling back to $PREV_BACKEND and $PREV_FRONTEND" >&2
+                if start_stack "$PREV_FRONTEND" "$PREV_BACKEND"; then
+                  echo 'Rollback succeeded: the previous version is serving traffic. This deploy is still marked failed.' >&2
+                else
+                  echo 'Rollback also failed: the site needs manual attention.' >&2
+                fi
+              fi
+            else
+              echo 'No earlier successful deploy is recorded, so there is nothing to roll back to.' >&2
+            fi
+            exit 1

@@ -17,17 +17,6 @@ services:
       retries: 15
     restart: unless-stopped
 
-  migrate:
-    image: migrate/migrate:v4.18.3
-    command: ["-path=/migrations", "-database=${DATABASE_URL}", "up"]
-    volumes:
-      - ../backend/migrations:/migrations:ro
-    networks: [private]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   backend:
     image: ${BACKEND_IMAGE}
     environment:
@@ -35,11 +24,21 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       APP_ENV: production
-      COOKIE_SECURE: "${COOKIE_SECURE:-true}"
+      # Signs every access and refresh token. Required: the backend refuses to
+      # start in production with a missing, short, or placeholder value.
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is not set in /opt/adicara/.env - generate one with openssl rand -hex 32}"
+      # Optional. Empty means "use the backend default" (see backend/README.md).
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      MIGRATE_ON_START: ${MIGRATE_ON_START:-}
+      # Same-origin traffic needs no CORS; allow only the public origin.
+      CORS_ORIGINS: ${CORS_ORIGINS:-${PUBLIC_SITE_URL}}
     networks: [private]
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "/adicara-api", "-healthcheck"]
       interval: 10s
@@ -54,6 +53,7 @@ services:
       PORT: "4321"
       API_BASE_URL: http://backend:8080
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL}
+      COOKIE_SECURE: "${COOKIE_SECURE:-true}"
     networks: [private]
     depends_on:
       backend:

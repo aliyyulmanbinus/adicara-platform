@@ -17,19 +17,6 @@ services:
       timeout: 3s
       retries: 10
 
-  migrate:
-    image: migrate/migrate:v4.18.3
-    command:
-      - -path=/migrations
-      - -database=${DATABASE_URL:-postgres://adicara:adicara-local@postgres:5432/adicara?sslmode=disable}
-      - up
-    volumes:
-      - ./backend/migrations:/migrations:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   backend:
     build:
       context: ./backend
@@ -38,10 +25,16 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://adicara:adicara-local@postgres:5432/adicara?sslmode=disable}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       APP_ENV: ${APP_ENV:-development}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Empty means "use the backend default". The default JWT secret is only
+      # accepted while APP_ENV is a development value.
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-}
+      AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
     depends_on:
-      migrate:
-        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "/adicara-api", "-healthcheck"]
       interval: 10s
@@ -58,6 +51,7 @@ services:
       PORT: "4321"
       API_BASE_URL: http://backend:8080
       PUBLIC_SITE_URL: ${PUBLIC_SITE_URL:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
     depends_on:
       backend:
         condition: service_healthy

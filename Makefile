@@ -1,8 +1,6 @@
 -include .env
 
-DATABASE_URL ?= postgres://adicara:adicara-local@postgres:5432/adicara?sslmode=disable
-
-.PHONY: dev down test lint build migrate-up migrate-down
+.PHONY: dev down test lint build migrate-up migrate-fresh
 
 dev:
 	docker compose up --build
@@ -22,8 +20,10 @@ build:
 	cd frontend && npm run build
 	cd backend && go build ./cmd/api
 
+# The API migrates on start (MIGRATE_ON_START); these run the same code on demand.
 migrate-up:
-	docker compose run --rm migrate
+	docker compose run --rm --no-deps --entrypoint /adicara-migrate backend up
 
-migrate-down:
-	docker compose run --rm migrate -path=/migrations -database="$(DATABASE_URL)" down 1
+# DESTRUCTIVE: wipes the compose database, then re-applies every migration.
+migrate-fresh:
+	docker compose run --rm --no-deps --entrypoint /adicara-migrate backend fresh -yes
