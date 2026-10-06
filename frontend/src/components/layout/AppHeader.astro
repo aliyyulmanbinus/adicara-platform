@@ -9,25 +9,28 @@
 </header>
 
 <script>
-  function cookieValue(name: string) {
-    const prefix = `${encodeURIComponent(name)}=`;
-    const item = document.cookie
-      .split('; ')
-      .find((value) => value.startsWith(prefix));
-    return item ? decodeURIComponent(item.slice(prefix.length)) : '';
-  }
+  const button = document.querySelector<HTMLButtonElement>('[data-logout]');
 
-  document
-    .querySelector<HTMLButtonElement>('[data-logout]')
-    ?.addEventListener('click', async () => {
-      const response = await fetch('/api/v1/auth/logout', {
+  button?.addEventListener('click', async () => {
+    button.disabled = true;
+    try {
+      // JSON on purpose: a body-less POST is treated by Astro as a form post and
+      // origin-checked, which fails behind a TLS-terminating proxy.
+      const response = await fetch('/auth/logout', {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'X-CSRF-Token': cookieValue('adicara_csrf') },
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
       });
-      if (response.ok || response.status === 401)
+      if (response.ok) {
         window.location.assign('/auth/masuk');
-    });
+        return;
+      }
+    } catch {
+      // Unreachable server: stay signed in and let the user try again.
+    }
+    button.disabled = false;
+  });
 </script>
 
 <style>

@@ -11,24 +11,29 @@ const isRegister = mode === 'register';
   {
     isRegister && (
       <label>
-        Nama
+        Username
         <input
-          name="display_name"
+          name="username"
           type="text"
-          autocomplete="name"
-          minlength="2"
-          maxlength="100"
+          autocomplete="username"
+          autocapitalize="none"
+          spellcheck="false"
+          minlength="3"
+          maxlength="30"
+          pattern="[A-Za-z0-9._]+"
           required
         />
       </label>
     )
   }
   <label>
-    Email
+    {isRegister ? 'Email' : 'Email atau username'}
     <input
-      name="email"
-      type="email"
-      autocomplete="email"
+      name={isRegister ? 'email' : 'identifier'}
+      type={isRegister ? 'email' : 'text'}
+      autocomplete={isRegister ? 'email' : 'username'}
+      autocapitalize="none"
+      spellcheck="false"
       maxlength="254"
       required
     />
@@ -39,8 +44,8 @@ const isRegister = mode === 'register';
       name="password"
       type="password"
       autocomplete={isRegister ? 'new-password' : 'current-password'}
-      minlength={isRegister ? 12 : undefined}
-      maxlength="128"
+      minlength={isRegister ? 8 : undefined}
+      maxlength="72"
       aria-describedby={isRegister ? 'password-help' : undefined}
       required
     />
@@ -48,8 +53,8 @@ const isRegister = mode === 'register';
   {
     isRegister && (
       <p id="password-help" class="field-help">
-        Gunakan setidaknya 12 karakter. Kata sandi tidak pernah ditampilkan
-        kembali.
+        Minimal 8 karakter, kombinasi huruf dan angka. Kata sandi tidak pernah
+        ditampilkan kembali.
       </p>
     )
   }
@@ -59,8 +64,60 @@ const isRegister = mode === 'register';
   </button>
 </form>
 
+<div class="toast-region" role="status" aria-live="polite" data-toast-region>
+</div>
+<template data-toast-template>
+  <div class="toast">
+    <span class="toast-icon" aria-hidden="true">✓</span>
+    <span class="toast-text" data-toast-text></span>
+    <button
+      type="button"
+      class="toast-close"
+      data-toast-close
+      aria-label="Tutup pemberitahuan">×</button
+    >
+  </div>
+</template>
+
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-auth-form]');
+
+  // Registering ends on the login page, so the form that registers leaves a
+  // one-shot flag and the login form shows the toast. Only a known key is
+  // stored, never text.
+  const TOAST_KEY = 'adicara:toast';
+  const TOASTS: Record<string, string> = {
+    registered: 'Akun berhasil dibuat. Silakan masuk.',
+  };
+  const TOAST_MS = 6000;
+
+  function showPendingToast() {
+    let message: string | undefined;
+    try {
+      message = TOASTS[sessionStorage.getItem(TOAST_KEY) ?? ''];
+      sessionStorage.removeItem(TOAST_KEY);
+    } catch {
+      return; // storage unavailable: skip the toast, the page still works
+    }
+
+    const region = document.querySelector('[data-toast-region]');
+    const template = document.querySelector<HTMLTemplateElement>(
+      '[data-toast-template]',
+    );
+    const toast = template?.content.firstElementChild?.cloneNode(true);
+    if (!message || !region || !(toast instanceof HTMLElement)) return;
+
+    const text = toast.querySelector('[data-toast-text]');
+    if (text) text.textContent = message;
+    const dismiss = () => toast.remove();
+    toast
+      .querySelector('[data-toast-close]')
+      ?.addEventListener('click', dismiss);
+    region.append(toast);
+    window.setTimeout(dismiss, TOAST_MS);
+  }
+
+  if (form?.dataset.mode === 'login') showPendingToast();
 
   if (form) {
     form.addEventListener('submit', async (event) => {
@@ -71,34 +128,57 @@ const isRegister = mode === 'register';
       );
       if (!status || !button || !form.reportValidity()) return;
 
-      const mode = form.dataset.mode;
-      const values = Object.fromEntries(new FormData(form));
+      const mode = form.dataset.mode === 'register' ? 'register' : 'login';
+      const values = Object.fromEntries(new FormData(form)) as Record<
+        string,
+        string
+      >;
+      // The backend stores usernames in lowercase and matches emails case-insensitively.
+      for (const key of ['username', 'email', 'identifier']) {
+        if (values[key]) values[key] = values[key].trim();
+      }
+      if (values.username) values.username = values.username.toLowerCase();
+
       status.textContent = 'Memeriksa data…';
       button.disabled = true;
+      let navigating = false;
 
       try {
-        const response = await fetch(
-          `/api/v1/auth/${mode === 'register' ? 'register' : 'login'}`,
-          {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
-          },
-        );
-        const payload = await response.json();
+        // Same-origin endpoint that talks to the API and sets the session cookies.
+        const response = await fetch(`/auth/${mode}`, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        });
+        const payload = await response.json().catch(() => null);
         if (!response.ok) {
           status.textContent =
             payload?.error?.message ??
             'Permintaan belum berhasil. Periksa kembali data Anda.';
           return;
         }
-        window.location.assign('/dashboard');
+        if (mode === 'register') {
+          try {
+            sessionStorage.setItem(TOAST_KEY, 'registered');
+          } catch {
+            // storage unavailable: the redirect still happens, without a toast
+          }
+        }
+        const target = payload?.redirect;
+        navigating = true;
+        window.location.assign(
+          typeof target === 'string' &&
+            target.startsWith('/') &&
+            !target.startsWith('//')
+            ? target
+            : '/dashboard',
+        );
       } catch {
         status.textContent =
           'Layanan belum dapat dijangkau. Silakan coba kembali.';
       } finally {
-        button.disabled = false;
+        if (!navigating) button.disabled = false;
       }
     });
   }
@@ -145,5 +225,66 @@ const isRegister = mode === 'register';
   .button:disabled {
     cursor: wait;
     opacity: 0.65;
+  }
+  .toast-region {
+    position: fixed;
+    /* Below the sticky site header (min-height 4.25rem), so the toast never
+       covers the logo, the menu button, or the navigation. */
+    inset: calc(4.25rem + var(--space-3)) var(--space-4) auto;
+    z-index: 100;
+    display: grid;
+    justify-items: center;
+    pointer-events: none;
+  }
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    max-width: 28rem;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-soft);
+    color: var(--color-text);
+    font-size: 0.9rem;
+    font-weight: 600;
+    pointer-events: auto;
+    animation: toast-in 0.25s ease-out;
+  }
+  .toast-icon {
+    color: var(--color-accent-deep);
+    font-weight: 800;
+  }
+  .toast-close {
+    min-width: 2rem;
+    min-height: 2rem;
+    margin-left: auto;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .toast-close:hover {
+    color: var(--color-text);
+  }
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      animation: none;
+    }
   }
 </style>

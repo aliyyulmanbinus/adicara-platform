@@ -1,12 +1,8 @@
 ---
 import AppLayout from '@/layouts/AppLayout.astro';
+import { backendFetch } from '@/lib/api/backend';
 
 export const prerender = false;
-
-interface User {
-  display_name: string;
-  email: string;
-}
 
 interface InvitationSummary {
   id: string;
@@ -17,33 +13,24 @@ interface InvitationSummary {
   updated_at: string;
 }
 
-const apiBase = import.meta.env.API_BASE_URL ?? Astro.url.origin;
-const cookie = Astro.request.headers.get('cookie') ?? '';
-let user: User | undefined;
+// The auth middleware has already verified the session for every /dashboard route.
+const { user, accessToken } = Astro.locals;
+if (!user) return Astro.redirect('/auth/masuk');
+
 let invitations: InvitationSummary[] = [];
 let loadError = '';
 
 try {
-  const headers = { cookie };
-  const meResponse = await fetch(new URL('/api/v1/me', apiBase), { headers });
-  if (meResponse.status === 401 || meResponse.status === 404) {
-    return Astro.redirect('/auth/masuk');
-  }
-  if (!meResponse.ok) throw new Error(`me returned ${meResponse.status}`);
-  user = ((await meResponse.json()) as { user: User }).user;
-
-  const invitationResponse = await fetch(
-    new URL('/api/v1/invitations', apiBase),
-    {
-      headers,
-    },
+  const result = await backendFetch<{ invitations: InvitationSummary[] }>(
+    '/v1/invitations',
+    { accessToken },
   );
-  if (!invitationResponse.ok) {
-    throw new Error(`invitations returned ${invitationResponse.status}`);
+  if (result.ok) {
+    invitations = result.data?.invitations ?? [];
+  } else if (result.status !== 404) {
+    // 404 = the backend has no invitations module yet; show the empty state.
+    loadError = 'Data undangan belum dapat dimuat. Coba muat ulang halaman.';
   }
-  invitations = (
-    (await invitationResponse.json()) as { invitations: InvitationSummary[] }
-  ).invitations;
 } catch {
   loadError = 'Data undangan belum dapat dimuat. Coba muat ulang halaman.';
 }
@@ -57,7 +44,7 @@ try {
     <div class="container dashboard-heading">
       <div>
         <p class="eyebrow">Ruang perayaan</p>
-        <h1>{user ? `Halo, ${user.display_name}.` : 'Undanganmu.'}</h1>
+        <h1>Halo, {user.name ?? user.username}.</h1>
         <p>Draft tetap privat sampai kalian memilih untuk menerbitkannya.</p>
       </div>
       <a class="button" href="/dashboard/undangan/baru">Buat Undangan</a>

@@ -1,5 +1,7 @@
 # Account Forms
 
+> **Digantikan** oleh [2026-10-04-session-cookies.md](2026-10-04-session-cookies.md). Alur cookie sesi + CSRF di bawah adalah untuk backend lama dan tidak berlaku lagi.
+
 Date: 2026-10-02
 
 `/auth/masuk` and `/auth/daftar` now provide accessible account forms connected to the same-origin API. Both routes remain `noindex` and are excluded from the sitemap and robots crawling.

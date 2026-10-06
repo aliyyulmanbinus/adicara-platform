@@ -1,5 +1,16 @@
 # Frontend Changelog
 
+## 2026-10-04
+
+### Authentication
+
+- Auth disesuaikan dengan backend baru (JWT di body, `/v1/auth/*`). Server Astro menjadi perantara dan menyimpan token di cookie HttpOnly; endpoint `/auth/login`, `/auth/register`, `/auth/logout`; middleware menjaga `/dashboard/**` dan me-refresh token otomatis. Documentation: `authentication/2026-10-04-session-cookies.md`.
+- Halaman masuk menampilkan toast "Akun berhasil dibuat. Silakan masuk." setelah register berhasil, dan petunjuk username "3–30 karakter…" dihapus dari form daftar. Documentation: `authentication/2026-10-04-register-success-toast.md`.
+- Register tidak lagi login otomatis: setelah akun dibuat, pengguna diarahkan ke `/auth/masuk` dan masuk sendiri (tanpa cookie sesi dari endpoint register). Documentation: `authentication/2026-10-04-session-cookies.md`.
+- Form daftar memakai `username` (3–30 karakter) dan password 8–72 karakter sesuai aturan backend; form masuk menerima email atau username. Pesan error dipetakan dari kode error backend.
+- Bug yang diperbaiki: login tidak pernah membuat sesi (token diabaikan), dashboard memanggil `/api/v1/me` yang tidak ada, tombol Keluar tidak berfungsi (body `refresh_token` tidak dikirim), password 73–128 karakter menghasilkan HTTP 500, halaman editor tidak dijaga karena di-prerender.
+- Belum berfungsi: pembuatan/pengelolaan undangan (menunggu modul undangan di backend).
+
 ## 2026-10-02
 
 ### Landing Page

@@ -22,6 +22,13 @@ export default defineConfig({
   vite: {
     server: {
       allowedHosts: ['localhost'],
+      proxy: {
+        '/api': {
+          target: process.env.API_BASE_URL || 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
     },
   },
 });
