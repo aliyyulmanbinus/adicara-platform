@@ -50,6 +50,16 @@ const breadcrumbSchema = {
       <div>
         <p class="lede">{theme.description}</p>
         <a class="button" href="/#mulai">Gunakan Tema Ini</a>
+        {
+          theme.key === 'batak-senja' && (
+            <a
+              class="button button--secondary full-preview-link"
+              href="/template-design-udangan/pernikahan/batak-senja"
+            >
+              Lihat pratinjau layar penuh
+            </a>
+          )
+        }
       </div>
     </div>
   </section>
@@ -105,6 +115,10 @@ const breadcrumbSchema = {
 
   .hero-grid .button {
     margin-top: var(--space-4);
+  }
+
+  .hero-grid .full-preview-link {
+    margin-left: var(--space-3);
   }
 
   .preview-section {

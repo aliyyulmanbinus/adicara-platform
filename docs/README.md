@@ -1,6 +1,7 @@
 # Dokumentasi Adicara
 
 - [Arsitektur](architecture.md)
+- [Menjalankan secara lokal](local-development.md)
 - [Database](database.md)
 - [API](api.md)
 - [Deployment](deployment.md)
@@ -13,4 +14,3 @@
 - [Architecture Decision Records](adr/README.md)
 
 Dokumentasi dan kode merupakan satu deliverable. Catatan validasi hanya boleh mencantumkan perintah yang benar-benar dijalankan.
-

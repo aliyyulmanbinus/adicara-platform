@@ -18,6 +18,8 @@ type Invitation struct {
 	AllowIndexing bool              `json:"allow_indexing"`
 	Hosts         []InvitationHost  `json:"hosts"`
 	Events        []InvitationEvent `json:"events"`
+	DesignData    map[string]string `json:"design_data"`
+	Media         []InvitationMedia `json:"media"`
 	CreatedAt     time.Time         `json:"created_at"`
 	UpdatedAt     time.Time         `json:"updated_at"`
 }
@@ -30,6 +32,7 @@ type InvitationWrite struct {
 	AllowIndexing bool
 	Hosts         []InvitationHost
 	Events        []InvitationEvent
+	DesignData    map[string]string
 }
 
 type InvitationUpdate struct {
@@ -40,6 +43,14 @@ type InvitationUpdate struct {
 	AllowIndexing *bool
 	Hosts         *[]InvitationHost
 	Events        *[]InvitationEvent
+	DesignData    *map[string]string
+}
+
+type InvitationMedia struct {
+	ID       string `json:"id"`
+	Kind     string `json:"kind"`
+	Position int    `json:"position"`
+	URL      string `json:"url"`
 }
 
 type InvitationHost struct {

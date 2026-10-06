@@ -85,3 +85,39 @@ func TestGetInvitationRejectsInvalidIDBeforeRepository(t *testing.T) {
 		t.Fatalf("expected ErrInvalidID, got %v", err)
 	}
 }
+
+func TestCreateBatakSenjaPreservesCustomCopyAndTwoEvents(t *testing.T) {
+	repository := &stubInvitationManagementRepository{}
+	manager := NewInvitationManagementService(repository)
+	input := validInvitationWrite()
+	input.TemplateKey = "batak-senja"
+	input.Events = append(input.Events, domain.InvitationEvent{
+		Name: "Resepsi dan Adat", StartAt: input.Events[0].StartAt.Add(3 * time.Hour),
+		Timezone: "Asia/Jakarta", VenueName: "Gedung Adat", VenueAddress: "Jakarta",
+	})
+	input.DesignData = map[string]string{"quote_text": "  Kisah kami  ", "gift_bank": "BCA"}
+	if _, err := manager.Create(context.Background(), "owner-1", input); err != nil {
+		t.Fatalf("create invitation: %v", err)
+	}
+	if got := repository.input.DesignData["quote_text"]; got != "Kisah kami" {
+		t.Fatalf("quote_text = %q", got)
+	}
+	if len(repository.input.Events) != 2 {
+		t.Fatalf("events = %d", len(repository.input.Events))
+	}
+}
+
+func TestCreateRejectsUnsafeOrUnknownDesignData(t *testing.T) {
+	for _, data := range []map[string]string{
+		{"music_url": "javascript:alert(1)"},
+		{"not_a_template_field": "test"},
+		{"quote_text": string(make([]byte, 1001))},
+	} {
+		input := validInvitationWrite()
+		input.DesignData = data
+		_, err := NewInvitationManagementService(&stubInvitationManagementRepository{}).Create(context.Background(), "owner-1", input)
+		if !errors.Is(err, ErrInvalidInvitation) {
+			t.Fatalf("expected invalid invitation for %v, got %v", data, err)
+		}
+	}
+}

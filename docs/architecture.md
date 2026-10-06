@@ -29,7 +29,7 @@ HTTP handler → service → repository → PostgreSQL
 
 ## Batas fase
 
-Autentikasi session, dashboard awal, CRUD undangan, tamu, dan RSVP sudah tersedia. Wishes, upload media, hadiah, editor lanjutan, reporting lengkap, serta pembayaran belum tersedia. Nginx menerapkan rate limit umum API dan limit lebih ketat untuk autentikasi serta RSVP publik.
+Autentikasi session, dashboard awal, CRUD undangan, tamu, RSVP, serta input teks/foto untuk template Batak Senja sudah tersedia. Foto disimpan di PostgreSQL dan hanya dapat diakses publik setelah undangan diterbitkan. Wishes, transaksi hadiah, editor visual lanjutan, reporting lengkap, serta pembayaran belum tersedia. Nginx menerapkan rate limit umum API dan limit lebih ketat untuk autentikasi serta RSVP publik.
 
 ## Keputusan
 

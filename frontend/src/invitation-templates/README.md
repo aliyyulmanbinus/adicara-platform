@@ -2,4 +2,4 @@
 
 Template hanya mengatur presentasi. Data undangan memakai `InvitationData`, sedangkan logika dan markup bagian umum berada di `src/components/invitation/sections`.
 
-Registry saat ini berisi `editorial-ivory`, `botanical-modern`, dan `monochrome-luxe`. Ketiganya memakai renderer section bersama sehingga tema hanya mengatur presentasi. Cara menambah template didokumentasikan di `docs/invitation-template-guide.md`.
+Registry berisi `editorial-ivory`, `botanical-modern`, `monochrome-luxe`, dan `batak-senja`. Tiga tema awal memakai renderer section bersama. `batak-senja` adalah desain pernikahan berhalaman dengan alur khusus dan berada di `template-design-udangan/pernikahan/`. Kategori lain disiapkan di folder yang sama. Cara menambah template didokumentasikan di `docs/invitation-template-guide.md`.

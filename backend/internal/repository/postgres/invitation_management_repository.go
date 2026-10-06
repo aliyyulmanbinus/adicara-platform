@@ -11,7 +11,7 @@ import (
 
 func (r *InvitationRepository) ListByOwner(ctx context.Context, userID string) ([]domain.Invitation, error) {
 	const query = `
-		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at
+		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at
 		FROM invitations
 		WHERE user_id = $1
 		ORDER BY updated_at DESC, id DESC`
@@ -42,6 +42,10 @@ func (r *InvitationRepository) ListByOwner(ctx context.Context, userID string) (
 		if err != nil {
 			return nil, err
 		}
+		invitations[index].Media, err = r.findMedia(ctx, invitations[index].ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return invitations, nil
 }
@@ -54,11 +58,11 @@ func (r *InvitationRepository) CreateForOwner(ctx context.Context, userID string
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	const query = `
-		INSERT INTO invitations (user_id, status, event_type, slug, title, template_key, allow_indexing)
-		VALUES ($1, 'draft', $2, $3, $4, $5, $6)
-		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at`
+		INSERT INTO invitations (user_id, status, event_type, slug, title, template_key, allow_indexing, design_data)
+		VALUES ($1, 'draft', $2, $3, $4, $5, $6, $7)
+		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at`
 	invitation, err := scanInvitation(tx.QueryRow(ctx, query,
-		userID, input.EventType, input.Slug, input.Title, input.TemplateKey, input.AllowIndexing,
+		userID, input.EventType, input.Slug, input.Title, input.TemplateKey, input.AllowIndexing, input.DesignData,
 	))
 	if isUniqueViolation(err) {
 		return domain.Invitation{}, domain.ErrInvitationSlugConflict
@@ -79,7 +83,7 @@ func (r *InvitationRepository) CreateForOwner(ctx context.Context, userID string
 
 func (r *InvitationRepository) FindByOwner(ctx context.Context, userID, invitationID string) (domain.Invitation, error) {
 	const query = `
-		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at
+		SELECT id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at
 		FROM invitations
 		WHERE id = $1 AND user_id = $2`
 	invitation, err := scanInvitation(r.pool.QueryRow(ctx, query, invitationID, userID))
@@ -94,6 +98,10 @@ func (r *InvitationRepository) FindByOwner(ctx context.Context, userID, invitati
 		return domain.Invitation{}, err
 	}
 	invitation.Events, err = r.findEvents(ctx, invitation.ID)
+	if err != nil {
+		return domain.Invitation{}, err
+	}
+	invitation.Media, err = r.findMedia(ctx, invitation.ID)
 	return invitation, err
 }
 
@@ -111,11 +119,12 @@ func (r *InvitationRepository) UpdateForOwner(ctx context.Context, userID, invit
 		    title = COALESCE($5, title),
 		    template_key = COALESCE($6, template_key),
 		    allow_indexing = COALESCE($7, allow_indexing),
+		    design_data = COALESCE($8, design_data),
 		    updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at`
+		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at`
 	invitation, err := scanInvitation(tx.QueryRow(ctx, query,
-		invitationID, userID, input.EventType, input.Slug, input.Title, input.TemplateKey, input.AllowIndexing,
+		invitationID, userID, input.EventType, input.Slug, input.Title, input.TemplateKey, input.AllowIndexing, input.DesignData,
 	))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Invitation{}, domain.ErrInvitationNotFound
@@ -159,7 +168,7 @@ func (r *InvitationRepository) SetStatusForOwner(ctx context.Context, userID, in
 		UPDATE invitations
 		SET status = $3, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, created_at, updated_at`
+		RETURNING id::text, status, event_type, slug, title, template_key, allow_indexing, design_data, created_at, updated_at`
 	invitation, err := scanInvitation(r.pool.QueryRow(ctx, query, invitationID, userID, status))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Invitation{}, domain.ErrInvitationNotFound
@@ -172,6 +181,10 @@ func (r *InvitationRepository) SetStatusForOwner(ctx context.Context, userID, in
 		return domain.Invitation{}, err
 	}
 	invitation.Events, err = r.findEvents(ctx, invitation.ID)
+	if err != nil {
+		return domain.Invitation{}, err
+	}
+	invitation.Media, err = r.findMedia(ctx, invitation.ID)
 	return invitation, err
 }
 
@@ -189,6 +202,7 @@ func scanInvitation(row rowScanner) (domain.Invitation, error) {
 		&invitation.Title,
 		&invitation.TemplateKey,
 		&invitation.AllowIndexing,
+		&invitation.DesignData,
 		&invitation.CreatedAt,
 		&invitation.UpdatedAt,
 	)

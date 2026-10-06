@@ -1,0 +1,24 @@
+---
+import InvitationLayout from '@/layouts/InvitationLayout.astro';
+import { demoInvitation } from '@/lib/demo-invitation';
+import BatakSenjaTemplate from '@/invitation-templates/template-design-udangan/pernikahan/batak-senja/Template.astro';
+
+export const prerender = false;
+
+const preview = { ...demoInvitation, templateKey: 'batak-senja' };
+---
+
+<InvitationLayout
+  title="Pratinjau Batak Senja — Undangan Pernikahan Adicara"
+  description="Pratinjau desain undangan pernikahan Batak Senja dengan navigasi slide otomatis."
+  canonicalPath="/template-design-udangan/pernikahan/batak-senja"
+  noindex={true}
+>
+  <BatakSenjaTemplate data={preview} />
+</InvitationLayout>
+
+<style is:global>
+  body:has(.bi-invitation) {
+    background: #4b2430;
+  }
+</style>

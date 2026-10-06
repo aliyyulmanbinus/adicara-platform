@@ -9,6 +9,7 @@ export interface InvitationSectionConfig {
 export interface InvitationHost {
   name: string;
   role: string;
+  photoURL?: string;
 }
 
 export interface InvitationEvent {
@@ -30,6 +31,8 @@ export interface InvitationData {
   allowIndexing: boolean;
   hosts: InvitationHost[];
   events: InvitationEvent[];
+  galleryImages?: string[];
+  designData?: Record<string, string>;
   sections: InvitationSectionConfig[];
 }
 
