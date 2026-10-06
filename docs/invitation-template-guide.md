@@ -6,7 +6,7 @@ Template adalah presentasi, bukan penyimpanan data atau business logic. Menambah
 
 ## Data contract
 
-`frontend/src/invitation-templates/types.ts` mendefinisikan `InvitationData`, host, event, dan konfigurasi section. Adapter API di `frontend/src/lib/api/invitations.ts` mengubah bentuk JSON OpenAPI menjadi kontrak frontend.
+`frontend/src/invitation-templates/types.ts` mendefinisikan `InvitationData`, host, event, dan konfigurasi section. Adapter API di `frontend/src/lib/api/invitations.ts` mengubah bentuk JSON OpenAPI menjadi kontrak frontend. Catatan: adapter ini memanggil `/api/v1/public/invitations/{slug}`, endpoint yang belum ada di backend saat ini (modul undangan dihapus), sehingga route `/i/[slug]` masih 404 sampai modulnya dibangun ulang.
 
 ## Struktur template
 

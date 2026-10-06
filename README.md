@@ -11,7 +11,7 @@ Adicara adalah platform undangan digital dan perayaan yang mobile-first untuk In
 
 ## Menjalankan seluruh stack
 
-1. Salin `.env.example` menjadi `.env` dan ganti password lokal.
+1. Salin `.env.example` menjadi `.env` dan ganti password lokal. `JWT_SECRET` boleh dibiarkan untuk pengembangan lokal; untuk produksi wajib diganti dengan `openssl rand -hex 32` (backend menolak start bila tidak).
 2. Jalankan:
 
    ```sh
@@ -19,28 +19,34 @@ Adicara adalah platform undangan digital dan perayaan yang mobile-first untuk In
    ```
 
 3. Buka `http://localhost:8080`.
-4. Periksa API melalui `http://localhost:8080/healthz` dan `http://localhost:8080/readyz`.
+4. Periksa API melalui `http://localhost:8080/healthz` (memeriksa koneksi PostgreSQL; tidak ada `/readyz`).
 
-PostgreSQL lokal tersedia pada port `5432`. Jangan gunakan nilai `.env.example` untuk produksi.
+PostgreSQL lokal tersedia pada port `5432`. Migrasi dijalankan otomatis oleh API saat start. Jangan gunakan nilai `.env.example` untuk produksi.
+
+> Alur Compose belum diverifikasi pada lingkungan implementasi (Docker tidak tersedia); lihat [docs/devops/docker.md](docs/devops/docker.md).
 
 ## Menjalankan tanpa Docker
 
-Jalankan PostgreSQL dan migrasi terlebih dahulu, lalu:
+Jalankan PostgreSQL lokal dan buat database kosong bernama `adicara`. Migrasi dijalankan otomatis oleh API saat start (`MIGRATE_ON_START=true`).
 
 ```sh
 cd backend
-cp .env.example .env
-go run ./cmd/api
+cp .env.example .env   # isi DB_PASSWORD dan JWT_SECRET
+make run               # atau: go run ./cmd/api  → http://localhost:8080
 ```
 
 Pada terminal lain:
 
 ```sh
 cd frontend
-cp .env.example .env
+cp .env.example .env   # API_BASE_URL=http://localhost:8080
 npm ci
-npm run dev
+npm run dev            # → http://localhost:4321
 ```
+
+Buka `http://localhost:4321`. Frontend memanggil API dari sisi server, jadi CORS tidak diperlukan. Detail alur login: [docs/frontend/authentication](docs/frontend/authentication/2026-10-04-session-cookies.md).
+
+Perintah database manual (dari `backend/`): `make migrate-up`, dan `make migrate-fresh` (**destruktif**: menghapus seluruh isi database lalu migrasi ulang).
 
 PowerShell tidak menyediakan `cp` secara bawaan sebagai perintah lintas platform; gunakan `Copy-Item .env.example .env`.
 
@@ -62,10 +68,16 @@ go build ./cmd/api
 
 ## Struktur utama
 
-- `frontend/` — Astro, design system, halaman marketing, dan template undangan.
-- `backend/` — Go API, domain, service, repository PostgreSQL, dan migrasi.
-- `contracts/openapi.yaml` — kontrak API kanonis.
+- `frontend/` — Astro, design system, halaman marketing, template undangan, dan alur login (endpoint `/auth/*`, middleware `/dashboard`).
+- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
+- `contracts/openapi.yaml` — **backup** kontrak API versi lama (cookie session + undangan); tidak sesuai backend dan tidak di-lint CI. Kontrak yang berlaku dan di-lint: `backend/docs/openapi.yaml`.
 - `deploy/` — Nginx dan Compose produksi.
 - `docs/` — arsitektur, operasi, dan catatan perubahan.
+
+## Status saat ini
+
+Berfungsi end-to-end (diuji dengan PostgreSQL 16 dan Chrome): registrasi, login (email atau username), sesi dengan refresh token otomatis, logout, dan perlindungan `/dashboard`.
+
+Belum berfungsi: pembuatan dan pengelolaan undangan, tamu, RSVP, serta halaman publik `/i/[slug]`. Modul undangan dihapus dari backend dan menunggu dibangun ulang; halaman frontend-nya masih memanggil API lama.
 
 Lihat [indeks dokumentasi](docs/README.md) untuk detail keputusan dan batasan fase ini.
