@@ -7,7 +7,9 @@ Frontend menggunakan Astro dengan TypeScript strict, HTML-first rendering, dan C
 - [Homepage awal](landing-page/2026-10-02-initial-homepage.md)
 - [Template Editorial Ivory](invitation-templates/2026-10-02-editorial-ivory-template.md)
 - [Katalog dan registry tiga tema](theme-catalog/2026-10-02-theme-catalog-and-registry.md)
-- [Form akun](authentication/2026-10-02-account-forms.md)
+- [Sesi autentikasi (cookie HttpOnly)](authentication/2026-10-04-session-cookies.md)
+- [Toast setelah register dan form daftar tanpa petunjuk username](authentication/2026-10-04-register-success-toast.md)
+- [Form akun (lama, digantikan)](authentication/2026-10-02-account-forms.md)
 - [Dashboard pengelolaan undangan](dashboard/2026-10-02-invitation-management.md)
 - [Changelog](CHANGELOG.md)
 

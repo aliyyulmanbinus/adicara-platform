@@ -23,7 +23,11 @@ export default defineConfig({
     server: {
       allowedHosts: ['localhost'],
       proxy: {
-        '/api': 'http://127.0.0.1:8080',
+        '/api': {
+          target: process.env.API_BASE_URL || 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
       },
     },
   },

@@ -1,0 +1,9 @@
+# Secrets and local state must not enter the build context (and its layers).
+.env
+.env.*
+!.env.example
+
+# Host build output and editor/OS files.
+adicara-api
+fastcgi_temp
+**/.DS_Store

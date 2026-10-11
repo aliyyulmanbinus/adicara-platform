@@ -1,0 +1,13 @@
+# Installed on the build platform by `npm ci` inside the image. Copying the
+# host's node_modules would mix macOS/Windows packages into the Alpine build.
+node_modules
+dist
+.astro
+
+# Secrets and local state must not enter the build context (and its layers).
+.env
+.env.*
+!.env.example
+
+.DS_Store
+npm-debug.log*

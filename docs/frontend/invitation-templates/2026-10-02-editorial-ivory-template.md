@@ -55,7 +55,7 @@ The template uses fluid type, intrinsic spacing, and a 42rem breakpoint. Physica
 
 ## API Dependencies
 
-`GET /api/v1/public/invitations/{slug}`. See `docs/backend/api/2026-10-02-health-and-public-invitation-api.md`.
+`GET /api/v1/public/invitations/{slug}`. That endpoint no longer exists: the invitation module was removed from the backend (see `docs/api.md`), so `/i/[slug]` currently always returns 404 until the module is rebuilt.
 
 ## SEO Impact
 

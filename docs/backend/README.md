@@ -1,14 +1,19 @@
 # Dokumentasi Backend
 
-Backend adalah Go REST API dengan lapisan handler, service, repository, dan PostgreSQL.
+Backend dibangun menggunakan Golang dengan pola **Module-Based Clean Architecture**.
 
 ## Implementasi
 
-- [Health dan public invitation API](api/2026-10-02-health-and-public-invitation-api.md)
-- [Initial invitation schema](migrations/2026-10-02-initial-invitation-schema.md)
-- [Session authentication](authentication/2026-10-02-session-authentication.md)
-- [Owner-scoped invitation CRUD](invitations/2026-10-02-owner-scoped-crud.md)
-- [Auth and ownership schema](migrations/2026-10-02-auth-and-ownership-schema.md)
+- [Health Check API](health/server-health.md)
+- [Skema Database & Migrasi (Goose)](migrations/schema-migrations.md)
+- [Migrasi 004: kolom pengerasan autentikasi](migrations/2026-10-04-auth-hardening-columns.md)
+- [Session & JWT Authentication](authentication/session-authentication.md)
+- [Pengerasan autentikasi (2026-10-04)](authentication/2026-10-04-auth-hardening.md)
+- [Manajemen Profil User](profile/user-profile.md)
 - [Changelog](CHANGELOG.md)
 
-OpenAPI di `contracts/openapi.yaml` adalah kontrak machine-readable kanonis.
+## Aturan
+
+Setiap penambahan modul atau perubahan logika yang bermakna wajib didokumentasikan di dalam sub-folder modul yang bersangkutan dan dicatat pada file `CHANGELOG.md`.
+
+Dokumentasi *technical contract* (seperti `openapi.yaml` atau `API.md`) berada di folder `/backend/docs/`.

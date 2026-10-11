@@ -11,11 +11,16 @@ frontend/.astro/
 
 # Backend
 backend/bin/
+backend/adicara-api
 backend/coverage.out
+backend/go.work
+backend/go.work.sum
 
 # Editors and operating systems
 .idea/
 .vscode/
+*.swp
+*.swo
 .DS_Store
 Thumbs.db
 

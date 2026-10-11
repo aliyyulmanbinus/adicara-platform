@@ -53,7 +53,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npx --yes @redocly/cli@latest lint contracts/openapi.yaml
+      # backend/docs/openapi.yaml is the contract; contracts/openapi.yaml is an unlinted backup.
+      - run: npx --yes @redocly/cli@latest lint backend/docs/openapi.yaml
 
   docker:
     runs-on: ubuntu-latest

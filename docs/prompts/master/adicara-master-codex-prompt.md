@@ -10,6 +10,8 @@
 > **Backend:** Go + PostgreSQL  
 > **Deployment:** VPS Sumopod + GitHub Actions + Docker  
 > **Team:** 1 Frontend Engineer + 1 Backend Engineer
+>
+> **Revisi 2026-10-04:** disesuaikan dengan kode setelah backend ditulis ulang (Gin, Module-Based Clean Architecture, JWT, migrasi goose). Yang berubah: arsitektur backend (§4, §7, §18), kontrak API (§4, §7, §20, §34, §37, §53, §58, §67), peran Nginx dan path `/api/v1` (§5, §20), autentikasi (§21), health (§31), migrasi (§19, §32, §35, §52), dan struktur docs backend (§7, §41). Modul undangan, tamu, RSVP, wishes, dan media belum ada di backend; bagian itu tetap menjadi rencana dan ditandai "planned". Kondisi terkini: `docs/architecture.md`, `docs/api.md`, dan `docs/backend/`.
 
 ---
 
@@ -190,24 +192,26 @@ Do not turn the public website into a React SPA.
 Use:
 
 - Go
+- Gin (HTTP routing)
 - REST API
 - PostgreSQL
-- `pgx` preferred for PostgreSQL access
-- SQL migrations
+- `pgx` for PostgreSQL access
+- SQL migrations with goose (SQL files embedded in the API binary)
 - JSON structured logging
-- pragmatic layered architecture
+- Module-Based Clean Architecture
 
-Recommended architecture:
+Architecture, one package tree per module under `backend/internal/modules/<name>/`:
 
 ```text
-HTTP Handler
-    ↓
-Service / Use Case
-    ↓
-Repository
-    ↓
-PostgreSQL
+delivery/http  →  usecase  →  domain  ←  repository
+(handler, DTO,    (business   (entities,   (SQL via pgx,
+ router)           rules)      repository   implements the
+                               interfaces)  domain interface)
+                                               ↓
+                                          PostgreSQL
 ```
+
+Handlers contain no SQL, and repositories decide no HTTP status. A module may use another module's usecase (profile uses auth).
 
 Do not introduce excessive enterprise abstractions.
 
@@ -215,11 +219,13 @@ Do not introduce excessive enterprise abstractions.
 
 Use:
 
-- OpenAPI 3.1
+- OpenAPI 3.0.3 (the version the contract currently uses)
 
 Canonical contract:
 
-`/contracts/openapi.yaml`
+`/backend/docs/openapi.yaml`
+
+CI lints it. `/contracts/openapi.yaml` is only a backup of the previous API version: it is not the contract and is not linted.
 
 Frontend and backend must follow the same contract.
 
@@ -258,7 +264,7 @@ Production architecture:
              ┌─────────┴─────────┐
              │                   │
            Astro               Go API
-        Frontend App         /api/v1/*
+        Frontend App    /healthz, /api/v1/*
              │                   │
              └─────────┬─────────┘
                        │
@@ -267,12 +273,14 @@ Production architecture:
 
 Nginx responsibilities:
 
-- HTTPS termination
+- HTTPS termination (currently done by the reverse proxy on the VPS host in front of Nginx; Nginx itself serves HTTP)
 - reverse proxy
 - compression
 - static asset caching
 - security headers
-- route `/api/*` to Go
+- rate limiting on credential endpoints
+- real client IP from `X-Forwarded-For`, trusted only from private or loopback peers
+- route `/healthz` and `/api/v1/*` to Go; the `/api` prefix is dropped because the backend serves `/v1/*`
 - route remaining web requests to Astro
 
 Prefer same-origin architecture.
@@ -288,6 +296,8 @@ https://domain.com/dashboard/*
 https://domain.com/i/:slug
 https://domain.com/api/v1/*
 ```
+
+`/api/v1/*` is the browser-facing path; the Go API itself serves `/v1/*`. Sign-in does not go through `/api`: the browser posts to `/auth/*` on Astro, and the Astro server calls the API (see section 21).
 
 Avoid using `api.domain.com` unless there is a real requirement.
 
@@ -467,37 +477,37 @@ adicara-platform/
 │
 ├── backend/
 │   ├── cmd/
-│   │   └── api/
-│   │       └── main.go
+│   │   ├── api/
+│   │   │   └── main.go            # server; `-healthcheck` flag for Docker
+│   │   └── migrate/
+│   │       └── main.go            # `up` | `fresh -yes` (destructive)
 │   │
 │   ├── internal/
+│   │   ├── app/                   # composition root
 │   │   ├── config/
-│   │   ├── server/
-│   │   ├── middleware/
-│   │   ├── domain/
-│   │   ├── repository/
-│   │   ├── service/
-│   │   ├── handler/
-│   │   ├── auth/
-│   │   ├── user/
-│   │   ├── invitation/
-│   │   ├── template/
-│   │   ├── guest/
-│   │   ├── rsvp/
-│   │   ├── wish/
-│   │   ├── media/
-│   │   └── storage/
+│   │   ├── db/
+│   │   ├── ginserver/             # Gin engine, CORS, trusted proxies
+│   │   ├── apierr/                # typed API errors
+│   │   ├── ginutil/               # error -> JSON
+│   │   ├── migrate/
+│   │   │   └── sql/               # NNN_000_name.sql (goose), embedded in the binary
+│   │   └── modules/
+│   │       ├── auth/              # delivery/http, usecase, domain, repository
+│   │       ├── profile/
+│   │       ├── health/
+│   │       └── ...                # invitation, template, guest, rsvp, wish, media,
+│   │                              # storage: planned, added when each begins to exist
 │   │
-│   ├── migrations/
-│   ├── sql/
-│   ├── tests/
+│   ├── docs/
+│   │   └── openapi.yaml           # the API contract
 │   ├── go.mod
 │   ├── go.sum
+│   ├── Makefile
 │   ├── Dockerfile
 │   └── .env.example
 │
 ├── contracts/
-│   └── openapi.yaml
+│   └── openapi.yaml               # backup of the previous API; not the contract
 │
 ├── deploy/
 │   ├── nginx/
@@ -544,7 +554,8 @@ adicara-platform/
 │   │   ├── CHANGELOG.md
 │   │   ├── architecture/
 │   │   ├── authentication/
-│   │   ├── users/
+│   │   ├── health/
+│   │   ├── profile/
 │   │   ├── invitations/
 │   │   ├── templates/
 │   │   ├── guests/
@@ -1143,22 +1154,25 @@ Sanitize output.
 
 # 18. Backend Architecture
 
-Use pragmatic separation:
+Use Module-Based Clean Architecture. Each module lives in `backend/internal/modules/<name>/` and is split into:
 
 ```text
-Handler
-  ↓
-Service
-  ↓
-Repository
-  ↓
-PostgreSQL
+delivery/http   Gin handlers, request/response DTOs, router
+usecase         business rules
+domain          entities and repository interfaces
+repository      PostgreSQL implementation of the domain interfaces
 ```
 
-Potential modules:
+A module only needs the layers it uses: today `health` has only `delivery/http`, and `profile` has `delivery/http` and `usecase`.
+
+Implemented modules:
 
 - auth
-- users
+- profile (`/v1/me`)
+- health
+
+Planned modules:
+
 - invitations
 - events
 - guests
@@ -1185,10 +1199,10 @@ Avoid:
 
 Use PostgreSQL.
 
-Suggested conceptual tables:
+Implemented tables: `m_role`, `users`, `refresh_sessions`.
 
-- users
-- sessions
+Suggested conceptual tables for the planned modules:
+
 - invitations
 - invitation_hosts
 - invitation_events
@@ -1224,28 +1238,29 @@ Common indexes should include:
 - guest token
 - status
 
-Use migrations.
+Use explicit, versioned SQL migrations (goose). Files live in `backend/internal/migrate/sql/`, are named `NNN_000_name.sql`, and each has an Up and a Down section.
 
-Never rely on automatic schema migration in production.
+Never use ORM auto-migration or any schema sync that is not a reviewed SQL file. The API applies pending migrations when it starts (`MIGRATE_ON_START`, default `true`), and a rollback only swaps images, so every migration must stay compatible with the previous release, and destructive changes must not ship together with a deploy that needs a simple rollback.
 
 ---
 
 # 20. API
 
-Version API under:
+Version the API under `/v1`. The Go API serves `/v1/*`; through Nginx the same paths are reached as `/api/v1/*` (Nginx drops the `/api` prefix). The paths below use the browser-facing `/api/v1` form. `/healthz` is not versioned and not under `/api`.
 
-`/api/v1`
-
-Suggested endpoints:
-
-## Authentication
+## Authentication and profile (implemented)
 
 ```text
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
-GET  /api/v1/me
+POST  /api/v1/auth/register
+POST  /api/v1/auth/login
+POST  /api/v1/auth/refresh
+POST  /api/v1/auth/logout
+POST  /api/v1/auth/password
+GET   /api/v1/me
+PATCH /api/v1/me
 ```
+
+Everything from here on is planned: suggested endpoints, not implemented yet.
 
 ## Invitations
 
@@ -1294,29 +1309,34 @@ POST /api/v1/public/invitations/{slug}/wishes
 POST /api/v1/media
 ```
 
-These endpoints are conceptual.
+The planned endpoints are conceptual.
 
 Refine them based on REST semantics and domain requirements.
 
 Document all API contracts in:
 
-`contracts/openapi.yaml`
+`backend/docs/openapi.yaml`
 
 ---
 
 # 21. Authentication
 
-Because frontend and backend use same-origin architecture, prefer secure cookie-based sessions.
+The Go API issues JWTs in the JSON response body and never sets cookies:
 
-Cookies should use:
+- **Access token:** short-lived (default 15 minutes), sent as `Authorization: Bearer <token>`. Besides the signature, the API checks the database on every request: the account must exist and be active, and the token must not predate the last password change.
+- **Refresh token:** long-lived (default 7 days), tracked in the `refresh_sessions` table so it can be revoked, and rotated on every use. Presenting a rotated token again after a short grace period revokes all of that user's sessions.
+
+Browsers do not call the auth endpoints on the API. The Astro server does, and keeps the tokens in cookies that page JavaScript cannot read:
 
 - HttpOnly
 - Secure in production
-- appropriate SameSite policy
+- `SameSite=Lax`
 
-Protect state-changing requests against CSRF when applicable.
+CSRF: the Astro auth endpoints (`/auth/login`, `/auth/register`, `/auth/logout`) accept only `Content-Type: application/json`, which another site cannot send cross-origin without a CORS preflight, in addition to `SameSite=Lax`.
 
-Passwords must use a secure modern password hashing algorithm.
+Passwords use bcrypt (cost 12, at most 72 bytes, which is bcrypt's limit).
+
+The JWT signing secret (`JWT_SECRET`) must be random and at least 32 characters; the backend refuses to start with a weak one outside development.
 
 Never:
 
@@ -1681,12 +1701,13 @@ Prefer:
 
 # 31. Observability
 
-Backend should expose:
+Backend exposes:
 
 ```text
 GET /healthz
-GET /readyz
 ```
+
+It pings PostgreSQL and serves as both liveness and readiness (`200`, or `503` with `database_unavailable`); there is no separate `/readyz`. Add one only if liveness and readiness ever need to differ.
 
 Use structured logs.
 
@@ -1726,12 +1747,15 @@ Recommended Makefile commands:
 
 ```text
 make dev
+make down
 make test
 make lint
 make build
 make migrate-up
-make migrate-down
+make migrate-fresh   # DESTRUCTIVE: wipes the compose database, then re-applies every migration
 ```
+
+Down migrations exist in the SQL files, but there is no `make migrate-down` target.
 
 If platform differences make Makefile inconvenient, document equivalent commands.
 
@@ -1794,7 +1818,7 @@ Run:
 
 ## Contract
 
-Validate OpenAPI where tooling is available.
+Lint `backend/docs/openapi.yaml` (Redocly) where tooling is available.
 
 ## Docker
 
@@ -1816,7 +1840,7 @@ On merge or push to `main`:
 6. Push images to GHCR.
 7. Connect securely to Sumopod VPS.
 8. Pull new images.
-9. Run required migrations.
+9. Run required migrations (the backend applies pending migrations itself when it starts, so this is not a separate step).
 10. Run `docker compose up -d`.
 11. Perform health checks.
 12. Report deployment status.
@@ -1877,7 +1901,7 @@ Backend:
 backend/**
 
 Shared:
-contracts/**
+backend/docs/openapi.yaml (the API contract, although it lives under backend/)
 docs/**
 deploy/**
 ```
@@ -2078,7 +2102,8 @@ docs/
 │   ├── CHANGELOG.md
 │   ├── architecture/
 │   ├── authentication/
-│   ├── users/
+│   ├── health/
+│   ├── profile/
 │   ├── invitations/
 │   ├── templates/
 │   ├── guests/
@@ -2653,7 +2678,7 @@ or:
 Example:
 
 ```text
-backend/migrations/000003_create_guests.sql
+backend/internal/migrate/sql/005_000_create_guests.sql
 docs/backend/migrations/2026-10-10-create-guests-table.md
 ```
 
@@ -2667,7 +2692,7 @@ Whenever the API contract changes:
 
 Update:
 
-`/contracts/openapi.yaml`
+`/backend/docs/openapi.yaml`
 
 and update/create the corresponding backend Markdown documentation.
 
@@ -2834,7 +2859,7 @@ and relevant backend module documentation.
 Before changing APIs, read:
 
 ```text
-/contracts/openapi.yaml
+/backend/docs/openapi.yaml
 ```
 
 Before changing database architecture, read:
@@ -3216,13 +3241,13 @@ docs/backend/CHANGELOG.md
 
 API change
     ↓
-contracts/openapi.yaml
+backend/docs/openapi.yaml
     +
 docs/backend/**/*.md
 
 Database change
     ↓
-backend/migrations/*
+backend/internal/migrate/sql/*
     +
 docs/database.md
     +

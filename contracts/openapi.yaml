@@ -2,7 +2,12 @@ openapi: 3.1.0
 info:
   title: Adicara API
   version: 0.3.0
-  description: Canonical REST contract for the Adicara platform.
+  description: >-
+    BACKUP, not the live contract. Describes the previous API version (cookie
+    sessions, /api/v1, invitations, guests, RSVP), which no longer matches the
+    backend, and is not linted by CI. The canonical contract is
+    backend/docs/openapi.yaml. Kept as a reference for rebuilding the invitation
+    module.
   license:
     name: MIT
     identifier: MIT
