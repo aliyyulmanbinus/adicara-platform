@@ -69,7 +69,7 @@ go build ./cmd/api
 ## Struktur utama
 
 - `frontend/` — Astro, design system, halaman marketing, template undangan, dan alur login (endpoint `/auth/*`, middleware `/dashboard`).
-- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`, `planner`, `plannertimeline`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
+- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`, `planner`, `plannertimeline`, `plannerfinance`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
 - `contracts/openapi.yaml` — **backup** kontrak API versi lama (cookie session + undangan); tidak sesuai backend dan tidak di-lint CI. Kontrak yang berlaku dan di-lint: `backend/docs/openapi.yaml`.
 - `deploy/` — Nginx dan Compose produksi.
 - `docs/` — arsitektur, operasi, dan catatan perubahan.
@@ -78,7 +78,7 @@ go build ./cmd/api
 
 Berfungsi end-to-end (diuji dengan PostgreSQL 16 dan Chrome): registrasi, login (email atau username), sesi dengan refresh token otomatis, logout, dan perlindungan `/dashboard`.
 
-Backend saja (belum ada halaman): API Planner menu 01 (proyek, sesi, dashboard) dan menu 02 (tugas/jadwal, dokumen legalitas, ekspor `.xlsx`) di `/v1/planner/*`, diuji dengan PostgreSQL 16; widget keuangan, vendor, tamu, dan rundown serta template-nya terisi saat menu 03–06 dibangun ([menu 01](docs/backend/planner/2026-10-21-planner-menu-01.md), [menu 02](docs/backend/planner/2026-10-21-planner-menu-02.md)).
+Backend saja (belum ada halaman): API Planner menu 01 (proyek, sesi, dashboard), menu 02 (tugas/jadwal, dokumen legalitas, ekspor `.xlsx`), dan menu 03 (skenario anggaran, tabungan, realisasi pembayaran, ekspor `.xlsx`) di `/v1/planner/*`, diuji dengan PostgreSQL 16; widget vendor, tamu, dan rundown serta template-nya terisi saat menu 04–06 dibangun ([menu 01](docs/backend/planner/2026-10-21-planner-menu-01.md), [menu 02](docs/backend/planner/2026-10-21-planner-menu-02.md), [menu 03](docs/backend/planner/2026-10-21-planner-menu-03.md)).
 
 Belum berfungsi: pembuatan dan pengelolaan undangan, tamu, RSVP, serta halaman publik `/i/[slug]`. Modul undangan dihapus dari backend dan menunggu dibangun ulang; halaman frontend-nya masih memanggil API lama.
 

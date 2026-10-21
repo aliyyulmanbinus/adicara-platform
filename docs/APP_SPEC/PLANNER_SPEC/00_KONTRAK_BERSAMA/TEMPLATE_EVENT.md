@@ -307,71 +307,71 @@ Semua jenis juga menerima `hero_title` (≤ 60 karakter; judul besar hero, mis. 
 
 ## 15. Pos Anggaran Template Non-Pernikahan
 
-Template pos anggaran jenis non-pernikahan berupa **persentase dari `target_budget`** (jumlah tiap jenis = 100). Nominal = `round(persen × target_budget / 100)` dibulatkan ke Rp 1.000; selisih pembulatan dibebankan ke pos `dana_darurat` (atau pos terakhir bila jenisnya tidak punya pos itu). Setiap pos berstatus `source = 'template'`, `sub_event_scope = all`, dan `item_key` seperti tabel di bawah. Bila `target_budget = 0`, nominal 0 dan pengguna mengisi sendiri. Pernikahan memakai 6 preset PDF (03 BE §6.1) dan 14 pos PDF (03 BE §6.2), bukan persentase.
+Template pos anggaran jenis non-pernikahan berupa **persentase dari `target_budget`** (jumlah tiap jenis = 100). Nominal = `round(persen × target_budget / 100)` dibulatkan ke Rp 1.000; selisih pembulatan dibebankan ke pos `dana_darurat` (atau pos terakhir bila jenisnya tidak punya pos itu). Setiap pos berstatus `source = 'template'`, `sub_event_scope = all`, dan `item_key` serta `category` seperti tabel di bawah (kolom Kategori ditambahkan saat Menu 03 diimplementasikan: `planner_budget_items.category` bertipe `NOT NULL`, sedangkan versi awal tabel tidak memuatnya). Bila `target_budget = 0`, nominal 0 dan pengguna mengisi sendiri. Pernikahan memakai 6 preset PDF (03 BE §6.1) dan 14 pos PDF (03 BE §6.2), bukan persentase.
 
 ### 15.1 Pos dan persentase
 
-| Jenis | `item_key` | Nama pos | % pagu |
-|---|---|---|--:|
-| `khitanan` | `konsumsi` | Konsumsi/katering | 40 |
-| `khitanan` | `medis` | Medis (dokter, perlengkapan) | 15 |
-| `khitanan` | `dekorasi_tenda` | Dekorasi dan tenda | 12 |
-| `khitanan` | `busana_mua` | Busana dan MUA | 8 |
-| `khitanan` | `dokumentasi` | Dokumentasi | 8 |
-| `khitanan` | `undangan_souvenir` | Undangan dan souvenir | 7 |
-| `khitanan` | `hiburan` | Pengajian/hiburan | 5 |
-| `khitanan` | `dana_darurat` | Dana darurat | 5 |
-| `aqiqah` | `kambing` | Kambing dan pengolahan | 45 |
-| `aqiqah` | `katering_box` | Katering/box nasi | 25 |
-| `aqiqah` | `dekorasi_tempat` | Dekorasi dan tempat | 8 |
-| `aqiqah` | `undangan_souvenir` | Undangan dan souvenir | 8 |
-| `aqiqah` | `dokumentasi` | Dokumentasi | 5 |
-| `aqiqah` | `ustadz_doa` | Ustadz/doa | 4 |
-| `aqiqah` | `dana_darurat` | Dana darurat | 5 |
-| `peresmian` | `venue_dekor` | Venue dan dekorasi | 20 |
-| `peresmian` | `katering` | Katering | 20 |
-| `peresmian` | `av_panggung` | Audio visual dan panggung | 15 |
-| `peresmian` | `publikasi_media` | Publikasi dan media | 15 |
-| `peresmian` | `prosesi_vip` | Prosesi peresmian dan VIP | 10 |
-| `peresmian` | `dokumentasi` | Dokumentasi | 8 |
-| `peresmian` | `perizinan_keamanan` | Perizinan dan keamanan | 5 |
-| `peresmian` | `dana_darurat` | Dana darurat | 7 |
-| `launching` | `produksi_av` | Produksi konten dan AV | 25 |
-| `launching` | `venue` | Venue | 20 |
-| `launching` | `publikasi_pr` | Publikasi/PR | 18 |
-| `launching` | `katering` | Katering | 12 |
-| `launching` | `talent_mc` | Talent dan MC | 8 |
-| `launching` | `dokumentasi` | Dokumentasi | 7 |
-| `launching` | `merchandise_kit` | Merchandise/kit | 5 |
-| `launching` | `dana_darurat` | Dana darurat | 5 |
-| `birthday` | `katering_kue` | Katering dan kue | 30 |
-| `birthday` | `venue` | Venue | 20 |
-| `birthday` | `dekorasi` | Dekorasi | 15 |
-| `birthday` | `hiburan` | Hiburan (DJ/MC) | 15 |
-| `birthday` | `dokumentasi` | Dokumentasi | 8 |
-| `birthday` | `souvenir` | Souvenir | 7 |
-| `birthday` | `dana_darurat` | Dana darurat | 5 |
-| `wisuda` | `venue_dekor` | Venue dan dekorasi | 25 |
-| `wisuda` | `katering` | Katering | 25 |
-| `wisuda` | `dokumentasi` | Dokumentasi | 15 |
-| `wisuda` | `toga_atribut` | Toga dan atribut | 10 |
-| `wisuda` | `audio_paduan_suara` | Audio dan paduan suara | 10 |
-| `wisuda` | `cetak` | Cetak (buku, sertifikat) | 8 |
-| `wisuda` | `dana_darurat` | Dana darurat | 7 |
-| `seminar` | `venue` | Venue | 25 |
-| `seminar` | `katering_coffee_break` | Katering dan coffee break | 20 |
-| `seminar` | `honor_narasumber` | Honor narasumber | 15 |
-| `seminar` | `av_streaming` | AV dan streaming | 12 |
-| `seminar` | `kit_sertifikat` | Kit dan sertifikat | 8 |
-| `seminar` | `publikasi` | Publikasi | 8 |
-| `seminar` | `dokumentasi` | Dokumentasi | 5 |
-| `seminar` | `dana_darurat` | Dana darurat | 7 |
-| `other` | `venue` | Venue | 30 |
-| `other` | `katering` | Katering | 30 |
-| `other` | `dekorasi` | Dekorasi | 10 |
-| `other` | `hiburan` | Hiburan | 10 |
-| `other` | `dokumentasi` | Dokumentasi | 8 |
-| `other` | `dana_darurat` | Dana darurat | 12 |
+| Jenis | `item_key` | Nama pos | Kategori | % pagu |
+|---|---|---|---|--:|
+| `khitanan` | `konsumsi` | Konsumsi/katering | Catering | 40 |
+| `khitanan` | `medis` | Medis (dokter, perlengkapan) | Medis | 15 |
+| `khitanan` | `dekorasi_tenda` | Dekorasi dan tenda | Dekorasi | 12 |
+| `khitanan` | `busana_mua` | Busana dan MUA | Busana & MUA | 8 |
+| `khitanan` | `dokumentasi` | Dokumentasi | Dokumentasi | 8 |
+| `khitanan` | `undangan_souvenir` | Undangan dan souvenir | Perlengkapan | 7 |
+| `khitanan` | `hiburan` | Pengajian/hiburan | Hiburan | 5 |
+| `khitanan` | `dana_darurat` | Dana darurat | Operasional | 5 |
+| `aqiqah` | `kambing` | Kambing dan pengolahan | Catering | 45 |
+| `aqiqah` | `katering_box` | Katering/box nasi | Catering | 25 |
+| `aqiqah` | `dekorasi_tempat` | Dekorasi dan tempat | Venue & Dekorasi | 8 |
+| `aqiqah` | `undangan_souvenir` | Undangan dan souvenir | Perlengkapan | 8 |
+| `aqiqah` | `dokumentasi` | Dokumentasi | Dokumentasi | 5 |
+| `aqiqah` | `ustadz_doa` | Ustadz/doa | Prosesi | 4 |
+| `aqiqah` | `dana_darurat` | Dana darurat | Operasional | 5 |
+| `peresmian` | `venue_dekor` | Venue dan dekorasi | Venue & Dekorasi | 20 |
+| `peresmian` | `katering` | Katering | Catering | 20 |
+| `peresmian` | `av_panggung` | Audio visual dan panggung | Audio Visual | 15 |
+| `peresmian` | `publikasi_media` | Publikasi dan media | Publikasi | 15 |
+| `peresmian` | `prosesi_vip` | Prosesi peresmian dan VIP | Prosesi | 10 |
+| `peresmian` | `dokumentasi` | Dokumentasi | Dokumentasi | 8 |
+| `peresmian` | `perizinan_keamanan` | Perizinan dan keamanan | Legalitas | 5 |
+| `peresmian` | `dana_darurat` | Dana darurat | Operasional | 7 |
+| `launching` | `produksi_av` | Produksi konten dan AV | Audio Visual | 25 |
+| `launching` | `venue` | Venue | Venue & Dekorasi | 20 |
+| `launching` | `publikasi_pr` | Publikasi/PR | Publikasi | 18 |
+| `launching` | `katering` | Katering | Catering | 12 |
+| `launching` | `talent_mc` | Talent dan MC | Hiburan | 8 |
+| `launching` | `dokumentasi` | Dokumentasi | Dokumentasi | 7 |
+| `launching` | `merchandise_kit` | Merchandise/kit | Perlengkapan | 5 |
+| `launching` | `dana_darurat` | Dana darurat | Operasional | 5 |
+| `birthday` | `katering_kue` | Katering dan kue | Catering | 30 |
+| `birthday` | `venue` | Venue | Venue & Dekorasi | 20 |
+| `birthday` | `dekorasi` | Dekorasi | Venue & Dekorasi | 15 |
+| `birthday` | `hiburan` | Hiburan (DJ/MC) | Hiburan | 15 |
+| `birthday` | `dokumentasi` | Dokumentasi | Dokumentasi | 8 |
+| `birthday` | `souvenir` | Souvenir | Perlengkapan | 7 |
+| `birthday` | `dana_darurat` | Dana darurat | Operasional | 5 |
+| `wisuda` | `venue_dekor` | Venue dan dekorasi | Venue & Dekorasi | 25 |
+| `wisuda` | `katering` | Katering | Catering | 25 |
+| `wisuda` | `dokumentasi` | Dokumentasi | Dokumentasi | 15 |
+| `wisuda` | `toga_atribut` | Toga dan atribut | Perlengkapan | 10 |
+| `wisuda` | `audio_paduan_suara` | Audio dan paduan suara | Audio Visual | 10 |
+| `wisuda` | `cetak` | Cetak (buku, sertifikat) | Perlengkapan | 8 |
+| `wisuda` | `dana_darurat` | Dana darurat | Operasional | 7 |
+| `seminar` | `venue` | Venue | Venue & Dekorasi | 25 |
+| `seminar` | `katering_coffee_break` | Katering dan coffee break | Catering | 20 |
+| `seminar` | `honor_narasumber` | Honor narasumber | Honor | 15 |
+| `seminar` | `av_streaming` | AV dan streaming | Audio Visual | 12 |
+| `seminar` | `kit_sertifikat` | Kit dan sertifikat | Perlengkapan | 8 |
+| `seminar` | `publikasi` | Publikasi | Publikasi | 8 |
+| `seminar` | `dokumentasi` | Dokumentasi | Dokumentasi | 5 |
+| `seminar` | `dana_darurat` | Dana darurat | Operasional | 7 |
+| `other` | `venue` | Venue | Venue & Dekorasi | 30 |
+| `other` | `katering` | Katering | Catering | 30 |
+| `other` | `dekorasi` | Dekorasi | Venue & Dekorasi | 10 |
+| `other` | `hiburan` | Hiburan | Hiburan | 10 |
+| `other` | `dokumentasi` | Dokumentasi | Dokumentasi | 8 |
+| `other` | `dana_darurat` | Dana darurat | Operasional | 12 |
 
 ### 15.2 Pemetaan kategori vendor → pos (`budget_item_keys`)
 

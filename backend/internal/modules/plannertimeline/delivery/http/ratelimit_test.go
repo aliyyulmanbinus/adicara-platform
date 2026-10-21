@@ -9,6 +9,7 @@ func TestUserLimiterCountsPerKeyAndResetsAfterTheWindow(t *testing.T) {
 	now := time.Date(2026, 10, 21, 10, 0, 0, 0, time.UTC)
 	l := newUserLimiter(3, time.Minute)
 	l.now = func() time.Time { return now }
+	l.lastSweep = now // newUserLimiter starts the sweep clock at the wall-clock time; the test clock must start it too
 
 	for i := 0; i < 3; i++ {
 		if !l.allow("alice") {

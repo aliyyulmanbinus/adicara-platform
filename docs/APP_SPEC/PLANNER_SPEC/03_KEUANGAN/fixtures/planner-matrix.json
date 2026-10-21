@@ -1,0 +1,70 @@
+{
+  "kpi": {
+    "line_count": 14,
+    "total_paid": 33550000,
+    "line_status": {
+      "unpaid": 0,
+      "partial": 7,
+      "settled": 7
+    },
+    "total_estimate": 74150000,
+    "total_overpaid": 0,
+    "total_remaining": 40600000
+  },
+  "rows": [
+    {
+      "dp": 3250000,
+      "paid": 4750000,
+      "term_1": 1000000,
+      "term_2": 500000,
+      "estimate": 7150000,
+      "overpaid": 0,
+      "remaining": 2400000,
+      "line_count": 5,
+      "rollup_paid": 0,
+      "sub_event_scope": "lamaran"
+    },
+    {
+      "dp": 600000,
+      "paid": 600000,
+      "term_1": 0,
+      "term_2": 0,
+      "estimate": 600000,
+      "overpaid": 0,
+      "remaining": 0,
+      "line_count": 1,
+      "rollup_paid": 0,
+      "sub_event_scope": "akad"
+    },
+    {
+      "dp": 16200000,
+      "paid": 28200000,
+      "term_1": 11000000,
+      "term_2": 1000000,
+      "estimate": 66400000,
+      "overpaid": 0,
+      "remaining": 38200000,
+      "line_count": 8,
+      "rollup_paid": 0,
+      "sub_event_scope": "resepsi"
+    }
+  ],
+  "total": {
+    "dp": 20050000,
+    "paid": 33550000,
+    "term_1": 12000000,
+    "term_2": 1500000,
+    "estimate": 74150000,
+    "overpaid": 0,
+    "remaining": 40600000,
+    "line_count": 14,
+    "rollup_paid": 0,
+    "sub_event_scope": ""
+  },
+  "active_scenario": {
+    "id": "00000000-0000-4000-8000-000100000001",
+    "name": "Opsi Ideal 75 Jt",
+    "unallocated": 850000,
+    "total_target": 75000000
+  }
+}

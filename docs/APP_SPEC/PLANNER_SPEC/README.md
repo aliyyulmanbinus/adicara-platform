@@ -2,7 +2,7 @@
 
 Cetak biru teknis layanan **Planner** pada platform **Adicara**, platform acara modular dengan tiga layanan: **Undangan Digital**, **Planner**, dan **Vendor/Gift**. Dokumen ini memodernisasi `Wedding_Planner.pdf` (spreadsheet 11 sheet) menjadi aplikasi web di atas arsitektur yang sudah ada: **Astro (SSR) di frontend, Go (Gin, Module-Based Clean Architecture) di backend, PostgreSQL** ([docs/architecture.md](../../architecture.md)).
 
-> **Status (2026-10-21):** **backend menu 01 sudah diimplementasikan** (modul `planner`, migrasi 005–012, [dokumen](../../backend/planner/2026-10-21-planner-menu-01.md)). Menu 02–06 dan seluruh frontend Planner masih spesifikasi. Fokus pembangunan saat ini adalah Planner. Yang sudah diuji pada spesifikasi: DDL migrasi 005–012 dan angka PDF pada basis data ([kontrak bab 10](00_KONTRAK_BERSAMA/README.md#10-validasi-spesifikasi)).
+> **Status (2026-10-21):** **backend menu 01, 02, dan 03 sudah diimplementasikan** (modul `planner`, `plannertimeline`, dan `plannerfinance`, migrasi 005–012; dokumen [menu 01](../../backend/planner/2026-10-21-planner-menu-01.md), [menu 02](../../backend/planner/2026-10-21-planner-menu-02.md), dan [menu 03](../../backend/planner/2026-10-21-planner-menu-03.md)). Menu 04–06 dan seluruh frontend Planner masih spesifikasi. Fokus pembangunan saat ini adalah Planner. Yang sudah diuji pada spesifikasi: DDL migrasi 005–012 dan angka PDF pada basis data ([kontrak bab 10](00_KONTRAK_BERSAMA/README.md#10-validasi-spesifikasi)).
 
 **Pernikahan adalah jenis acara paling lengkap dan menjadi acuan** (data dari PDF). Delapan jenis lain memakai kerangka yang sama dengan template usulan Adicara yang ditandai jelas.
 

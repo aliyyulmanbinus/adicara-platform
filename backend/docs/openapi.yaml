@@ -21,6 +21,12 @@ tags:
       project. Every route needs a bearer token and goes through the same project guard as
       menu 01 (another user's project is 404; an archived project is read-only, `GET` and the
       export still work).
+  - name: Planner Finance
+    description: >-
+      Menu 03 of the Planner service: the budget simulation (scenarios), the savings and the
+      realisation of the budget lines (payments, matrix, cash flow, export). Every route needs a bearer
+      token and goes through the same project guard as menu 01 (another user's project is 404; an
+      archived project is read-only, `GET` and the export still work).
 
 components:
   securitySchemes:
@@ -44,6 +50,9 @@ components:
                 Planner codes: invalid_metadata, invalid_scope, invalid_date, invalid_timezone,
                 invalid_template (400); project_read_only, project_limit_reached,
                 session_in_use, session_name_taken, session_limit_reached, conflict (409).
+                Finance codes: invalid_stage (400); max_scenarios_reached, scenario_item_limit_reached,
+                budget_item_limit_reached, contributor_limit_reached, savings_entry_limit_reached,
+                contributor_in_use, vendor_already_linked, rollup_locked (409).
               example: weak_password
             message:
               type: string
@@ -185,7 +194,8 @@ components:
             Warnings: `tasks_overdue_after_shift`. Hints: `tasks_not_shifted`,
             `sessions_dates_unchanged`. Template warnings come from the module that owns the
             template: `lead_time_compressed`, `lead_time_too_short`, `scope_fallback` and
-            `budget_link_lost` (menu 02), `estimate_differs` (sync to the budget).
+            `budget_link_lost` (menus 02 and 03), `estimate_differs` (sync to the budget).
+            `scope_fallback` also comes from the budget template and from scenario presets.
         message:
           type: string
         count:
@@ -311,6 +321,21 @@ components:
               description: Exactly four steps, plain text.
               items:
                 type: string
+        contributor_roles:
+          type: array
+          items:
+            type: object
+            required: [key, label]
+            properties:
+              key:
+                type: string
+                example: groom
+              label:
+                type: string
+                example: Mempelai Pria
+          description: >-
+            Roles a savings contributor can have for this event type; every type lists `other` (the
+            default). Menu 03.
     PlannerInitTemplates:
       type: object
       description: >-
@@ -1034,6 +1059,913 @@ components:
           description: '`estimate_differs` when the linked line already had a different non-zero estimate; it is kept.'
           items:
             $ref: '#/components/schemas/PlannerNotice'
+    PlannerScenarioItem:
+      type: object
+      required: [id, sub_event_scope, category, item_name, cost_amount, included]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sub_event_scope:
+          type: string
+          description: 'A `scope_key` of the project (`all` = the general session).'
+        item_key:
+          type: string
+          description: >-
+            Matches the item with the budget line of the same key (Smart Adjust). Absent for a
+            custom item.
+        category:
+          type: string
+        item_name:
+          type: string
+        cost_amount:
+          type: integer
+          format: int64
+        included:
+          type: boolean
+          description: >-
+            Computed: the session takes part in the simulation (`active_sub_events` empty, `all`, or
+            listed).
+        preset_amount:
+          type: integer
+          format: int64
+          description: >-
+            The value of this item in the preset the scenario came from (same `item_key`); the basis
+            of "back to the preset value".
+    PlannerScenario:
+      type: object
+      required:
+        - id
+        - name
+        - total_target
+        - is_active
+        - active_sub_events
+        - allocated
+        - items
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        total_target:
+          type: integer
+          format: int64
+        is_active:
+          type: boolean
+        active_sub_events:
+          type: array
+          items:
+            type: string
+          description: '`scope_key` of the sessions that take part; empty means every non-system session.'
+        preset_key:
+          type: string
+          example: wedding_75jt
+        allocated:
+          type: integer
+          format: int64
+          description: 'Σ `cost_amount` of the items that are `included`.'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerScenarioItem'
+    PlannerPresetInfo:
+      type: object
+      required: [key, kind]
+      properties:
+        key:
+          type: string
+          example: wedding_75jt
+        kind:
+          type: string
+          enum: [fixed, percent]
+        total_target:
+          type: integer
+          format: int64
+          description: >-
+            Only for `fixed` (the wedding packages); a `percent` preset is sized by the total the
+            user sends.
+    PlannerScenarioList:
+      type: object
+      required: [scenarios, presets]
+      properties:
+        scenarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerScenario'
+          description: 'At most 3, by `total_target`.'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerPresetInfo'
+          description: 'The presets of the project''s event type (code, not data).'
+    PlannerScenarioResult:
+      type: object
+      required: [scenario, warnings]
+      properties:
+        scenario:
+          $ref: '#/components/schemas/PlannerScenario'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+          description: '`scope_fallback`: items of a deleted session were placed in `all`.'
+    PlannerCreateScenarioRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: '1-100 characters.'
+        total_target:
+          type: integer
+          format: int64
+          description: >-
+            Required without `preset_key`; for a `fixed` preset it may be left out or must equal the
+            package; for a `percent` preset it is required and at least 100000.
+        preset_key:
+          type: string
+          description: 'A key of `presets` of the event type, otherwise `400 invalid_template`.'
+        active_sub_events:
+          type: array
+          items:
+            type: string
+          description: 'Non-system sessions of the project; duplicates are dropped.'
+    PlannerUpdateScenarioRequest:
+      type: object
+      description: 'PUT: replaces the header. Omitting `active_sub_events` means every session.'
+      required: [name, total_target]
+      properties:
+        name:
+          type: string
+        total_target:
+          type: integer
+          format: int64
+          description: '1 to 10^13. Changing it does not scale the items.'
+        active_sub_events:
+          type: array
+          items:
+            type: string
+    PlannerCloneScenarioRequest:
+      type: object
+      required: [new_name]
+      properties:
+        new_name:
+          type: string
+    PlannerLoadPresetRequest:
+      type: object
+      required: [preset_key]
+      properties:
+        preset_key:
+          type: string
+        total_target:
+          type: integer
+          format: int64
+          description: >-
+            A `percent` preset takes this total (default: the scenario's own); a `fixed` one must
+            not differ.
+        confirm:
+          type: boolean
+          description: Required when the scenario already has items (they are replaced).
+    PlannerScenarioItemRequest:
+      type: object
+      required: [category, item_name]
+      properties:
+        sub_event_scope:
+          type: string
+          description: 'Blank = `all`.'
+        item_key:
+          type: string
+          description: '`^[a-z0-9_]{1,40}$`; unique per session in the scenario (`409 conflict`).'
+        category:
+          type: string
+        item_name:
+          type: string
+        cost_amount:
+          type: integer
+          format: int64
+    PlannerUpdateScenarioItemRequest:
+      type: object
+      description: >-
+        PUT. `item_key` never changes; sending it is `400 invalid_input: item_key`. Moving the
+        item to a session that already has the key makes it keyless.
+      required: [category, item_name]
+      properties:
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        item_name:
+          type: string
+        cost_amount:
+          type: integer
+          format: int64
+    PlannerCompareRequest:
+      type: object
+      required: [a, b]
+      properties:
+        a:
+          type: string
+          format: uuid
+        b:
+          type: string
+          format: uuid
+    PlannerCompareRow:
+      type: object
+      required: [sub_event_scope, item_name, a_amount, b_amount, delta]
+      properties:
+        sub_event_scope:
+          type: string
+        item_key:
+          type: string
+        item_name:
+          type: string
+        a_amount:
+          type: integer
+          format: int64
+        b_amount:
+          type: integer
+          format: int64
+        delta:
+          type: integer
+          format: int64
+          description: '`b - a`.'
+    PlannerScenarioComparison:
+      type: object
+      required: [a, b, rows, totals]
+      properties:
+        a:
+          type: object
+          required: [id, name, total_target]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            total_target:
+              type: integer
+              format: int64
+        b:
+          type: object
+          required: [id, name, total_target]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            total_target:
+              type: integer
+              format: int64
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerCompareRow'
+        totals:
+          type: object
+          required: [a, b, delta]
+          properties:
+            a:
+              type: integer
+              format: int64
+            b:
+              type: integer
+              format: int64
+            delta:
+              type: integer
+              format: int64
+    PlannerApplyScenarioRequest:
+      type: object
+      required: [scenario_id]
+      properties:
+        scenario_id:
+          type: string
+          format: uuid
+        mode:
+          type: string
+          enum: [smart_adjust, clean_overwrite]
+          default: smart_adjust
+          description: >-
+            `smart_adjust` changes estimates only; `clean_overwrite` deletes every budget line (and
+            its payments) first.
+        sync_target_budget:
+          type: boolean
+          description: 'Set the project''s `target_budget` to the scenario''s `total_target`.'
+        sync_target_savings:
+          type: boolean
+          description: 'Clear the project''s `savings_target` so the savings follow the budget again.'
+        confirm:
+          type: string
+          description: '`RESET`, required by `clean_overwrite` (not by apply-preview).'
+    PlannerApplyReport:
+      type: object
+      required: [mode, updated, created, skipped, untouched_count, estimate_after]
+      properties:
+        mode:
+          type: string
+          enum: [smart_adjust, clean_overwrite]
+        updated:
+          type: array
+          items:
+            type: object
+            required: [sub_event_scope, item_name, from, to]
+            properties:
+              sub_event_scope:
+                type: string
+              item_key:
+                type: string
+              item_name:
+                type: string
+              from:
+                type: integer
+                format: int64
+              to:
+                type: integer
+                format: int64
+        created:
+          type: array
+          items:
+            type: object
+            required: [sub_event_scope, item_name, amount]
+            properties:
+              sub_event_scope:
+                type: string
+              item_key:
+                type: string
+              item_name:
+                type: string
+              amount:
+                type: integer
+                format: int64
+        skipped:
+          type: array
+          items:
+            type: object
+            required: [sub_event_scope, item_name, reason]
+            properties:
+              sub_event_scope:
+                type: string
+              item_key:
+                type: string
+              item_name:
+                type: string
+              reason:
+                type: string
+                enum: [rollup, unit_pricing]
+          description: >-
+            Lines the application leaves alone: they roll up the shopping list or are priced per
+            unit.
+        deleted:
+          type: object
+          description: '`clean_overwrite` only: what is lost.'
+          required: [lines, paid_total]
+          properties:
+            lines:
+              type: integer
+            paid_total:
+              type: integer
+              format: int64
+        untouched_count:
+          type: integer
+          description: 'Budget lines no scenario item pairs with; they stay as they are.'
+        estimate_after:
+          type: integer
+          format: int64
+          description: 'Σ estimate of every line after the application.'
+        new_target_budget:
+          type: integer
+          format: int64
+          description: 'Present when `sync_target_budget`.'
+    PlannerContributor:
+      type: object
+      required: [id, name, role_label, total, entry_count]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role_label:
+          type: string
+          description: 'A key of `contributor_roles` of the event type.'
+          example: groom
+        total:
+          type: integer
+          format: int64
+        entry_count:
+          type: integer
+    PlannerContributorRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: '1-100 characters.'
+        role_label:
+          type: string
+          description: 'A key of `contributor_roles`; blank = `other`.'
+    PlannerSavingsEntry:
+      type: object
+      required: [id, contributor_id, contributor_name, role_label, entry_date, amount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contributor_id:
+          type: string
+          format: uuid
+        contributor_name:
+          type: string
+        role_label:
+          type: string
+        entry_date:
+          type: string
+          format: date
+        amount:
+          type: integer
+          format: int64
+        notes:
+          type: string
+    PlannerSavingsEntryRequest:
+      type: object
+      required: [contributor_id, entry_date, amount]
+      properties:
+        contributor_id:
+          type: string
+          format: uuid
+        entry_date:
+          type: string
+          format: date
+          description: >-
+            Within Hari-H - 1095 days to the last day + 365 days. A future date is allowed and
+            counts as collected.
+        amount:
+          type: integer
+          format: int64
+          description: Above 0.
+        notes:
+          type: string
+          description: At most 2000 characters.
+    PlannerMilestone:
+      type: object
+      required:
+        - sub_event_scope
+        - name
+        - session_date
+        - target_amount
+        - secured_amount
+        - is_secured
+      properties:
+        sub_event_scope:
+          type: string
+        name:
+          type: string
+        session_date:
+          type: string
+          format: date
+        target_amount:
+          type: integer
+          format: int64
+          description: 'Σ estimate of the lines of the session.'
+        secured_amount:
+          type: integer
+          format: int64
+          description: 'What the savings cover of it, filled in date order.'
+        is_secured:
+          type: boolean
+    PlannerSavingsOverview:
+      type: object
+      required:
+        - kpi
+        - contributors
+        - milestones
+        - unscheduled_estimate
+        - recommendation
+        - matrix
+        - entries
+      properties:
+        kpi:
+          type: object
+          required: [target, collected, shortfall, target_follows_budget]
+          properties:
+            target:
+              type: integer
+              format: int64
+              description: '`COALESCE(savings_target, target_budget)`.'
+            collected:
+              type: integer
+              format: int64
+            shortfall:
+              type: integer
+              format: int64
+            target_follows_budget:
+              type: boolean
+              description: '`savings_target` is not set.'
+        contributors:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerContributor'
+        milestones:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerMilestone'
+          description: 'Dated, non-system sessions in date order.'
+        unscheduled_estimate:
+          type: integer
+          format: int64
+          description: 'Σ estimate of the lines in undated sessions and in `all`: they form no milestone.'
+        recommendation:
+          type: object
+          required: [months_left, recommended_monthly, target_date, basis]
+          properties:
+            months_left:
+              type: integer
+              description: '30-day months to `target_date`, rounded up, at least 1.'
+            recommended_monthly:
+              type: integer
+              format: int64
+              description: Rounded up to Rp 1.000.
+            per_contributor:
+              type: integer
+              format: int64
+              description: Absent while the project has no contributor.
+            target_date:
+              type: string
+              format: date
+            basis:
+              type: string
+              enum: [session, event_date]
+        matrix:
+          type: object
+          description: 'Every month from the first to the last deposit, with no gap.'
+          required: [months, rows]
+          properties:
+            months:
+              type: array
+              items:
+                type: string
+                example: '2026-02'
+            rows:
+              type: array
+              items:
+                type: object
+                required: [month, by_contributor, total]
+                properties:
+                  month:
+                    type: string
+                  by_contributor:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                      format: int64
+                    description: 'Key = contributor id; every contributor is present (0 when empty).'
+                  total:
+                    type: integer
+                    format: int64
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerSavingsEntry'
+          description: 'Filtered by `contributor_id`; every other part covers the whole project.'
+    PlannerBudgetLine:
+      type: object
+      required:
+        - id
+        - sub_event_scope
+        - category
+        - item_name
+        - source
+        - pricing_mode
+        - estimate
+        - dp_amount
+        - term_1_amount
+        - term_2_amount
+        - paid
+        - remaining
+        - payment_status
+        - sort_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        item_name:
+          type: string
+        item_key:
+          type: string
+        source:
+          type: string
+          enum: [template, scenario, vendor, admin_doc, manual]
+        vendor_id:
+          type: string
+          format: uuid
+        vendor_name:
+          type: string
+        admin_doc_id:
+          type: string
+          format: uuid
+        rollup_source:
+          type: string
+          enum: [shopping]
+          description: 'The estimate and `paid` come from the shopping list; the line cannot be paid here.'
+        pricing_mode:
+          type: string
+          enum: [lump, unit]
+        quantity:
+          type: number
+          description: 'Two decimals; `unit` mode only.'
+        unit_label:
+          type: string
+        unit_price:
+          type: integer
+          format: int64
+        estimate:
+          type: integer
+          format: int64
+          description: 'Effective: from the shopping list for a rollup line.'
+        dp_amount:
+          type: integer
+          format: int64
+        term_1_amount:
+          type: integer
+          format: int64
+        term_2_amount:
+          type: integer
+          format: int64
+        dp_paid_at:
+          type: string
+          format: date
+        term_1_paid_at:
+          type: string
+          format: date
+        term_2_paid_at:
+          type: string
+          format: date
+        dp_receipt_url:
+          type: string
+        term_1_receipt_url:
+          type: string
+        term_2_receipt_url:
+          type: string
+        paid:
+          type: integer
+          format: int64
+        remaining:
+          type: integer
+          format: int64
+          description: 'Negative = overpaid.'
+        payment_status:
+          type: string
+          enum: [unpaid, dp_paid, partial, settled]
+          description: 'Computed by the database view, never stored.'
+        sort_order:
+          type: integer
+        notes:
+          type: string
+    PlannerBudgetLineList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerBudgetLine'
+    PlannerBudgetItemRequest:
+      type: object
+      description: >-
+        POST and PUT. PUT replaces the whole line; `source`, `item_key`, the document link, the
+        rollup and the payments are not touched.
+      required: [category, item_name]
+      properties:
+        sub_event_scope:
+          type: string
+          description: 'Blank = `all`.'
+        category:
+          type: string
+          description: '1-60 characters.'
+        item_name:
+          type: string
+          description: '1-150 characters.'
+        vendor_id:
+          type: string
+          format: uuid
+          description: >-
+            A vendor of the project not linked to another line (`409 vendor_already_linked`). PUT:
+            omitting it releases the vendor.
+        pricing_mode:
+          type: string
+          enum: [lump, unit]
+          default: lump
+        initial_estimate:
+          type: integer
+          format: int64
+          description: 'Ignored for `unit` pricing and for a rollup line.'
+        quantity:
+          type: number
+          description: '0.01 to 1000000, two decimals; required for `unit`.'
+        unit_label:
+          type: string
+          description: At most 30 characters.
+        unit_price:
+          type: integer
+          format: int64
+          description: 'Required for `unit`; quantity x unit_price must not exceed 10^13.'
+        notes:
+          type: string
+          description: At most 2000 characters.
+    PlannerPaymentRequest:
+      type: object
+      required: [payment_stage, paid_at]
+      properties:
+        payment_stage:
+          type: string
+          enum: [dp, term_1, term_2, full]
+          description: >-
+            `dp`, `term_1` and `term_2` replace everything in that stage. `full` pays the remainder
+            into the first empty stage and ignores `amount`.
+        amount:
+          type: integer
+          format: int64
+          description: 'Above 0; required except for `full`.'
+        paid_at:
+          type: string
+          format: date
+        receipt_url:
+          type: string
+          description: 'http or https, at most 500 characters. Omitted = the receipt of that stage is cleared.'
+    PlannerApplyTemplateRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [append, replace_template]
+          default: append
+        sub_event_scope:
+          type: string
+          description: Limit to the lines of one session.
+        confirm:
+          type: boolean
+          description: >-
+            Required for `replace_template` when a line to delete holds an estimate, a vendor, a
+            document or a shopping link.
+    PlannerApplyTemplateResult:
+      type: object
+      required: [created, skipped, deleted, warnings]
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        deleted:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+          description: '`scope_fallback`, `budget_link_lost`.'
+    PlannerCashflowSummary:
+      type: object
+      required:
+        - total_savings_collected
+        - total_paid
+        - available_cash
+        - remaining_debt
+        - overpaid
+        - cash_deficit
+      properties:
+        total_savings_collected:
+          type: integer
+          format: int64
+        total_paid:
+          type: integer
+          format: int64
+        available_cash:
+          type: integer
+          format: int64
+          description: 'Collected - paid; may be negative.'
+        remaining_debt:
+          type: integer
+          format: int64
+          description: 'Σ max(estimate - paid, 0).'
+        overpaid:
+          type: integer
+          format: int64
+        cash_deficit:
+          type: integer
+          format: int64
+          description: 'max(remaining_debt - available_cash, 0).'
+    PlannerMatrixRow:
+      type: object
+      required:
+        - sub_event_scope
+        - estimate
+        - dp
+        - term_1
+        - term_2
+        - rollup_paid
+        - paid
+        - remaining
+        - overpaid
+        - line_count
+      properties:
+        sub_event_scope:
+          type: string
+          description: Empty on the total row.
+        estimate:
+          type: integer
+          format: int64
+        dp:
+          type: integer
+          format: int64
+        term_1:
+          type: integer
+          format: int64
+        term_2:
+          type: integer
+          format: int64
+        rollup_paid:
+          type: integer
+          format: int64
+        paid:
+          type: integer
+          format: int64
+          description: 'dp + term_1 + term_2 + rollup_paid.'
+        remaining:
+          type: integer
+          format: int64
+        overpaid:
+          type: integer
+          format: int64
+        line_count:
+          type: integer
+    PlannerBudgetMatrix:
+      type: object
+      required: [kpi, rows, total, active_scenario]
+      properties:
+        kpi:
+          type: object
+          required:
+            - total_estimate
+            - total_paid
+            - total_remaining
+            - total_overpaid
+            - line_count
+            - line_status
+          properties:
+            total_estimate:
+              type: integer
+              format: int64
+            total_paid:
+              type: integer
+              format: int64
+            total_remaining:
+              type: integer
+              format: int64
+            total_overpaid:
+              type: integer
+              format: int64
+            line_count:
+              type: integer
+            line_status:
+              type: object
+              description: Lines with an estimate above 0.
+              required: [settled, partial, unpaid]
+              properties:
+                settled:
+                  type: integer
+                partial:
+                  type: integer
+                unpaid:
+                  type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerMatrixRow'
+          description: 'One per session that has lines, in session order, `all` last.'
+        total:
+          $ref: '#/components/schemas/PlannerMatrixRow'
+        active_scenario:
+          type: object
+          nullable: true
+          description: '`null` while no scenario is active.'
+          required: [id, name, total_target, unallocated]
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            total_target:
+              type: integer
+              format: int64
+            unallocated:
+              type: integer
+              format: int64
+              description: '`total_target` - Σ estimate; negative = over the ceiling.'
   parameters:
     PlannerTaskId:
       name: taskId
@@ -1058,6 +1990,48 @@ components:
       description: >-
         A canonical UUID. An id that is not a UUID, an unknown project and another user's
         project all answer 404.
+      schema:
+        type: string
+        format: uuid
+    PlannerScenarioId:
+      name: scenarioId
+      in: path
+      required: true
+      description: >-
+        A canonical UUID; anything else, an unknown scenario and another project's scenario
+        answer 404.
+      schema:
+        type: string
+        format: uuid
+    PlannerScenarioItemId:
+      name: scenarioItemId
+      in: path
+      required: true
+      description: A canonical UUID of an item of the scenario.
+      schema:
+        type: string
+        format: uuid
+    PlannerContributorId:
+      name: contributorId
+      in: path
+      required: true
+      description: A canonical UUID of a contributor of the project.
+      schema:
+        type: string
+        format: uuid
+    PlannerEntryId:
+      name: entryId
+      in: path
+      required: true
+      description: A canonical UUID of a deposit of the project.
+      schema:
+        type: string
+        format: uuid
+    PlannerBudgetItemId:
+      name: budgetItemId
+      in: path
+      required: true
+      description: A canonical UUID of a budget line of the project.
       schema:
         type: string
         format: uuid
@@ -2516,6 +3490,1076 @@ paths:
           $ref: '#/components/responses/PlannerNotFound'
         '409':
           description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: List the scenarios and the presets
+      operationId: plannerListScenarios
+      description: >-
+        At most three scenarios by `total_target`, with their items, and the presets of the
+        event type (six fixed wedding packages, or one percentage preset).
+      responses:
+        '200':
+          description: Scenarios and presets.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Finance]
+      summary: Create a scenario
+      operationId: plannerCreateScenario
+      description: >-
+        Empty, or copied from a preset. Runs under the project lock, so two simultaneous
+        requests cannot pass the limit of three.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerCreateScenarioRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`max_scenarios_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/compare:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Finance]
+      summary: Compare two scenarios
+      operationId: plannerCompareScenarios
+      description: >-
+        Item by item: paired by session and `item_key`, keyless items by session and lower-cased
+        name. `delta` is `b - a`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerCompareRequest'
+      responses:
+        '200':
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioComparison'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/apply-preview:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Finance]
+      summary: Preview applying a scenario
+      operationId: plannerApplyScenarioPreview
+      description: >-
+        Reports what `apply` would do and writes nothing. `clean_overwrite` needs no
+        confirmation here; the report shows what would be lost.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerApplyScenarioRequest'
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerApplyReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/apply:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Finance]
+      summary: Apply a scenario
+      operationId: plannerApplyScenario
+      description: >-
+        Makes the scenario the active one and lays it over the budget lines in one transaction.
+        `smart_adjust` sets estimates only (payments, vendors and documents stay; rollup and
+        unit-priced lines are skipped; applying twice changes nothing). `clean_overwrite`
+        deletes every line and its payments first and needs `confirm: RESET`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerApplyScenarioRequest'
+      responses:
+        '200':
+          description: What was done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerApplyReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: >-
+            `budget_item_limit_reached` (the result would exceed 300 lines), `project_read_only`
+            (the project is archived), `conflict`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/{scenarioId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerScenarioId'
+    get:
+      tags: [Planner Finance]
+      summary: Get a scenario
+      operationId: plannerGetScenario
+      description: One scenario with its items.
+      responses:
+        '200':
+          description: The scenario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenario'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    put:
+      tags: [Planner Finance]
+      summary: Replace a scenario header
+      operationId: plannerUpdateScenario
+      description: >-
+        Name, `total_target` and `active_sub_events`. Changing the total does not scale the
+        items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateScenarioRequest'
+      responses:
+        '200':
+          description: The scenario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenario'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Finance]
+      summary: Delete a scenario
+      operationId: plannerDeleteScenario
+      description: 'Also the active one; no other scenario is activated in its place.'
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/{scenarioId}/clone:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerScenarioId'
+    post:
+      tags: [Planner Finance]
+      summary: Clone a scenario
+      operationId: plannerCloneScenario
+      description: >-
+        Copies the items, the sessions, the preset and the total as an inactive scenario; it
+        counts toward the limit of three.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerCloneScenarioRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`max_scenarios_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/{scenarioId}/load-preset:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerScenarioId'
+    post:
+      tags: [Planner Finance]
+      summary: Replace the items with a preset
+      operationId: plannerLoadScenarioPreset
+      description: >-
+        The preset must belong to the event type (`400 invalid_template`). A scenario that
+        already has items needs `confirm: true`. The scenario takes the preset and its total.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerLoadPresetRequest'
+      responses:
+        '200':
+          description: The scenario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/{scenarioId}/items:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerScenarioId'
+    post:
+      tags: [Planner Finance]
+      summary: Add an item to a scenario
+      operationId: plannerCreateScenarioItem
+      description: At most 100 items per scenario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerScenarioItemRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: >-
+            `scenario_item_limit_reached`, `conflict` (the same `item_key` twice in a session),
+            `project_read_only` (the project is archived),
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/scenarios/{scenarioId}/items/{scenarioItemId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerScenarioId'
+      - $ref: '#/components/parameters/PlannerScenarioItemId'
+    put:
+      tags: [Planner Finance]
+      summary: Replace an item of a scenario
+      operationId: plannerUpdateScenarioItem
+      description: 'Session, category, name and cost. `item_key` never changes.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateScenarioItemRequest'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerScenarioItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Finance]
+      summary: Delete an item of a scenario
+      operationId: plannerDeleteScenarioItem
+      description: Removes the item.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/contributors:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: List the contributors
+      operationId: plannerListContributors
+      description: 'In `sort_order`, with the total and the number of deposits of each.'
+      responses:
+        '200':
+          description: Contributors.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlannerContributor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Finance]
+      summary: Add a contributor
+      operationId: plannerCreateContributor
+      description: >-
+        At most 20 per project. `role_label` must be a key of `contributor_roles` of the event
+        type.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerContributorRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerContributor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`contributor_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/contributors/{contributorId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerContributorId'
+    put:
+      tags: [Planner Finance]
+      summary: Replace a contributor
+      operationId: plannerUpdateContributor
+      description: 'Name and role; a blank role becomes `other`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerContributorRequest'
+      responses:
+        '200':
+          description: The contributor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerContributor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Finance]
+      summary: Delete a contributor
+      operationId: plannerDeleteContributor
+      description: Refused while the contributor has deposits.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`contributor_in_use`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/savings:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: The savings screen
+      operationId: plannerGetSavings
+      description: >-
+        KPI, contributors, milestones, the monthly recommendation, the monthly matrix and the
+        deposits. `contributor_id` filters the deposits only.
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSavingsOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+      parameters:
+        - name: contributor_id
+          in: query
+          description: A contributor of the project.
+          schema:
+            type: string
+            format: uuid
+    post:
+      tags: [Planner Finance]
+      summary: Record a deposit
+      operationId: plannerCreateSavingsEntry
+      description: At most 2000 deposits per project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerSavingsEntryRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSavingsEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: >-
+            `savings_entry_limit_reached`, `project_read_only` (the project is archived),
+            `conflict`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/savings/{entryId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerEntryId'
+    put:
+      tags: [Planner Finance]
+      summary: Correct a deposit
+      operationId: plannerUpdateSavingsEntry
+      description: Also moves it to another contributor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerSavingsEntryRequest'
+      responses:
+        '200':
+          description: The deposit.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSavingsEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Finance]
+      summary: Delete a deposit
+      operationId: plannerDeleteSavingsEntry
+      description: Removes the deposit.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/cashflow-summary:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: Cash flow summary
+      operationId: plannerGetCashflow
+      description: >-
+        Collected, paid, available cash, what is still owed and the cash deficit.
+        `remaining_debt` adds up the positive part of every line, so an overpaid line never
+        hides what another still owes.
+      responses:
+        '200':
+          description: The summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerCashflowSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+
+  /v1/planner/projects/{projectId}/budget/matrix:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: Budget matrix by session
+      operationId: plannerGetBudgetMatrix
+      description: >-
+        KPI, one row per session that has lines (the general session last), their total, and the
+        active scenario with what it leaves unallocated.
+      responses:
+        '200':
+          description: The matrix.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetMatrix'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+
+  /v1/planner/projects/{projectId}/budget/items:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: List the budget lines
+      operationId: plannerListBudgetItems
+      description: >-
+        Lines in `sort_order` with their effective figures. No `scope` = every session;
+        `scope=all` = the general lines only; any other `scope_key` = that session.
+      responses:
+        '200':
+          description: The lines.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLineList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+      parameters:
+        - name: scope
+          in: query
+          description: 'A `scope_key`.'
+          schema:
+            type: string
+    post:
+      tags: [Planner Finance]
+      summary: Add a budget line
+      operationId: plannerCreateBudgetItem
+      description: >-
+        A line the user made (source `manual`, no `item_key`), at the end of the order. At most
+        300 per project. A `unit` line has its estimate worked out from quantity x unit price.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerBudgetItemRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: >-
+            `budget_item_limit_reached`, `vendor_already_linked`, `project_read_only` (the project
+            is archived), `conflict`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/items/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Finance]
+      summary: Reorder the budget lines
+      operationId: plannerReorderBudgetItems
+      description: '`ids` lists every line of the project exactly once.'
+      responses:
+        '200':
+          description: The lines in the new order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLineList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+
+  /v1/planner/projects/{projectId}/budget/items/{budgetItemId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerBudgetItemId'
+    put:
+      tags: [Planner Finance]
+      summary: Replace a budget line
+      operationId: plannerUpdateBudgetItem
+      description: >-
+        Replaces the whole line: an optional field that is not sent is cleared, an omitted
+        `vendor_id` releases the vendor. Payments, `source`, `item_key` and the document link
+        stay. A rollup line keeps its pricing and estimate. Moving a line to a session that
+        already has its `item_key` makes it keyless.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerBudgetItemRequest'
+      responses:
+        '200':
+          description: The line.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`vendor_already_linked`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Finance]
+      summary: Delete a budget line
+      operationId: plannerDeleteBudgetItem
+      description: >-
+        The payments go with it; shopping items and documents that pointed at the line keep
+        their figures and lose the link.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/items/{budgetItemId}/payment:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerBudgetItemId'
+    patch:
+      tags: [Planner Finance]
+      summary: Record a payment
+      operationId: plannerRecordPayment
+      description: >-
+        Writes one stage. `full` pays the remainder into the first empty stage (`400
+        invalid_stage` when none is left or nothing remains). An overpayment is allowed. A
+        rollup line cannot be paid.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerPaymentRequest'
+      responses:
+        '200':
+          description: The line.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`rollup_locked`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/items/{budgetItemId}/payment/{stage}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerBudgetItemId'
+      - name: stage
+        in: path
+        required: true
+        description: '`dp`, `term_1` or `term_2`.'
+        schema:
+          type: string
+          enum: [dp, term_1, term_2]
+    delete:
+      tags: [Planner Finance]
+      summary: Take back a payment
+      operationId: plannerClearPayment
+      description: 'Empties one stage (amount 0, no date, no receipt).'
+      responses:
+        '200':
+          description: The line.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerBudgetLine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`rollup_locked`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/apply-template:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Finance]
+      summary: Apply the budget template
+      operationId: plannerApplyBudgetTemplate
+      description: >-
+        `append` adds the lines whose session and `item_key` are not there yet.
+        `replace_template` first deletes the template lines that have no payment; it needs
+        `confirm` when one of them holds an estimate, a vendor, a document or a shopping link. A
+        wedding gets 14 lines with estimate 0; other event types get percentage lines sized from
+        `target_budget`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerApplyTemplateRequest'
+      responses:
+        '200':
+          description: The result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerApplyTemplateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`budget_item_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/budget/export:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Finance]
+      summary: Export the budget as .xlsx
+      operationId: plannerExportBudget
+      description: >-
+        Three sheets: Rekap (the session matrix), Anggaran (one block per session) and Tabungan
+        (the monthly deposits). Every line of the project, not a filtered list. Text that starts
+        with `=`, `+`, `-` or `@` is prefixed with an apostrophe. Limited to 10 per minute per
+        user. Works on an archived project.
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [xlsx]
+      responses:
+        '200':
+          description: The workbook.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="keuangan-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"'
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
           content:
             application/json:
               schema:

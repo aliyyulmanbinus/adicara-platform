@@ -1,0 +1,378 @@
+{
+  "scenarios": [
+    {
+      "id": "00000000-0000-4000-8000-000100000002",
+      "name": "Opsi Hemat 50 Jt",
+      "items": [
+        {
+          "id": "00000000-0000-4000-8000-000200000001",
+          "category": "Legalitas",
+          "item_key": "biaya_kua",
+          "item_name": "Biaya KUA",
+          "cost_amount": 600000,
+          "sub_event_scope": "akad",
+          "included": true,
+          "preset_amount": 600000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000002",
+          "category": "Mahar",
+          "item_key": "mahar",
+          "item_name": "Mahar & cincin pernikahan",
+          "cost_amount": 5000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 5000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000003",
+          "category": "Catering",
+          "item_key": "catering",
+          "item_name": "Catering",
+          "cost_amount": 20000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 20000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000004",
+          "category": "Busana & MUA",
+          "item_key": "rias_busana",
+          "item_name": "Rias & baju pengantin",
+          "cost_amount": 3000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000005",
+          "category": "Venue & Dekorasi",
+          "item_key": "venue_dekor",
+          "item_name": "Sewa tempat/gedung & dekorasi",
+          "cost_amount": 10000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 10000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000006",
+          "category": "Perlengkapan",
+          "item_key": "undangan_souvenir",
+          "item_name": "Undangan & souvenir",
+          "cost_amount": 2500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 2500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000007",
+          "category": "Dokumentasi",
+          "item_key": "dokumentasi",
+          "item_name": "Dokumentasi",
+          "cost_amount": 2500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 2500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000008",
+          "category": "Hantaran",
+          "item_key": "seserahan",
+          "item_name": "Seserahan",
+          "cost_amount": 3000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000009",
+          "category": "Hiburan",
+          "item_key": "hiburan",
+          "item_name": "Hiburan & pengisi acara",
+          "cost_amount": 2400000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 2400000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000010",
+          "category": "Operasional",
+          "item_key": "dana_darurat",
+          "item_name": "Dana darurat",
+          "cost_amount": 1000000,
+          "sub_event_scope": "all",
+          "included": true,
+          "preset_amount": 1000000
+        }
+      ],
+      "is_active": false,
+      "preset_key": "wedding_50jt",
+      "total_target": 50000000,
+      "active_sub_events": [
+        "akad",
+        "resepsi"
+      ],
+      "allocated": 50000000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000100000001",
+      "name": "Opsi Ideal 75 Jt",
+      "items": [
+        {
+          "id": "00000000-0000-4000-8000-000200000011",
+          "category": "Legalitas",
+          "item_key": "biaya_kua",
+          "item_name": "Biaya KUA",
+          "cost_amount": 600000,
+          "sub_event_scope": "akad",
+          "included": true,
+          "preset_amount": 600000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000012",
+          "category": "Mahar",
+          "item_key": "mahar",
+          "item_name": "Mahar & cincin pernikahan",
+          "cost_amount": 5000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 5000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000013",
+          "category": "Catering",
+          "item_key": "catering",
+          "item_name": "Catering",
+          "cost_amount": 30000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 30000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000014",
+          "category": "Busana & MUA",
+          "item_key": "rias_busana",
+          "item_name": "Rias & baju pengantin",
+          "cost_amount": 5000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 5000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000015",
+          "category": "Venue & Dekorasi",
+          "item_key": "venue_dekor",
+          "item_name": "Sewa tempat/gedung & dekorasi",
+          "cost_amount": 20000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 20000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000016",
+          "category": "Perlengkapan",
+          "item_key": "undangan_souvenir",
+          "item_name": "Undangan & souvenir",
+          "cost_amount": 3500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000017",
+          "category": "Dokumentasi",
+          "item_key": "dokumentasi",
+          "item_name": "Dokumentasi",
+          "cost_amount": 3000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000018",
+          "category": "Hantaran",
+          "item_key": "seserahan",
+          "item_name": "Seserahan",
+          "cost_amount": 3500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000019",
+          "category": "Hiburan",
+          "item_key": "hiburan",
+          "item_name": "Hiburan & pengisi acara",
+          "cost_amount": 3400000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3400000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000020",
+          "category": "Operasional",
+          "item_key": "dana_darurat",
+          "item_name": "Dana darurat",
+          "cost_amount": 1000000,
+          "sub_event_scope": "all",
+          "included": true,
+          "preset_amount": 1000000
+        }
+      ],
+      "is_active": true,
+      "preset_key": "wedding_75jt",
+      "total_target": 75000000,
+      "active_sub_events": [
+        "akad",
+        "resepsi"
+      ],
+      "allocated": 75000000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000100000003",
+      "name": "Opsi 100 Jt",
+      "items": [
+        {
+          "id": "00000000-0000-4000-8000-000200000021",
+          "category": "Legalitas",
+          "item_key": "biaya_kua",
+          "item_name": "Biaya KUA",
+          "cost_amount": 600000,
+          "sub_event_scope": "akad",
+          "included": true,
+          "preset_amount": 600000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000022",
+          "category": "Mahar",
+          "item_key": "mahar",
+          "item_name": "Mahar & cincin pernikahan",
+          "cost_amount": 5000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 5000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000023",
+          "category": "Catering",
+          "item_key": "catering",
+          "item_name": "Catering",
+          "cost_amount": 50000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 50000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000024",
+          "category": "Busana & MUA",
+          "item_key": "rias_busana",
+          "item_name": "Rias & baju pengantin",
+          "cost_amount": 5000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 5000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000025",
+          "category": "Venue & Dekorasi",
+          "item_key": "venue_dekor",
+          "item_name": "Sewa tempat/gedung & dekorasi",
+          "cost_amount": 24000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 24000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000026",
+          "category": "Perlengkapan",
+          "item_key": "undangan_souvenir",
+          "item_name": "Undangan & souvenir",
+          "cost_amount": 3500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000027",
+          "category": "Dokumentasi",
+          "item_key": "dokumentasi",
+          "item_name": "Dokumentasi",
+          "cost_amount": 3000000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3000000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000028",
+          "category": "Hantaran",
+          "item_key": "seserahan",
+          "item_name": "Seserahan",
+          "cost_amount": 3500000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 3500000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000029",
+          "category": "Hiburan",
+          "item_key": "hiburan",
+          "item_name": "Hiburan & pengisi acara",
+          "cost_amount": 4400000,
+          "sub_event_scope": "resepsi",
+          "included": true,
+          "preset_amount": 4400000
+        },
+        {
+          "id": "00000000-0000-4000-8000-000200000030",
+          "category": "Operasional",
+          "item_key": "dana_darurat",
+          "item_name": "Dana darurat",
+          "cost_amount": 1000000,
+          "sub_event_scope": "all",
+          "included": true,
+          "preset_amount": 1000000
+        }
+      ],
+      "is_active": false,
+      "preset_key": "wedding_100jt",
+      "total_target": 100000000,
+      "active_sub_events": [
+        "akad",
+        "resepsi"
+      ],
+      "allocated": 100000000
+    }
+  ],
+  "presets": [
+    {
+      "key": "wedding_10jt",
+      "kind": "fixed",
+      "total_target": 10000000
+    },
+    {
+      "key": "wedding_20jt",
+      "kind": "fixed",
+      "total_target": 20000000
+    },
+    {
+      "key": "wedding_30jt",
+      "kind": "fixed",
+      "total_target": 30000000
+    },
+    {
+      "key": "wedding_50jt",
+      "kind": "fixed",
+      "total_target": 50000000
+    },
+    {
+      "key": "wedding_75jt",
+      "kind": "fixed",
+      "total_target": 75000000
+    },
+    {
+      "key": "wedding_100jt",
+      "kind": "fixed",
+      "total_target": 100000000
+    }
+  ]
+}

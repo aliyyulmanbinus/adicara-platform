@@ -24,6 +24,9 @@ import (
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/domain"
 	plannerrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/repository"
 	plannerusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/usecase"
+	financehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/delivery/http"
+	financerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/repository"
+	financeusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/usecase"
 	timelinehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/delivery/http"
 	timelinerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/repository"
 	timelineusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/usecase"
@@ -85,12 +88,19 @@ func Build(ctx context.Context) (*App, error) {
 
 	// Menu 02: timeline and administrative documents (two keys: timeline, admin_docs).
 	timelineSvc := timelineusecase.New(timelinerepo.NewPostgresRepository(pool), plannerTx, registry, timelineusecase.Options{})
-	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider())
-	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier())
-	plannerSvc.RegisterSampleOverlays(timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay())
+
+	// Menu 03: finance (scenarios, savings, budget lines; one key each: finance, budget, finance).
+	// Its overlay must run after menu 02's (the Lamaran session date feeds the milestones) and
+	// before the vendor module's, once that exists (it links vendors to the lines this overlay fills).
+	financeSvc := financeusecase.New(financerepo.NewPostgresRepository(pool), plannerTx, registry, financeusecase.Options{})
+
+	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider())
+	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier())
+	plannerSvc.RegisterSampleOverlays(timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay())
 
 	plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
 	timelinehttp.RegisterRoutes(ginEngine, idn, plannerSvc, timelineSvc)
+	financehttp.RegisterRoutes(ginEngine, idn, plannerSvc, financeSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)

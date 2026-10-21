@@ -277,3 +277,38 @@ func TestTemplatesAvailableFollowsRegisteredAppliers(t *testing.T) {
 		t.Errorf("other: general timeline, budget and rundown only, got %+v", o)
 	}
 }
+
+// TestContributorRoles checks the roles of menu 03 against TEMPLATE_EVENT chapter 4:
+// every type has "other" (the default) and only its own roles, with Indonesian labels.
+func TestContributorRoles(t *testing.T) {
+	want := map[EventType][]string{
+		EventWedding:   {"groom", "bride", "family", "sponsor", "other"},
+		EventKhitanan:  {"host", "family", "other"},
+		EventAqiqah:    {"host", "family", "other"},
+		EventPeresmian: {"internal", "sponsor", "other"},
+		EventLaunching: {"internal", "sponsor", "other"},
+		EventBirthday:  {"host", "family", "other"},
+		EventWisuda:    {"internal", "family", "sponsor", "other"},
+		EventSeminar:   {"internal", "sponsor", "other"},
+		EventOther:     {"host", "internal", "sponsor", "other"},
+	}
+	r := DefaultRegistry()
+	for _, spec := range r.All() {
+		keys := make([]string, len(spec.ContributorRoles))
+		for i, role := range spec.ContributorRoles {
+			keys[i] = role.Key
+			if role.Label == "" || role.Label == role.Key {
+				t.Errorf("%s/%s has no Indonesian label", spec.Key, role.Key)
+			}
+		}
+		if strings.Join(keys, ",") != strings.Join(want[spec.Key], ",") {
+			t.Errorf("%s roles = %v, want %v", spec.Key, keys, want[spec.Key])
+		}
+	}
+	if len(want) != len(r.All()) {
+		t.Error("the table must cover every event type")
+	}
+	if wedding, _ := r.Get(EventWedding); wedding.ContributorRoles[0].Label != "Mempelai Pria" {
+		t.Errorf("groom label = %q", wedding.ContributorRoles[0].Label)
+	}
+}

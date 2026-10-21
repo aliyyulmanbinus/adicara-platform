@@ -17,7 +17,7 @@ Total 14 tabel dan 1 view. Skema per kolom ada di blok ```sql pada `BE.md` modul
 
 ## Mengapa 006–012 ikut
 
-Hanya modul `planner` (menu 01) yang punya kode. Tetapi SQL-nya sendiri menyentuh tabel menu lain: kartu Hub menjumlah `planner_budget_lines`, `planner_tasks`, dan `planner_guests`; `usage` sesi menghitung tujuh tabel; hapus sesi memindahkan baris di enam tabel dan membersihkan `planner_budget_scenarios`; ubah tanggal menggeser `planner_tasks`. Tanpa tabelnya, fitur-fitur itu gagal pada kueri pertama. Kontrak bersama (bab 9) membolehkan 005–012 dirilis sekaligus dengan tabel kosong untuk modul yang belum dibangun.
+Yang punya kode: `planner` (menu 01), `plannertimeline` (menu 02; tabel 007), dan `plannerfinance` (menu 03; tabel 008 dan view 010). SQL menu 01 sendiri juga menyentuh tabel menu lain: kartu Hub menjumlah `planner_budget_lines`, `planner_tasks`, dan `planner_guests`; `usage` sesi menghitung tujuh tabel; hapus sesi memindahkan baris di enam tabel dan membersihkan `planner_budget_scenarios`; ubah tanggal menggeser `planner_tasks`. Tanpa tabelnya, fitur-fitur itu gagal pada kueri pertama. Kontrak bersama (bab 9) membolehkan 005–012 dirilis sekaligus dengan tabel kosong untuk modul yang belum dibangun.
 
 ## Aturan yang dijaga skema
 

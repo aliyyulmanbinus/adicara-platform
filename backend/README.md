@@ -52,6 +52,7 @@ Backend API untuk platform Adicara. Saat ini hanya mencakup modul inti: **Auth**
 | Profile | `GET /v1/me` · `PATCH /v1/me` |
 | Planner (menu 01) | `GET /v1/planner/event-types` · `/projects` (daftar, buat, ringkasan, contoh) · `/projects/:id` (detail, ubah, status, hapus, dashboard) · `/projects/:id/sessions` (CRUD, urutan). Detail: [docs/backend/planner](../docs/backend/planner/2026-10-21-planner-menu-01.md) |
 | Planner (menu 02) | `/projects/:id/tasks` (CRUD, status, urutan, geser, `generate-defaults`, `export-spreadsheet`) · `/projects/:id/admin-docs` (CRUD, status, urutan, `apply-template`, `sync-budget`). Detail: [docs/backend/planner](../docs/backend/planner/2026-10-21-planner-menu-02.md) |
+| Planner (menu 03) | `/projects/:id/scenarios` (CRUD, `clone`, `load-preset`, `items`, `compare`, `apply-preview`, `apply`) · `/projects/:id/contributors` · `/projects/:id/savings` · `/projects/:id/budget/{items,matrix,cashflow-summary,apply-template,export}` (pos, pembayaran per tahap, urut ulang). Detail: [docs/backend/planner](../docs/backend/planner/2026-10-21-planner-menu-03.md) |
 
 Kontrak lengkap dan satu-satunya yang berlaku: [`docs/openapi.yaml`](docs/openapi.yaml) (`../contracts/openapi.yaml` hanya backup versi lama). Ringkasan, format error, dan rate limit: [docs/api.md](../docs/api.md). Docker: `/adicara-api -healthcheck` dan `/adicara-migrate` ([docs/devops/docker.md](../docs/devops/docker.md)).
 

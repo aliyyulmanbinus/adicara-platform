@@ -6,10 +6,11 @@ package domain
 // (guarded by a test that reads pg_get_constraintdef).
 //
 // Fields owned by the other planner modules (vendor and shopping categories,
-// guest sides and categories, contributor roles, audio moment tags) are added
-// here when those modules are built; their data is in
-// PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md. Menu 02 added the document
-// subjects, the legal widget title and the bureaucracy guide (TEMPLATE_EVENT 4.1).
+// guest sides and categories, audio moment tags) are added here when those
+// modules are built; their data is in PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md.
+// Menu 02 added the document subjects, the legal widget title and the
+// bureaucracy guide (TEMPLATE_EVENT 4.1); menu 03 added the contributor roles
+// (TEMPLATE_EVENT 4).
 
 const (
 	EventWedding   EventType = "wedding"
@@ -98,6 +99,10 @@ type EventTypeSpec struct {
 	AdminSubjects []Option `json:"admin_subjects"`
 	AdminGuide    Guide    `json:"admin_guide"`
 	AdminLabel    string   `json:"-"`
+
+	// Owned by menu 03 (finance): the roles a savings contributor can have.
+	// Every type lists "other"; it is the default.
+	ContributorRoles []Option `json:"contributor_roles"`
 }
 
 // TemplatesAvailable is the part of TemplateSet that can be requested now.
@@ -199,6 +204,35 @@ var weddingAdminGuide = Guide{
 		"KUA asal (numpang nikah): minta surat rekomendasi numpang nikah di tempat tujuan; siapkan fotokopi KTP CPP dan CPW, fotokopi KK, surat pengantar kelurahan (N1, N2, N4), pasfoto 2×3 dan 3×4 masing-masing 2 lembar.",
 		"KUA tempat akad: serahkan surat rekomendasi pindah nikah dari KUA asal, fotokopi KTP dan KK, foto berwarna 2×3 dan 3×4 masing-masing 2 lembar, fotokopi ijazah terakhir, dan fotokopi akta kelahiran.",
 	},
+}
+
+// contributorRoleLabels are the Indonesian labels of the role keys; a type
+// picks its own subset (TEMPLATE_EVENT 4).
+var contributorRoleLabels = map[string]string{
+	"groom": "Mempelai Pria", "bride": "Mempelai Wanita", "host": "Tuan Rumah", "internal": "Internal/Panitia",
+	"family": "Keluarga", "sponsor": "Sponsor", "other": "Lainnya",
+}
+
+var contributorRoleKeys = map[EventType][]string{
+	EventWedding:   {"groom", "bride", "family", "sponsor", "other"},
+	EventKhitanan:  {"host", "family", "other"},
+	EventAqiqah:    {"host", "family", "other"},
+	EventPeresmian: {"internal", "sponsor", "other"},
+	EventLaunching: {"internal", "sponsor", "other"},
+	EventBirthday:  {"host", "family", "other"},
+	EventWisuda:    {"internal", "family", "sponsor", "other"},
+	EventSeminar:   {"internal", "sponsor", "other"},
+	EventOther:     {"host", "internal", "sponsor", "other"},
+}
+
+func contributorRolesFor(t EventType) []Option {
+	keys := contributorRoleKeys[t]
+	out := make([]Option, len(keys))
+	for i, k := range keys {
+		out[i] = Option{Key: k, Label: contributorRoleLabels[k]}
+	}
+
+	return out
 }
 
 // The eight other types share subjects and a permit guide. The guide is an
@@ -356,6 +390,7 @@ func DefaultRegistry() *Registry {
 		if specs[i].AdminSubjects == nil {
 			specs[i].AdminSubjects, specs[i].AdminGuide, specs[i].AdminLabel = generalAdminSubjects, generalAdminGuide, generalAdminLabel
 		}
+		specs[i].ContributorRoles = contributorRolesFor(specs[i].Key)
 	}
 
 	return NewRegistry(specs)
