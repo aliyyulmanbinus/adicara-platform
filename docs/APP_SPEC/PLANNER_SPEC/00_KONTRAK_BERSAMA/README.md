@@ -30,7 +30,7 @@ Enam modul fungsional baru di `backend/internal/modules/`, masing-masing dengan 
 | `plannerguest` | 05 | tamu, RSVP, check-in |
 | `plannerrundown` | 06 | agenda dan playlist |
 
-Aturan ketergantungan: modul 02–06 boleh mengimpor `planner/domain` dan `planner/delivery/http` (guard); `planner` **tidak** mengimpor modul lain. Dashboard mengumpulkan ringkasan lewat antarmuka (bab 7), bukan lewat import. Pengecualian yang disengaja adalah SQL, bukan import: kartu Hub, hitungan `usage` sesi, pemindahan data saat menghapus sesi, dan penggeseran tugas template membaca atau mengubah tabel milik modul 02–06 (`planner_tasks`, `planner_budget_*`, dst.). Karena itu migrasi 005–012 dirilis bersama dan tabel modul yang belum dibangun hanya kosong.
+Aturan ketergantungan: modul 02–06 boleh mengimpor `planner/domain` dan `planner/delivery/http` (guard); `planner` **tidak** mengimpor modul lain. Dashboard mengumpulkan ringkasan lewat antarmuka (bab 7), bukan lewat import. Pengecualian yang disengaja adalah SQL, bukan import: kartu Hub, hitungan `usage` sesi, pemindahan data saat menghapus sesi, dan penggeseran tugas template membaca atau mengubah tabel milik modul 02–06 (`planner_tasks`, `planner_budget_*`, dst.). Pengecualian kedua yang disengaja: sinkron biaya dokumen (Menu 02, `POST …/admin-docs/:id/sync-budget`) menulis ke `planner_budget_items` milik Menu 03 dengan SQL langsung ([02 BE §4.5](../02_TIMELINE_DAN_TUGAS/BE.md#45-sinkron-biaya-dokumen-ke-anggaran)). Karena itu migrasi 005–012 dirilis bersama dan tabel modul yang belum dibangun hanya kosong.
 
 Pemasangan di `internal/app/app.go` (komposisi akar yang sudah ada):
 
@@ -117,7 +117,7 @@ Semua DDL pada dokumen BE telah dijalankan di PostgreSQL 16 (bab 10). Migrasi 00
 
 - Saat sebuah modul diimplementasikan, endpoint-nya **ditambahkan ke `backend/docs/openapi.yaml`** (kontrak yang di-lint CI). Spesifikasi di folder ini bukan pengganti kontrak itu; ia sumber desain sampai kontrak ditulis.
 - Setiap modul menambah dokumen di `docs/backend/planner/` dan `docs/frontend/planner/` serta entri `CHANGELOG.md`, sesuai aturan [docs/backend/README.md](../../../backend/README.md).
-- Dependensi Go baru yang dibutuhkan (disetujui saat implementasi, bukan sekarang): `github.com/xuri/excelize/v2` (ekspor/impor `.xlsx`) dan satu pustaka PDF (cue card, rekap). Pembaca CSV memakai `encoding/csv` (stdlib).
+- Dependensi Go baru yang dibutuhkan (disetujui saat implementasi, bukan sekarang): `github.com/xuri/excelize/v2` (ekspor/impor `.xlsx`; **disetujui pemilik 2026-10-21** bersama Menu 02, v2.11.0) dan satu pustaka PDF (cue card, rekap; belum disetujui). Pembaca CSV memakai `encoding/csv` (stdlib).
 - Nginx: `client_max_body_size 8m` sudah berlaku; impor tamu dibatasi lebih ketat di aplikasi (5 MB, 2.000 baris). Endpoint ekspor/impor dibatasi per pengguna (ekspor 10/menit, impor 5/menit) dengan pola `ratelimit.go` modul auth. RSVP publik milik modul undangan memakai zona `public_writes` yang sudah ada.
 
 ### 1.5 Prasyarat runtime (dibaca dari kode dan Dockerfile)
@@ -134,7 +134,7 @@ Semua DDL pada dokumen BE telah dijalankan di PostgreSQL 16 (bab 10). Migrasi 00
 2. **`WriteGuard`**: proyek berstatus `archived` bersifat baca-saja; method selain `GET` menjawab `409 project_read_only` (kecuali `PATCH .../status` untuk membuka arsip dan `DELETE /v1/planner/projects/:id`: menghapus proyek arsip tidak perlu membuka arsipnya dulu). Pengecualian dicocokkan dengan pola rute (`c.FullPath()` + method), bukan akhiran URL. Proyek `completed` tetap bisa diedit (pelunasan susulan).
 3. **Pertahanan berlapis:** setiap query repository tetap memfilter `project_id`, dan id anak dari URL selalu dicari dengan `WHERE id = $x AND project_id = $y`. Di basis data, **FK komposit** `(x_id, project_id)` mencegah baris proyek A menunjuk vendor, kontributor, pos, atau dokumen proyek B (terverifikasi, bab 10).
 4. Tautan dari pengguna (`receipt_url`, `purchase_location`, `portfolio_url`, `spotify_url`, `youtube_url`) divalidasi skema `http`/`https` saat disimpan dan dirender dengan `rel="noopener noreferrer"`.
-5. Sel ekspor `.xlsx` yang diawali `=`, `+`, `-`, `@` diberi awalan `'` (mencegah formula injection dari nama tamu/vendor).
+5. Sel ekspor `.xlsx` yang diawali `=`, `+`, `-`, `@` diberi awalan `'` (mencegah formula injection dari nama tamu/vendor). Teks pengguna ditulis dengan `SetCellStr`. Prototipe Menu 02 menunjukkan `excelize` menyimpan string berawalan `=` sebagai string bersama (tidak pernah formula), jadi awalan ini adalah pertahanan berlapis dan **tampak sebagai karakter `'`** di sel ([02 BE §4.4](../02_TIMELINE_DAN_TUGAS/BE.md#44-ekspor-xlsx), keputusan di 02 BE bab 8 butir 12).
 6. Nama berkas ekspor (`Content-Disposition`) dibuat dari slug ASCII judul proyek + tanggal (`pernikahan-sinta-arif-2026-10-21.xlsx`), tidak pernah dari judul mentah, supaya judul dengan emoji, tanda kutip, atau baris baru tidak merusak header.
 7. Data tamu (nama, telepon) bersifat pribadi: hanya pemilik proyek yang bisa membacanya; tidak ada endpoint publik di modul Planner. Kebijakan retensi/penghapusan akun mengikuti [docs/database.md](../../../database.md#data-pribadi).
 
@@ -159,7 +159,8 @@ type EventTypeSpec struct {
     GuestCategories    []Option
     ContributorRoles   []Option
     AdminSubjects      []Option
-    AdminGuide         Guide          // judul + 4 langkah panduan birokrasi/perizinan
+    AdminGuide         Guide          // judul + 4 langkah panduan birokrasi/perizinan (dikirim ke klien)
+    AdminLabel         string         // judul widget Legalitas di dashboard (hanya provider admin_docs; tidak dikirim). Nilai: TEMPLATE_EVENT bab 4.1
     MetadataFields     []FieldSpec    // kunci, label, tipe, panjang maks, wajib
     VendorCategories   []VendorCategory // key, label, budget_item_keys (04 BE bab 2)
     ShoppingCategories []Option
@@ -249,11 +250,11 @@ Menambah daftar di [docs/api.md](../../../api.md#format-error); kode lama (`inva
 |---|---|---|
 | 400 | `invalid_metadata`, `invalid_scope`, `invalid_date`, `invalid_timezone`, `invalid_template`, `invalid_phone`, `invalid_file`, `invalid_stage` | validasi masukan; `invalid_scope` juga untuk pelanggaran FK sesi (pg `23503` pada `*_sub_event_scope_fkey`) |
 | 404 | `not_found` | proyek/anak tidak ada **atau bukan milik pemanggil** |
-| 409 | `project_read_only`, `project_limit_reached`, `max_scenarios_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `conflict`, `contributor_in_use`, `already_checked_in`, `vendor_already_linked`, `rollup_locked`, `rollup_conflict` | konflik status/aturan bisnis. `vendor_already_linked`: vendor sudah tertaut ke pos lain (indeks unik). `rollup_locked`: pembayaran manual pada pos yang dihitung dari belanja. `rollup_conflict`: mengaktifkan rollup pada pos yang sudah punya pembayaran tanpa `confirm`. `conflict`: galat `23503`/`23505`/serialisasi yang muncul saat commit (FK ditunda) pada permintaan yang berbalapan; aman diulang. `project_limit_reached`: lebih dari `PLANNER_MAX_PROJECTS` proyek (bawaan 100; batas teknis, bukan batas produk) |
+| 409 | `project_read_only`, `project_limit_reached`, `max_scenarios_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `task_limit_reached`, `admin_doc_limit_reached`, `conflict`, `contributor_in_use`, `already_checked_in`, `vendor_already_linked`, `rollup_locked`, `rollup_conflict` | konflik status/aturan bisnis. `vendor_already_linked`: vendor sudah tertaut ke pos lain (indeks unik). `rollup_locked`: pembayaran manual pada pos yang dihitung dari belanja. `rollup_conflict`: mengaktifkan rollup pada pos yang sudah punya pembayaran tanpa `confirm`. `conflict`: galat `23503`/`23505`/serialisasi yang muncul saat commit (FK ditunda) pada permintaan yang berbalapan; aman diulang. `project_limit_reached`: lebih dari `PLANNER_MAX_PROJECTS` proyek (bawaan 100; batas teknis, bukan batas produk). `task_limit_reached` / `admin_doc_limit_reached`: lebih dari 500 tugas / 200 berkas per proyek (angka usulan, [02 BE §3.4](../02_TIMELINE_DAN_TUGAS/BE.md#34-validasi-dan-batas)) |
 | 413 | `file_too_large` | impor melebihi batas aplikasi |
 | 402 | `entitlement_denied` | disiapkan untuk gating layanan |
 
-**Notice** (bukan error; objek `{"code","message","count"}`, ditambah `shift_days` pada `tasks_not_shifted`). Pada `PATCH /projects/:id` ada dua daftar: `warnings[]` (`tasks_overdue_after_shift`) dan `hints[]` yang bersifat informasi (`tasks_not_shifted`, `sessions_dates_unchanged`). Pada `POST /projects`, setiap applier mengisi `applied.<kunci template>.warnings[]` dengan kodenya sendiri: `lead_time_compressed`, `lead_time_too_short`, `scope_fallback`, `estimate_differs` (02), `scope_missing` (06), `shared_budget_item` (04).
+**Notice** (bukan error; objek `{"code","message","count"}`, ditambah `shift_days` pada `tasks_not_shifted`). Pada `PATCH /projects/:id` ada dua daftar: `warnings[]` (`tasks_overdue_after_shift`) dan `hints[]` yang bersifat informasi (`tasks_not_shifted`, `sessions_dates_unchanged`). Pada `POST /projects`, setiap applier mengisi `applied.<kunci template>.warnings[]` dengan kodenya sendiri: `lead_time_compressed`, `lead_time_too_short`, `scope_fallback`, `budget_link_lost`, `estimate_differs` (02), `scope_missing` (06), `shared_budget_item` (04).
 
 ---
 
@@ -287,7 +288,7 @@ Setiap baris punya mekanisme konkret di skema/endpoint. Klaim integrasi tanpa me
 | # | Dari → Ke | Mekanisme | Dokumen |
 |---|---|---|---|
 | 1 | Semua modul → 01 Dashboard | `SummaryProvider` per modul (bab 7) | 01 BE §5 |
-| 2 | 02 Dokumen → 03 Anggaran | `planner_budget_items.admin_doc_id`; `POST .../admin-docs/:id/sync-budget`; status "tersinkron" = ada pos yang menunjuk dokumen | 02 BE §4.5 |
+| 2 | 02 Dokumen → 03 Anggaran | `planner_budget_items.admin_doc_id`; `POST .../admin-docs/:id/sync-budget` (SQL langsung ke tabel 03, pengecualian bab 1.1); status "tersinkron" = ada pos yang menunjuk dokumen | 02 BE §4.5 |
 | 3 | 02 Tugas ↔ 04 Vendor | `planner_tasks.vendor_id` (FK komposit) | 02 BE §1 |
 | 4 | 04 Vendor → 03 Anggaran | `lock-deal`: tautkan ke pos khusus via kunci kategori, atau buat pos baru; **tidak ada pos ganda**; pos yang dipakai bersama beberapa kategori tidak ditimpa | 04 BE §2.2 |
 | 5 | 03 Skenario → 04 Vendor | `budget_limit` dicari lewat `category_key → budget_item_keys` pada skenario aktif | 04 BE §2.1 |
@@ -325,7 +326,7 @@ Setiap baris punya mekanisme konkret di skema/endpoint. Klaim integrasi tanpa me
 | Dashboard | hitung mundur = 175 hari pada Proyek Contoh | Hal. 1 |
 | Siklus hidup | `DELETE` proyek/akun yang berisi skenario, kontributor, belanja, rundown terhapus bersih (FK ditunda); pindah-sesi Lamaran → Resepsi menetralkan 1 `item_key` bentrok (`catering`), total tetap 74.150.000, `active_sub_events` bersih | audit 01 |
 
-Angka anggaran, tabungan, dan durasi di atas sudah diuji pada DDL (bab 10); sisanya diuji saat modulnya diimplementasikan.
+Angka anggaran, tabungan, dan durasi di atas sudah diuji pada DDL (bab 10); baris **Timeline** dan **Dokumen** (juga widget Timeline dan Legalitas) dijalankan pada kode menu 02 oleh `TestSampleProjectGolden`; sisanya diuji saat modulnya diimplementasikan.
 
 ---
 
@@ -347,4 +348,8 @@ Audit menu 01 (2026-10-21), selain yang di atas:
 
 Implementasi menu 01 (2026-10-21, PostgreSQL 16.2, database sementara): migrasi 005–012 naik, turun ke 4, dan naik lagi; kode Go, endpoint, isolasi antar pengguna, pindah sesi, hapus proyek dengan skenario, fase di batas tengah malam (SQL = Go), balapan `sample` dan `client_token`, dan registry ↔ `CHECK(event_type)` diuji otomatis (127 tes tingkat atas lulus, `-race` lulus); detail di [dokumen implementasi](../../../backend/planner/2026-10-21-planner-menu-01.md#pengujian).
 
-Belum dijalankan: kode modul 02–06, frontend, ekspor `.xlsx`/PDF, pengukuran latensi dashboard (menunggu provider), image Docker sebenarnya (Docker tidak terpasang), uji emas PDF.
+Audit menu 02 (2026-10-21, PostgreSQL 16.2, database sementara yang dihapus setelahnya): migrasi 001–012 naik; 50 tugas dan 15 berkas Proyek Contoh dimasukkan dari tabel 02 BE; kueri provider `timeline`/`admin_docs`, ringkasan `GET /tasks`, urut ulang, geser manual, `append` idempoten, dan semua langkah sinkron biaya (dijalankan persis seperti tertulis di 02 BE §4.5) menghasilkan angka yang tertulis di sana; nama galat FK tugas dicatat (vendor galat pada pernyataan, sesi baru saat `COMMIT`); nama, durasi, dan status 44 tugas serta 15 berkas dibandingkan dengan PDF; algoritma penskalaan jadwal (kode Go acuan) lulus lima tes. Temuan yang mengubah dokumen lain: tanggal sesi Lamaran Proyek Contoh adalah **15 Okt 2026** (bukan 10 Okt), karena offset H-169 diskalakan `175/180`.
+
+Implementasi menu 02 (2026-10-21, backend): modul `plannertimeline` dengan 17 endpoint, ekspor `.xlsx`, dan sambungan ke menu 01 diuji terhadap PostgreSQL 16.2 (177 tes tingkat atas lulus, `-race` pada paket baru); rinciannya di [dokumen implementasi](../../../backend/planner/2026-10-21-planner-menu-02.md) dan [02 BE bab 6](../02_TIMELINE_DAN_TUGAS/BE.md#6-pengujian).
+
+Belum dijalankan: kode modul 03–06, frontend, ekspor PDF, ekspor `.xlsx` yang dibuka di Excel/Numbers/LibreOffice, pengukuran latensi dashboard (menunggu provider), image Docker sebenarnya (Docker tidak terpasang), uji emas PDF baris menu 03–06.

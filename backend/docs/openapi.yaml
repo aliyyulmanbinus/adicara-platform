@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Adicara API
-  description: Backend API untuk platform Adicara (Auth, Health, Profile, Planner menu 01).
+  description: Backend API untuk platform Adicara (Auth, Health, Profile, Planner).
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -15,6 +15,12 @@ servers:
 tags:
   - name: Planner
     description: Menu 01 of the Planner service. Every route needs a bearer token.
+  - name: Planner Timeline
+    description: >-
+      Menu 02 of the Planner service: the task timeline and the administrative documents of a
+      project. Every route needs a bearer token and goes through the same project guard as
+      menu 01 (another user's project is 404; an archived project is read-only, `GET` and the
+      export still work).
 
 components:
   securitySchemes:
@@ -177,8 +183,9 @@ components:
           type: string
           description: >-
             Warnings: `tasks_overdue_after_shift`. Hints: `tasks_not_shifted`,
-            `sessions_dates_unchanged`. Template warnings such as `lead_time_compressed` come from
-            the module that owns the template.
+            `sessions_dates_unchanged`. Template warnings come from the module that owns the
+            template: `lead_time_compressed`, `lead_time_too_short`, `scope_fallback` and
+            `budget_link_lost` (menu 02), `estimate_differs` (sync to the budget).
         message:
           type: string
         count:
@@ -280,6 +287,30 @@ components:
               example: Buku Tamu & RSVP
         templates_available:
           $ref: '#/components/schemas/PlannerTemplatesAvailable'
+        admin_subjects:
+          type: array
+          description: Subjects a document can be about (filter chips and the role dropdown). Menu 02.
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                example: ortu_cpp
+              label:
+                type: string
+                example: Orang Tua CPP
+        admin_guide:
+          type: object
+          description: The callout above the document list. Menu 02.
+          properties:
+            title:
+              type: string
+              example: Panduan Pengurusan Berkas Nikah
+            steps:
+              type: array
+              description: Exactly four steps, plain text.
+              items:
+                type: string
     PlannerInitTemplates:
       type: object
       description: >-
@@ -649,7 +680,377 @@ components:
               description: Only when `created` is true. One entry per template that was applied.
               additionalProperties:
                 $ref: '#/components/schemas/PlannerApplyResult'
+    PlannerTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          maxLength: 255
+        sub_event_scope:
+          type: string
+          description: '`scope_key` of a session of the project; `all` = Umum.'
+          example: resepsi
+        category:
+          type: string
+          example: Vendor
+        phase_order:
+          type: integer
+          minimum: 1
+          maximum: 20
+        phase_name:
+          type: string
+          example: Detail Acara & Perlengkapan
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          description: Inclusive on the Gantt chart.
+        duration_days:
+          type: integer
+          description: '`max(end_date - start_date, 1)` (the convention of the PDF), computed by the database.'
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+        pic:
+          type: string
+        vendor_id:
+          type: string
+          format: uuid
+          description: Omitted when the task has no vendor.
+        vendor_name:
+          type: string
+          description: Omitted when the task has no vendor.
+        vendor_wa:
+          type: string
+          description: Normalized WhatsApp number (62…) of the vendor; omitted when unknown.
+        sort_order:
+          type: integer
+        notes:
+          type: string
+        template_key:
+          type: string
+          description: Omitted for custom tasks. The basis of `append` and of the manual shift.
+          example: wedding.lamaran
+        origin:
+          type: string
+          enum: [pdf, adicara, custom]
+        overdue:
+          type: boolean
+          description: '`status != selesai` and `end_date` before today in the project''s time zone; computed by the server.'
+    PlannerTaskSummary:
+      type: object
+      description: Counts every task of the project, never only the filtered list.
+      properties:
+        total:
+          type: integer
+        completed:
+          type: integer
+        in_progress:
+          type: integer
+        not_started:
+          type: integer
+        overdue:
+          type: integer
+    PlannerTaskList:
+      type: object
+      properties:
+        tasks:
+          type: array
+          description: Always an array, in `sort_order`.
+          items:
+            $ref: '#/components/schemas/PlannerTask'
+        summary:
+          $ref: '#/components/schemas/PlannerTaskSummary'
+    PlannerCreateTaskRequest:
+      type: object
+      required: [title, start_date, end_date]
+      properties:
+        title:
+          type: string
+          description: Trimmed, 1-255 characters, no control characters.
+        sub_event_scope:
+          type: string
+          description: Blank = `all`. Must be a session of the project (`400 invalid_scope`).
+        category:
+          type: string
+          maxLength: 60
+          description: Blank = `Umum`.
+        phase_order:
+          type: integer
+          description: >-
+            0 or absent = follow the task with the highest `sort_order` (phase 1 in an empty
+            project); otherwise 1-20, and a missing `phase_name` is copied from another task of
+            that phase.
+        phase_name:
+          type: string
+          maxLength: 100
+        start_date:
+          type: string
+          format: date
+          description: Within 1095 days before Hari-H and 365 days after the last day of the event.
+        end_date:
+          type: string
+          format: date
+          description: Not before `start_date`; same window.
+        pic:
+          type: string
+          maxLength: 100
+        vendor_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 'Must be a vendor of this project (`400 invalid_input: vendor_id`).'
+        notes:
+          type: string
+          maxLength: 2000
+          description: A line break is allowed; other control characters are not.
+    PlannerUpdateTaskRequest:
+      type: object
+      description: >-
+        Only the fields that are sent change, and only they are validated (a task whose dates fell
+        outside the window can still change status).
+      properties:
+        title:
+          type: string
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        phase_order:
+          type: integer
+          description: >-
+            Unlike `POST`, changing it does not copy `phase_name` from another task of that phase;
+            send both.
+        phase_name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        pic:
+          type: string
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+        vendor_id:
+          type: string
+          format: uuid
+        clear_vendor:
+          type: boolean
+          description: Removes the vendor; cannot be combined with `vendor_id`.
+    PlannerReorderRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          description: >-
+            Every id of the project exactly once. Missing, repeated or foreign ids answer
+            `400 invalid_input: ids` and change nothing. The items get `sort_order` 1..n.
+          items:
+            type: string
+            format: uuid
+    PlannerShiftRequest:
+      type: object
+      required: [days]
+      properties:
+        days:
+          type: integer
+          description: Negative = earlier. Not 0; absolute value at most 1826.
+    PlannerShiftResult:
+      type: object
+      properties:
+        shifted:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerGenerateRequest:
+      type: object
+      required: [preset]
+      properties:
+        preset:
+          type: string
+          description: >-
+            One of `templates_available.timeline_presets` of the project's event type
+            (`wedding_pdf_44`, `wedding_essential_22`, `general`); otherwise `400 invalid_template`.
+        include_adicara_tasks:
+          type: boolean
+          description: The six Adicara tasks of the wedding; ignored for `general`.
+        mode:
+          type: string
+          enum: [append, replace_template, replace_all]
+          default: append
+        confirm:
+          type: boolean
+          description: >-
+            Required for `replace_template` when a template task is not `belum` or has a vendor,
+            and for `replace_all` when the project has any task (`400 invalid_input: confirm`).
+    PlannerGenerateResult:
+      type: object
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        deleted:
+          type: integer
+        warnings:
+          type: array
+          description: '`lead_time_compressed`, `lead_time_too_short`, `scope_fallback`, `budget_link_lost`.'
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerAdminDoc:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document_name:
+          type: string
+          maxLength: 255
+        subject_role:
+          type: string
+          description: A key of `admin_subjects` of the event type.
+          example: ortu_cpw
+        quantity_detail:
+          type: string
+          example: 2 lembar
+        nominal_cost:
+          type: integer
+          format: int64
+          description: Whole rupiah, 0 to 10^13.
+        status:
+          type: string
+          enum: [belum, selesai]
+        sort_order:
+          type: integer
+        notes:
+          type: string
+        template_key:
+          type: string
+          description: Omitted for custom documents.
+        origin:
+          type: string
+          enum: [pdf, adicara, custom]
+        budget_item_id:
+          type: string
+          format: uuid
+          description: The budget line that points at this document; omitted until the cost is synced.
+    PlannerAdminDocList:
+      type: object
+      properties:
+        docs:
+          type: array
+          description: Always an array, in `sort_order`.
+          items:
+            $ref: '#/components/schemas/PlannerAdminDoc'
+        summary:
+          type: object
+          description: Counts every document of the project, not only the filtered list.
+          properties:
+            total:
+              type: integer
+            completed:
+              type: integer
+    PlannerCreateAdminDocRequest:
+      type: object
+      required: [document_name]
+      properties:
+        document_name:
+          type: string
+          description: Trimmed, 1-255 characters.
+        subject_role:
+          type: string
+          description: Blank = `bersama` (wedding) or `umum`. Must be a key of `admin_subjects`.
+        quantity_detail:
+          type: string
+          maxLength: 100
+        nominal_cost:
+          type: integer
+          format: int64
+        notes:
+          type: string
+          maxLength: 2000
+    PlannerUpdateAdminDocRequest:
+      type: object
+      properties:
+        document_name:
+          type: string
+        subject_role:
+          type: string
+        quantity_detail:
+          type: string
+        nominal_cost:
+          type: integer
+          format: int64
+        notes:
+          type: string
+    PlannerApplyDocsRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [append, replace_template]
+          default: append
+        confirm:
+          type: boolean
+          description: >-
+            Required for `replace_template` when a template document is done or a budget line
+            points at one; the response then warns `budget_link_lost`.
+    PlannerSyncBudgetRequest:
+      type: object
+      description: The whole body is optional.
+      properties:
+        sub_event_scope:
+          type: string
+          description: >-
+            Session of the budget line. Default: `akad` for the KUA fee (`wedding.pendaftaran_kua`,
+            matched to the line `biaya_kua`), otherwise `all`.
+    PlannerSyncBudgetResult:
+      type: object
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+        created:
+          type: boolean
+          description: A new budget line was created (`201`).
+        linked:
+          type: boolean
+          description: An existing line was linked to the document.
+        warnings:
+          type: array
+          description: '`estimate_differs` when the linked line already had a different non-zero estimate; it is kept.'
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
   parameters:
+    PlannerTaskId:
+      name: taskId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown task and another project's task answer 404.
+      schema:
+        type: string
+        format: uuid
+    PlannerDocId:
+      name: docId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown document and another project's document answer 404.
+      schema:
+        type: string
+        format: uuid
     PlannerProjectId:
       name: projectId
       in: path
@@ -1490,6 +1891,631 @@ paths:
           description: >-
             `session_in_use` (with `error.details.usage`), `project_read_only` or `conflict`
             (safe to retry).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Timeline]
+      summary: List tasks
+      operationId: plannerListTasks
+      description: >-
+        Tasks in `sort_order` with the summary of the whole project. `scope=all` means only the
+        general (Umum) tasks; without `scope` every session is returned.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [belum, proses, selesai]
+        - name: category
+          in: query
+          description: Exact match.
+          schema:
+            type: string
+        - name: scope
+          in: query
+          description: '`scope_key` of a session.'
+          schema:
+            type: string
+        - name: phase
+          in: query
+          description: '`phase_order`, 1-20.'
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tasks and summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerTaskList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Timeline]
+      summary: Add a task
+      operationId: plannerCreateTask
+      description: >-
+        The task goes to the end of the list and starts as `belum`, `origin` `custom`. At most 500
+        tasks per project (`409 task_limit_reached`); the count is checked under a lock on the
+        project so a double click cannot pass it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerCreateTaskRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`task_limit_reached`, `project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/{taskId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerTaskId'
+    patch:
+      tags: [Planner Timeline]
+      summary: Change a task
+      operationId: plannerUpdateTask
+      description: Partial update; see the request schema.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateTaskRequest'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Timeline]
+      summary: Delete a task
+      operationId: plannerDeleteTask
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/{taskId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerTaskId'
+    patch:
+      tags: [Planner Timeline]
+      summary: Set the status of a task
+      operationId: plannerSetTaskStatus
+      description: The quick toggle (checkbox, Kanban). There are no transition rules.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [belum, proses, selesai]
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Timeline]
+      summary: Reorder tasks
+      operationId: plannerReorderTasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerReorderRequest'
+      responses:
+        '200':
+          description: All tasks in the new order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerTaskList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/shift:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Timeline]
+      summary: Shift the schedule by hand
+      operationId: plannerShiftTasks
+      description: >-
+        Moves the template tasks that are not done by `days`. Not idempotent: every call moves
+        again. Moving Hari-H itself goes through `PATCH /projects/{projectId}` with `shift_tasks`.
+        Every shifted task must stay within the schedule window (`400 invalid_date`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerShiftRequest'
+      responses:
+        '200':
+          description: Shifted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShiftResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/generate-defaults:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Timeline]
+      summary: Generate the schedule from a template
+      operationId: plannerGenerateTasks
+      description: >-
+        Scales the offsets of the template to the time left before Hari-H (never before today or
+        `prep_start_date`) and writes the tasks in one transaction; a refused call changes nothing.
+        An event in the past answers `400 invalid_date`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerGenerateRequest'
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerGenerateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`task_limit_reached`, `project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/tasks/export-spreadsheet:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Timeline]
+      summary: Export the schedule as .xlsx
+      operationId: plannerExportTasks
+      description: >-
+        All tasks of the project (not a filtered list) and a weekly Gantt matrix. Text that
+        starts with `=`, `+`, `-` or `@` is prefixed with an apostrophe. Limited to 10 per minute
+        per user. Works on an archived project.
+      responses:
+        '200':
+          description: The workbook.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="jadwal-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Timeline]
+      summary: List documents
+      operationId: plannerListAdminDocs
+      description: Documents in `sort_order` with the summary of the whole project.
+      parameters:
+        - name: subject
+          in: query
+          description: A key of `admin_subjects` of the event type.
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [belum, selesai]
+      responses:
+        '200':
+          description: Documents and summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerAdminDocList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Timeline]
+      summary: Add a document
+      operationId: plannerCreateAdminDoc
+      description: At most 200 documents per project (`409 admin_doc_limit_reached`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerCreateAdminDocRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerAdminDoc'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`admin_doc_limit_reached`, `project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs/{docId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerDocId'
+    patch:
+      tags: [Planner Timeline]
+      summary: Change a document
+      operationId: plannerUpdateAdminDoc
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateAdminDocRequest'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerAdminDoc'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Timeline]
+      summary: Delete a document
+      operationId: plannerDeleteAdminDoc
+      description: A budget line that points at the document keeps its amount and loses the link.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs/{docId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerDocId'
+    patch:
+      tags: [Planner Timeline]
+      summary: Set the status of a document
+      operationId: plannerSetAdminDocStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [belum, selesai]
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerAdminDoc'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Timeline]
+      summary: Reorder documents
+      operationId: plannerReorderAdminDocs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerReorderRequest'
+      responses:
+        '200':
+          description: All documents in the new order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerAdminDocList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs/apply-template:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Timeline]
+      summary: Add the standard documents of the event type
+      operationId: plannerApplyAdminDocTemplate
+      description: >-
+        The 15 KUA documents of the wedding or the short permit list of the other types. An event
+        type without a document template (`other`) answers `400 invalid_template`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerApplyDocsRequest'
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerGenerateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`admin_doc_limit_reached`, `project_read_only` (the project is archived) or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/admin-docs/{docId}/sync-budget:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerDocId'
+    post:
+      tags: [Planner Timeline]
+      summary: Copy the cost of a document into the budget
+      operationId: plannerSyncAdminDocBudget
+      description: >-
+        Idempotent and never overwrites a figure: an already linked document changes nothing; a
+        waiting line with the matching session and `item_key` is linked (and takes the cost when its
+        estimate is 0); otherwise a new line in category `Legalitas` is created. The cost must be
+        above 0. The sync happens once: later changes to the cost do not reach the line.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerSyncBudgetRequest'
+      responses:
+        '200':
+          description: Nothing new was created (already linked, or an existing line was linked).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSyncBudgetResult'
+        '201':
+          description: A new budget line was created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSyncBudgetResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived) or `conflict`.'
           content:
             application/json:
               schema:

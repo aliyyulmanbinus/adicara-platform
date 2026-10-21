@@ -1,0 +1,33 @@
+{
+ "project": {
+  "id": "6347c545-f38c-4ed2-975d-6b5ddf6915f4",
+  "event_type": "wedding",
+  "title": "Contoh: Pernikahan Sinta & Arif",
+  "event_date": "2027-03-28",
+  "event_end_date": null,
+  "prep_start_date": "2026-10-04",
+  "timezone": "Asia/Jakarta",
+  "days_remaining": 175,
+  "phase": "upcoming",
+  "day_number": 0,
+  "total_days": 1,
+  "target_budget": 75000000,
+  "savings_target": null,
+  "status": "active",
+  "is_sample": true,
+  "skipped_vendor_categories": [],
+  "invitation_id": null,
+  "metadata": {
+   "bride_name": "Sinta Maharani",
+   "bride_parents": "Bpk. Bambang & Ibu Sri",
+   "city": "Jakarta Selatan",
+   "groom_name": "Arif Pratama",
+   "groom_parents": "Bpk. Hendra & Ibu Rina",
+   "hero_title": "Bismillah Nikah",
+   "venue_name": "Sasana Kriya Ballroom"
+  },
+  "created_at": "2026-10-04T10:00:00+07:00",
+  "updated_at": "2026-10-04T10:00:00+07:00"
+ },
+ "shiftable_tasks": 35
+}

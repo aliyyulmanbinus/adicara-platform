@@ -1,0 +1,296 @@
+[
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "days: must keep every shifted task within the project schedule window",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "end_date: must be within the project schedule window",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "end_date: must not be before start_date",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "event_date: must not be before today",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "prep_start_date: must not be after event_date",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "start_date: must be a valid date in YYYY-MM-DD format",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "start_date: must be within the project schedule window",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_date",
+  "message": "start_date: must not be after end_date",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "category: must be at most 60 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "clear_vendor: cannot be combined with vendor_id",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "confirm: required",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "days: must be at most 1826 in absolute value",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "days: must not be zero",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "document_name: must be at most 255 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "document_name: must not be empty",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "ids: must list every id exactly once",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "mode: must be one of append, replace_template",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "mode: must be one of append, replace_template, replace_all",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "nominal_cost: must be between 0 and 10000000000000",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "nominal_cost: must be greater than 0",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "notes: must be at most 2000 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "phase: must be between 1 and 20",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "phase_name: must be at most 100 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "phase_order: must be between 1 and 20",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "pic: must be at most 100 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "preset: required",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "quantity_detail: must be at most 100 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "scope: must be a session scope_key",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "status: must be one of belum, proses, selesai",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "status: must be one of belum, selesai",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "subject: must be one of the event type subjects",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "subject_role: must be one of the event type subjects",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "title: must be at most 255 characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "title: must not be empty",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "title: must not contain control characters",
+  "source": "respons asli (probe)"
+ },
+ {
+  "status": 400,
+  "code": "invalid_input",
+  "message": "vendor_id: must be a vendor of this project",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_json",
+  "message": "invalid JSON body",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_scope",
+  "message": "sub_event_scope: unknown session",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_template",
+  "message": "admin_docs: not available for this event type",
+  "source": "respons asli"
+ },
+ {
+  "status": 400,
+  "code": "invalid_template",
+  "message": "preset: not available for this event type",
+  "source": "respons asli"
+ },
+ {
+  "status": 401,
+  "code": "unauthorized",
+  "message": "missing bearer token",
+  "source": "respons asli"
+ },
+ {
+  "status": 404,
+  "code": "not_found",
+  "message": "document not found",
+  "source": "respons asli"
+ },
+ {
+  "status": 404,
+  "code": "not_found",
+  "message": "project not found",
+  "source": "respons asli"
+ },
+ {
+  "status": 404,
+  "code": "not_found",
+  "message": "task not found",
+  "source": "respons asli"
+ },
+ {
+  "status": 409,
+  "code": "admin_doc_limit_reached",
+  "message": "at most 200 documents per project",
+  "source": "respons asli"
+ },
+ {
+  "status": 409,
+  "code": "conflict",
+  "message": "the project was changed concurrently, try again",
+  "source": "kode (usecase/service.go)"
+ },
+ {
+  "status": 409,
+  "code": "project_read_only",
+  "message": "the project is archived; restore it to make changes",
+  "source": "respons asli"
+ },
+ {
+  "status": 409,
+  "code": "task_limit_reached",
+  "message": "at most 500 tasks per project",
+  "source": "respons asli"
+ },
+ {
+  "status": 429,
+  "code": "rate_limited",
+  "message": "too many requests, try again later",
+  "source": "respons asli (probe)"
+ }
+]

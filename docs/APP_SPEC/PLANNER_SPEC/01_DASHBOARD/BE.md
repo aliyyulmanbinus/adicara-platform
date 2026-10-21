@@ -588,7 +588,7 @@ Catatan: kelebihan bayar pada satu pos tidak boleh mengurangi kewajiban pos lain
 
 ### 5.2 Query per provider
 
-`$1` = `project_id`, `$2` = zona waktu proyek. "Hari ini" selalu `(now() AT TIME ZONE $2)::date`. Kueri provider ini milik modul 02–06 dan **belum diimplementasikan** (hanya kueri Hub di bab 5.3–5.4 yang sudah menjadi kode).
+`$1` = `project_id`, `$2` = zona waktu proyek. "Hari ini" selalu `(now() AT TIME ZONE $2)::date`. Kueri provider ini milik modul 02–06 dan **belum diimplementasikan** (hanya kueri Hub di bab 5.3–5.4 yang sudah menjadi kode). Modul yang mengimplementasikannya memakai waktu sebagai parameter (`$3::timestamptz`) seperti kueri Hub, bukan `now()`, supaya batas tengah malam bisa diuji; bentuk itu untuk `timeline` dan `admin_docs` ada di [02 BE §4.6](../02_TIMELINE_DAN_TUGAS/BE.md#46-sambungan-ke-menu-01) (dijalankan terhadap data Proyek Contoh).
 
 **timeline**
 ```sql

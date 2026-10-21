@@ -47,13 +47,14 @@ Handler tidak mengandung SQL dan repository tidak menentukan status HTTP. `domai
 | `internal/ginserver` | Engine Gin, CORS, dan proxy tepercaya. |
 | `internal/apierr`, `internal/ginutil` | Error API bertipe dan serialisasinya ke JSON. |
 | `internal/modules/{auth,profile,health}` | Modul fungsional. |
-| `internal/modules/planner` | Planner menu 01: proyek, master sesi, registry jenis acara, dashboard. Modul Planner lain (timeline, keuangan, vendor, tamu, rundown) mendaftar ke dalamnya lewat `SummaryProvider`, `TemplateApplier`, dan `SampleOverlay`; belum dibangun. [Dokumen](backend/planner/2026-10-21-planner-menu-01.md). |
+| `internal/modules/planner` | Planner menu 01: proyek, master sesi, registry jenis acara, dashboard. Modul Planner lain mendaftar ke dalamnya lewat `SummaryProvider`, `TemplateApplier`, dan `SampleOverlay`. [Dokumen](backend/planner/2026-10-21-planner-menu-01.md). |
+| `internal/modules/plannertimeline` | Planner menu 02: tugas/jadwal persiapan dan dokumen legalitas (penskalaan jadwal dari template, ekspor `.xlsx`, sinkron biaya ke anggaran). Keuangan, vendor, tamu, dan rundown belum dibangun. [Dokumen](backend/planner/2026-10-21-planner-menu-02.md). |
 
 Modul `profile` memakai usecase `auth` untuk membaca dan mengubah pengguna.
 
 ## Batas fase
 
-Tersedia: autentikasi (register, login, refresh, logout, ganti password), profil (`/v1/me`), health check, dan Planner menu 01 (proyek, sesi, dashboard; widget dashboard dan template terisi saat menu 02–06 dibangun). Modul undangan, tamu, dan RSVP dihapus dari backend dan menunggu dibangun ulang. Wishes, upload media, hadiah, editor lanjutan, reporting, dan pembayaran belum tersedia.
+Tersedia: autentikasi (register, login, refresh, logout, ganti password), profil (`/v1/me`), health check, dan Planner menu 01 dan 02 (proyek, sesi, dashboard, tugas, dokumen legalitas; widget keuangan, vendor, tamu, dan rundown serta template-nya terisi saat menu 03–06 dibangun). Modul undangan, tamu, dan RSVP dihapus dari backend dan menunggu dibangun ulang. Wishes, upload media, hadiah, editor lanjutan, reporting, dan pembayaran belum tersedia.
 
 ## Keputusan
 

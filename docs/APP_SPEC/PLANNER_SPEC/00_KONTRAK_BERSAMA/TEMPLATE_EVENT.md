@@ -2,7 +2,7 @@
 
 Data untuk `EventTypeSpec` ([README bab 3](README.md#3-registry-event-type-di-kode-bukan-basis-data)) dan template bawaan sembilan jenis acara Adicara.
 
-> **Sumber data.** Pernikahan (💍) bersumber dari `Wedding_Planner.pdf` dan tabelnya ada di dokumen modul masing-masing (02 BE §5–6, 03 BE §6, 04 BE §5, 06 BE §5). Delapan jenis lainnya (🕌 🍼 🏢 🚀 🎂 🎓 🎤 ✨) **tidak ada di PDF**: isi di bawah adalah **usulan Adicara** (ditandai `origin: adicara`) yang perlu ditinjau pemilik produk sebelum dirilis. Template hanya struktur dan estimasi; tidak ada pembayaran, vendor, atau tamu (lihat [README bab 5](README.md#5-template-vs-data-contoh)).
+> **Sumber data.** Pernikahan (💍) bersumber dari `Wedding_Planner.pdf` dan tabelnya ada di dokumen modul masing-masing (02 BE §5, 03 BE §6, 04 BE §5, 06 BE §5). Delapan jenis lainnya (🕌 🍼 🏢 🚀 🎂 🎓 🎤 ✨) **tidak ada di PDF**: isi di bawah adalah **usulan Adicara** (ditandai `origin: adicara`) yang perlu ditinjau pemilik produk sebelum dirilis. Template hanya struktur dan estimasi; tidak ada pembayaran, vendor, atau tamu (lihat [README bab 5](README.md#5-template-vs-data-contoh)).
 
 ---
 
@@ -21,6 +21,8 @@ bila avail < 3: semua tugas dijepit ke [hari_ini, event_date] + warning lead_tim
 ```
 
 Contoh terhitung: pernikahan dengan `avail = 175` (Proyek Contoh): `k = 175/180`, tugas 1 (H-180) jatuh pada hari ini. Aqiqah dengan `avail = 10`: `k = (21/60) × 10/21 ≈ 0,167`; "Gladi resik" (H-1…H-0) menjadi H-0…H-0 (durasi minimal 1 hari). `round()` = bilangan bulat terdekat, setengah naik (`floor(x + 0,5)`); bukan pembulatan bankir. Durasi tugas selalu `max(selesai − mulai, 1)` (konvensi PDF Hal. 3).
+
+Setiap offset berada di rentang `0…R` (tugas paling awal tepat di H-`R`, yang oleh penskalaan jatuh pada awal horizon baku `LeadTimeDays`); offset di atas `R` tidak diizinkan karena akan jatuh sebelum horizon dan hanya dijepit ke hari ini tanpa arti. Aturan ini dijaga tes `TestEveryTemplateOffsetIsWithinItsHorizon` ([02 BE §6](../02_TIMELINE_DAN_TUGAS/BE.md#6-pengujian)); pemeriksaan skrip atas seluruh template menemukan satu pelanggaran (Seminar "Undang dan konfirmasi pembicara" H-70…H-56, kini H-58…H-50: setelah panitia inti terbentuk, selesai tepat sebelum registrasi dibuka).
 
 Penskalaan diperlukan karena offset tetap H-180…H-4 akan menjatuhkan tanggal tugas ke masa lalu untuk acara berjarak pendek; template juga memuat tugas H-3…H-0 (gladi resik, Hari-H).
 
@@ -92,6 +94,24 @@ Hanya seminar yang berbeda dari bawaan; jenis lain memakai bawaan.
 | `other` | *(kosong)* | `umum` · `vip` | `host` · `internal` · `sponsor` · `other` | `panitia` · `lembaga` · `umum` |
 
 Label tampilan Indonesia berasal dari registry (mis. `groom` → "Mempelai Pria", `ortu_cpp` → "Orang Tua CPP"). Istilah PDF "CMP/CMW" disamakan dengan CPP/CPW; nama dokumen PDF tetap disalin apa adanya.
+
+### 4.1 Subjek dokumen, label widget, dan panduan (milik Menu 02)
+
+Tiga bidang registry yang ditambahkan modul Timeline & Tugas ([02 BE bab 2](../02_TIMELINE_DAN_TUGAS/BE.md#2-domain--dto-go)): `AdminSubjects` (kunci dan label subjek dokumen; dikirim ke klien), `AdminGuide` (judul dan 4 langkah; dikirim ke klien), dan `AdminLabel` (judul widget Legalitas di dashboard; hanya dipakai provider `admin_docs`, tidak dikirim).
+
+| Key | `AdminSubjects` (`key` → label) | `AdminLabel` | `AdminGuide.Title` |
+|---|---|---|---|
+| `wedding` | `cpp` CPP · `cpw` CPW · `ortu_cpp` Orang Tua CPP · `ortu_cpw` Orang Tua CPW · `bersama` Bersama | Kelengkapan Berkas KUA | Panduan Pengurusan Berkas Nikah |
+| delapan jenis lain | `panitia` Panitia · `lembaga` Lembaga/Instansi · `umum` Umum | Kelengkapan Perizinan | Panduan Perizinan Acara |
+
+Langkah panduan pernikahan ada di [02 BE §5.4](../02_TIMELINE_DAN_TUGAS/BE.md#54-panduan-birokrasi-pdf-hal-11) (catatan PDF Hal. 11). Langkah panduan **delapan jenis lain** adalah usulan Adicara, bukan dari PDF, dan belum ditinjau pemilik produk; syarat, biaya, dan instansi berbeda per daerah sehingga teksnya mengarahkan pengguna bertanya ke kantor setempat:
+
+1. **RT/RW**: sampaikan rencana acara dan minta surat pengantar atau persetujuan lingkungan, terutama bila acara memakai jalan, tenda, atau pengeras suara.
+2. **Kelurahan dan Polsek**: sampaikan pemberitahuan acara dengan membawa surat pengantar RT/RW dan fotokopi KTP penanggung jawab; tanyakan apakah acara Anda memerlukan izin keramaian.
+3. **Izin keramaian (bila diperlukan)**: untuk acara yang ramai, memakai jalan umum, atau menghadirkan hiburan dan musik, ajukan ke Polsek setempat dengan rincian acara; tanyakan syarat dan biaya yang berlaku.
+4. **Pengelola venue**: pastikan tanggal, jam, kapasitas, aturan lokasi (suara, parkir, dekorasi), dan kontrak atau surat izin penggunaan tempat secara tertulis.
+
+Tugas khusus jenis pada bab 7–14 diisi kunci, kategori, dan fasenya dengan aturan [02 BE §5.5](../02_TIMELINE_DAN_TUGAS/BE.md#55-template-jenis-non-pernikahan-usulan-adicara).
 
 ## 5. Kolom Metadata Proyek (`planner_projects.metadata`)
 
@@ -249,7 +269,7 @@ Semua jenis juga menerima `hero_title` (≤ 60 karakter; judul besar hero, mis. 
 
 ## 13. 🎤 Seminar (`seminar`)
 
-- **Tugas tambahan:** Undang dan konfirmasi pembicara H-70…H-56 · Buka registrasi peserta H-50…H-48 · Siapkan materi, sertifikat, dan kit H-24…H-12.
+- **Tugas tambahan:** Undang dan konfirmasi pembicara H-58…H-50 · Buka registrasi peserta H-50…H-48 · Siapkan materi, sertifikat, dan kit H-24…H-12.
 - **Dokumen** (`template_key` = `seminar.<judul bergaris-bawah>`, biaya 0, jumlah "1 berkas"): Kontrak venue (`lembaga`) · Perjanjian pembicara (`panitia`) · Izin keramaian (bila > 500 orang) (`lembaga`) · Lisensi musik (LMKN) bila relevan (`lembaga`).
 - **Pos anggaran:** bab 15.1 (persentase dan `item_key`); pemetaan kategori vendor → pos: bab 15.2.
 - **Kategori vendor:** `venue` · `katering` · `av` · `streaming` Live Streaming · `dokumentasi` · `percetakan`.

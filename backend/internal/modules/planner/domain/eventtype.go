@@ -6,9 +6,10 @@ package domain
 // (guarded by a test that reads pg_get_constraintdef).
 //
 // Fields owned by the other planner modules (vendor and shopping categories,
-// guest sides and categories, contributor roles, document subjects and guide,
-// audio moment tags) are added here when those modules are built; their data
-// is in PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md.
+// guest sides and categories, contributor roles, audio moment tags) are added
+// here when those modules are built; their data is in
+// PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md. Menu 02 added the document
+// subjects, the legal widget title and the bureaucracy guide (TEMPLATE_EVENT 4.1).
 
 const (
 	EventWedding   EventType = "wedding"
@@ -52,6 +53,18 @@ type FieldSpec struct {
 	Required bool      `json:"required"`
 }
 
+// Option is a key with its display label (document subjects).
+type Option struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
+}
+
+// Guide is the callout above the document list: a title and exactly four steps.
+type Guide struct {
+	Title string   `json:"title"`
+	Steps []string `json:"steps"`
+}
+
 // Labels are the words in the UI that depend on the event type.
 type Labels struct {
 	Guest     string `json:"guest"`      // noun for a guest: "Tamu", seminar "Peserta"
@@ -79,6 +92,12 @@ type EventTypeSpec struct {
 	MetadataFields []FieldSpec   `json:"metadata_fields"`
 	Labels         Labels        `json:"labels"`
 	Templates      TemplateSet   `json:"-"`
+
+	// Owned by menu 02 (documents). AdminLabel is the title of the dashboard
+	// widget and is read by the admin_docs provider; it is not sent to clients.
+	AdminSubjects []Option `json:"admin_subjects"`
+	AdminGuide    Guide    `json:"admin_guide"`
+	AdminLabel    string   `json:"-"`
 }
 
 // TemplatesAvailable is the part of TemplateSet that can be requested now.
@@ -165,6 +184,43 @@ func fields(extra ...FieldSpec) []FieldSpec {
 
 var defaultLabels = Labels{Guest: "Tamu", GuestMenu: "Buku Tamu & RSVP"}
 
+// weddingAdminSubjects follows Wedding_Planner.pdf p. 11 (the PDF writes CMP/CMW
+// for the parents' side; Adicara uses ortu_cpp/ortu_cpw).
+var weddingAdminSubjects = []Option{
+	{"cpp", "CPP"}, {"cpw", "CPW"}, {"ortu_cpp", "Orang Tua CPP"}, {"ortu_cpw", "Orang Tua CPW"}, {"bersama", "Bersama"},
+}
+
+// weddingAdminGuide is the note of Wedding_Planner.pdf p. 11 (forms N1, N2, N4).
+var weddingAdminGuide = Guide{
+	Title: "Panduan Pengurusan Berkas Nikah",
+	Steps: []string{
+		"RT & RW: minta surat pengantar dengan membawa fotokopi KTP kamu dan pasangan serta fotokopi Kartu Keluarga.",
+		"Kelurahan: bawa surat pengantar untuk mengisi formulir N1, N2, N4 dan surat keterangan belum menikah; syarat pasfoto 3×4 dan 2×3 masing-masing 2 lembar, fotokopi KTP CPW dan CPP 2 lembar, fotokopi KK CPP dan CPW 2 lembar, dan surat pengantar RT/RW.",
+		"KUA asal (numpang nikah): minta surat rekomendasi numpang nikah di tempat tujuan; siapkan fotokopi KTP CPP dan CPW, fotokopi KK, surat pengantar kelurahan (N1, N2, N4), pasfoto 2×3 dan 3×4 masing-masing 2 lembar.",
+		"KUA tempat akad: serahkan surat rekomendasi pindah nikah dari KUA asal, fotokopi KTP dan KK, foto berwarna 2×3 dan 3×4 masing-masing 2 lembar, fotokopi ijazah terakhir, dan fotokopi akta kelahiran.",
+	},
+}
+
+// The eight other types share subjects and a permit guide. The guide is an
+// Adicara proposal, not from the PDF; requirements differ per region, so the
+// text sends the user to the local office.
+var generalAdminSubjects = []Option{{"panitia", "Panitia"}, {"lembaga", "Lembaga/Instansi"}, {"umum", "Umum"}}
+
+var generalAdminGuide = Guide{
+	Title: "Panduan Perizinan Acara",
+	Steps: []string{
+		"RT/RW: sampaikan rencana acara dan minta surat pengantar atau persetujuan lingkungan, terutama bila acara memakai jalan, tenda, atau pengeras suara.",
+		"Kelurahan dan Polsek: sampaikan pemberitahuan acara dengan membawa surat pengantar RT/RW dan fotokopi KTP penanggung jawab; tanyakan apakah acara Anda memerlukan izin keramaian.",
+		"Izin keramaian (bila diperlukan): untuk acara yang ramai, memakai jalan umum, atau menghadirkan hiburan dan musik, ajukan ke Polsek setempat dengan rincian acara; tanyakan syarat dan biaya yang berlaku.",
+		"Pengelola venue: pastikan tanggal, jam, kapasitas, aturan lokasi (suara, parkir, dekorasi), dan kontrak atau surat izin penggunaan tempat secara tertulis.",
+	},
+}
+
+const (
+	weddingAdminLabel = "Kelengkapan Berkas KUA"
+	generalAdminLabel = "Kelengkapan Perizinan"
+)
+
 // generalTemplates is what the eight non-wedding types own (the wedding adds
 // shopping and playlist templates; "other" has no document template).
 func generalTemplates(adminDocs bool) TemplateSet {
@@ -174,7 +230,7 @@ func generalTemplates(adminDocs bool) TemplateSet {
 // DefaultRegistry returns the nine event types of Adicara. Wedding comes from
 // Wedding_Planner.pdf; the other eight are Adicara proposals.
 func DefaultRegistry() *Registry {
-	return NewRegistry([]EventTypeSpec{
+	specs := []EventTypeSpec{
 		{
 			Key: EventWedding, Label: "Pernikahan", Icon: "💍", LeadTimeDays: 180,
 			Sessions: []SessionSeed{
@@ -193,6 +249,7 @@ func DefaultRegistry() *Registry {
 				TimelinePresets: []string{"wedding_pdf_44", "wedding_essential_22"}, IncludeAdicaraTasks: true,
 				AdminDocs: true, BudgetLines: true, ShoppingList: true, Rundown: true, Playlist: true,
 			},
+			AdminSubjects: weddingAdminSubjects, AdminGuide: weddingAdminGuide, AdminLabel: weddingAdminLabel,
 		},
 		{
 			Key: EventKhitanan, Label: "Khitanan", Icon: "🕌", LeadTimeDays: 45,
@@ -292,7 +349,16 @@ func DefaultRegistry() *Registry {
 			MetadataFields: fields(str("organizer_name", "Nama Penyelenggara", 150, false)),
 			Labels:         defaultLabels, Templates: generalTemplates(false),
 		},
-	})
+	}
+
+	// The eight non-wedding types share the permit subjects, guide and widget title.
+	for i := range specs {
+		if specs[i].AdminSubjects == nil {
+			specs[i].AdminSubjects, specs[i].AdminGuide, specs[i].AdminLabel = generalAdminSubjects, generalAdminGuide, generalAdminLabel
+		}
+	}
+
+	return NewRegistry(specs)
 }
 
 // maxCount bounds the head-count metadata fields (safe for JavaScript numbers).

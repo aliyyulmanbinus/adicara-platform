@@ -1,0 +1,81 @@
+// Code generated from PLANNER_SPEC (02 BE section 5, TEMPLATE_EVENT chapters 2 and 7-14) by a one-off script; edit freely afterwards,
+// TestTemplatesMatchSpec keeps the two in step.
+
+package domain
+
+// weddingTasks are the 44 tasks of Wedding_Planner.pdf p. 3 (02 BE 5.1). Offsets are days before Hari-H on the R = 180 horizon.
+var weddingTasks = []TaskTemplate{
+	{Key: "wedding.pertemuan_keluarga_1", Title: "Pertemuan keluarga", Scope: "lamaran", Category: "Keluarga", Phase: 1, Start: 180, End: 179, Essential: false},
+	{Key: "wedding.pilih_tanggal_lamaran", Title: "Pilih tanggal lamaran", Scope: "lamaran", Category: "Acara", Phase: 1, Start: 178, End: 177, Essential: false},
+	{Key: "wedding.tetapkan_anggaran_lamaran", Title: "Tetapkan anggaran lamaran", Scope: "lamaran", Category: "Keuangan", Phase: 1, Start: 176, End: 174, Essential: false},
+	{Key: "wedding.draf_daftar_tamu_lamaran", Title: "Draf daftar tamu lamaran", Scope: "lamaran", Category: "Tamu", Phase: 1, Start: 173, End: 171, Essential: false},
+	{Key: "wedding.book_vendor_untuk_lamaran", Title: "Book vendor untuk lamaran", Scope: "lamaran", Category: "Vendor", Phase: 1, Start: 173, End: 172, Essential: false},
+	{Key: "wedding.persiapkan_cincin_dan_kebaya_lamaran", Title: "Persiapkan cincin dan kebaya lamaran", Scope: "lamaran", Category: "Busana", Phase: 1, Start: 171, End: 170, Essential: false},
+	{Key: "wedding.lamaran", Title: "Lamaran", Scope: "lamaran", Category: "Acara", Phase: 1, Start: 169, End: 168, Essential: false},
+	{Key: "wedding.penentuan_tanggal_pernikahan", Title: "Penentuan tanggal pernikahan", Scope: "all", Category: "Acara", Phase: 2, Start: 167, End: 166, Essential: true},
+	{Key: "wedding.siapkan_pendaftaran_pernikahan", Title: "Siapkan pendaftaran pernikahan", Scope: "akad", Category: "Administrasi", Phase: 2, Start: 165, End: 164, Essential: true},
+	{Key: "wedding.buat_list_seserahan", Title: "Buat list seserahan", Scope: "all", Category: "Logistik", Phase: 2, Start: 163, End: 162, Essential: true},
+	{Key: "wedding.tetapkan_anggaran_pernikahan", Title: "Tetapkan anggaran pernikahan", Scope: "all", Category: "Keuangan", Phase: 2, Start: 161, End: 160, Essential: true},
+	{Key: "wedding.draf_daftar_tamu_pernikahan", Title: "Draf daftar tamu pernikahan", Scope: "resepsi", Category: "Tamu", Phase: 2, Start: 159, End: 157, Essential: true},
+	{Key: "wedding.pertemuan_keluarga_2", Title: "Pertemuan keluarga", Scope: "all", Category: "Keluarga", Phase: 2, Start: 156, End: 155, Essential: true},
+	{Key: "wedding.book_vendor_untuk_pernikahan", Title: "Book Vendor untuk pernikahan", Scope: "resepsi", Category: "Vendor", Phase: 2, Start: 154, End: 153, Essential: true},
+	{Key: "wedding.buat_list_administrasi", Title: "Buat list administrasi", Scope: "akad", Category: "Administrasi", Phase: 2, Start: 152, End: 151, Essential: true},
+	{Key: "wedding.finalisasi_seserahan", Title: "Finalisasi Seserahan", Scope: "all", Category: "Logistik", Phase: 3, Start: 150, End: 149, Essential: true},
+	{Key: "wedding.pertemuan_keluarga_3", Title: "Pertemuan keluarga", Scope: "all", Category: "Keluarga", Phase: 3, Start: 148, End: 147, Essential: false},
+	{Key: "wedding.fix_budgeting", Title: "Fix budgeting", Scope: "all", Category: "Keuangan", Phase: 3, Start: 146, End: 145, Essential: true},
+	{Key: "wedding.fix_tamu_undangan", Title: "Fix Tamu undangan", Scope: "resepsi", Category: "Tamu", Phase: 3, Start: 144, End: 143, Essential: true},
+	{Key: "wedding.moodboard_wedding_dream", Title: "Moodboard wedding dream", Scope: "all", Category: "Kreatif", Phase: 3, Start: 142, End: 141, Essential: false},
+	{Key: "wedding.siapkan_undangan_fisik_dan_digital", Title: "Siapkan undangan fisik dan digital", Scope: "all", Category: "Undangan", Phase: 3, Start: 140, End: 139, Essential: true},
+	{Key: "wedding.souvenir", Title: "Souvenir", Scope: "resepsi", Category: "Logistik", Phase: 3, Start: 138, End: 137, Essential: false},
+	{Key: "wedding.photobooth", Title: "Photobooth", Scope: "resepsi", Category: "Vendor", Phase: 3, Start: 136, End: 135, Essential: false},
+	{Key: "wedding.pertemuan_keluarga_4", Title: "Pertemuan keluarga", Scope: "all", Category: "Keluarga", Phase: 3, Start: 134, End: 133, Essential: false},
+	{Key: "wedding.visit_venue_pernikahan", Title: "Visit Venue Pernikahan", Scope: "resepsi", Category: "Vendor", Phase: 3, Start: 132, End: 131, Essential: true},
+	{Key: "wedding.info_tanggal_ke_bridesmaid_grooms", Title: "Info tanggal ke bridesmaid & grooms", Scope: "all", Category: "Panitia", Phase: 3, Start: 130, End: 129, Essential: false},
+	{Key: "wedding.meeting_1_dengan_wo", Title: "Meeting 1 dengan WO", Scope: "all", Category: "WO", Phase: 3, Start: 128, End: 127, Essential: false},
+	{Key: "wedding.prepare_berkas_kua", Title: "Prepare berkas KUA", Scope: "akad", Category: "Administrasi", Phase: 3, Start: 126, End: 125, Essential: true},
+	{Key: "wedding.pick_lock_semua_vendor_pernikahan", Title: "Pick & Lock semua vendor pernikahan", Scope: "all", Category: "Vendor", Phase: 3, Start: 124, End: 123, Essential: true},
+	{Key: "wedding.prewedding", Title: "Prewedding", Scope: "all", Category: "Dokumentasi", Phase: 3, Start: 122, End: 121, Essential: false},
+	{Key: "wedding.finalisasi_urusan_dengan_kua", Title: "Finalisasi urusan dengan KUA", Scope: "akad", Category: "Administrasi", Phase: 3, Start: 90, End: 89, Essential: true},
+	{Key: "wedding.finalisasi_moodboard_wedding_yang_diinginkan", Title: "Finalisasi moodboard wedding yang diinginkan", Scope: "all", Category: "Kreatif", Phase: 3, Start: 85, End: 84, Essential: false},
+	{Key: "wedding.souvenir_undangan_photobooth", Title: "Souvenir, undangan , Photobooth", Scope: "resepsi", Category: "Logistik", Phase: 3, Start: 75, End: 74, Essential: false},
+	{Key: "wedding.research_book_honeymoon_destination", Title: "Research & book honeymoon destination", Scope: "all", Category: "Liburan", Phase: 3, Start: 65, End: 64, Essential: false},
+	{Key: "wedding.meeting_2_dengan_wo", Title: "Meeting 2 dengan WO", Scope: "all", Category: "WO", Phase: 3, Start: 60, End: 59, Essential: true},
+	{Key: "wedding.pertemuan_keluarga_5", Title: "Pertemuan keluarga", Scope: "all", Category: "Keluarga", Phase: 4, Start: 45, End: 44, Essential: false},
+	{Key: "wedding.penerima_tamu", Title: "Penerima tamu", Scope: "resepsi", Category: "Panitia", Phase: 4, Start: 35, End: 34, Essential: false},
+	{Key: "wedding.fitting_attire", Title: "Fitting Attire", Scope: "all", Category: "Busana", Phase: 4, Start: 30, End: 29, Essential: true},
+	{Key: "wedding.bridal_shower", Title: "Bridal Shower", Scope: "all", Category: "Acara", Phase: 4, Start: 25, End: 24, Essential: false},
+	{Key: "wedding.finalisasi_honeymoon_trip", Title: "Finalisasi Honeymoon Trip", Scope: "all", Category: "Liburan", Phase: 4, Start: 20, End: 19, Essential: false},
+	{Key: "wedding.finalisasi_payment_ekspektasi_hasil_dari_tiap_vendor", Title: "Finalisasi payment + ekspektasi hasil dari tiap vendor", Scope: "all", Category: "Keuangan", Phase: 4, Start: 14, End: 13, Essential: true},
+	{Key: "wedding.meeting_3_dengan_wo", Title: "Meeting 3 dengan WO", Scope: "all", Category: "WO", Phase: 4, Start: 10, End: 9, Essential: true},
+	{Key: "wedding.final_fitting", Title: "Final Fitting (H-7 acara)", Scope: "all", Category: "Busana", Phase: 4, Start: 7, End: 6, Essential: true},
+	{Key: "wedding.kirim_undangan", Title: "Kirim undangan", Scope: "all", Category: "Undangan", Phase: 4, Start: 5, End: 4, Essential: true},
+}
+
+// weddingAdicaraTasks are the six optional tasks that link to menus 05 and 06 (02 BE 5.2), phase 4.
+var weddingAdicaraTasks = []TaskTemplate{
+	{Key: "wedding.adicara_finalisasi_tamu", Title: "Finalisasi daftar tamu dan kuota pax", Scope: "resepsi", Category: "Tamu", Phase: 4, Start: 45, End: 44},
+	{Key: "wedding.adicara_sebar_undangan_digital", Title: "Sebar undangan digital via WhatsApp", Scope: "all", Category: "Undangan", Phase: 4, Start: 30, End: 29},
+	{Key: "wedding.adicara_followup_rsvp", Title: "Follow-up RSVP tamu", Scope: "resepsi", Category: "Tamu", Phase: 4, Start: 10, End: 9},
+	{Key: "wedding.adicara_technical_meeting", Title: "Technical meeting vendor dan panitia", Scope: "all", Category: "Panitia", Phase: 4, Start: 7, End: 6},
+	{Key: "wedding.adicara_gladi_resik", Title: "Gladi resik", Scope: "all", Category: "Acara", Phase: 4, Start: 1, End: 0},
+	{Key: "wedding.adicara_hari_h", Title: "Hari-H acara", Scope: "all", Category: "Acara", Phase: 4, Start: 0, End: 0},
+}
+
+// weddingDocs are the 15 documents of Wedding_Planner.pdf p. 11 (02 BE 5.3). Subject, quantity, cost and note are Adicara suggestions.
+var weddingDocs = []DocTemplate{
+	{Key: "wedding.pendaftaran_kua", Name: "Pendaftaran KUA", Subject: "bersama", Quantity: "1 berkas", Cost: 600000, Note: "PNBP nikah di luar kantor/hari libur; Rp 0 di kantor KUA jam kerja"},
+	{Key: "wedding.fc_cpp", Name: "FC CPP ( KTP, Ijazah, Akte, KK)", Subject: "cpp", Quantity: "2 lembar", Cost: 0, Note: "Fotokopi legalitas calon pengantin pria"},
+	{Key: "wedding.fc_cpw", Name: "FC CPW ( KTP, Ijazah, Akte, KK)", Subject: "cpw", Quantity: "2 lembar", Cost: 0, Note: "Fotokopi legalitas calon pengantin wanita"},
+	{Key: "wedding.fc_ktp_ortu_cmp", Name: "FC KTP Ortu CMP", Subject: "ortu_cpp", Quantity: "2 lembar", Cost: 0, Note: "KTP ayah dan ibu pihak pria"},
+	{Key: "wedding.fc_ktp_ortu_cmw", Name: "FC KTP Ortu CMW", Subject: "ortu_cpw", Quantity: "2 lembar", Cost: 0, Note: "KTP ayah dan ibu pihak wanita"},
+	{Key: "wedding.surat_ket_sehat_puskesmas", Name: "Surat Ket. Sehat puskesmas", Subject: "bersama", Quantity: "1 berkas", Cost: 0, Note: "Pemeriksaan kesehatan Puskesmas"},
+	{Key: "wedding.vaksin_tetanus", Name: "Vaksin Tetanus", Subject: "cpw", Quantity: "1 lembar", Cost: 0, Note: "Surat keterangan imunisasi TT calon pengantin wanita"},
+	{Key: "wedding.surat_pengantar_nikah_kelurahan", Name: "Surat pengantar nikah dari kelurahan", Subject: "bersama", Quantity: "1 berkas", Cost: 0, Note: "Formulir N1, N2, N4 yang ditandatangani lurah/kepala desa"},
+	{Key: "wedding.pas_foto_2x3", Name: "Pas Foto Background Biru 2x3 (3pcs)", Subject: "bersama", Quantity: "3 pcs", Cost: 15000, Note: ""},
+	{Key: "wedding.pas_foto_3x4", Name: "Pas Foto Background Biru 3x4 (3pcs)", Subject: "bersama", Quantity: "3 pcs", Cost: 15000, Note: ""},
+	{Key: "wedding.pas_foto_4x6", Name: "Pas Foto Background Biru 4x6 (3pcs)", Subject: "bersama", Quantity: "3 pcs", Cost: 15000, Note: ""},
+	{Key: "wedding.surat_ket_belum_nikah", Name: "Surat ket. belum nikah dr setempat", Subject: "bersama", Quantity: "1 lembar", Cost: 0, Note: "Dari kelurahan masing-masing"},
+	{Key: "wedding.materai_10000", Name: "Materai 10.000", Subject: "bersama", Quantity: "2 pcs", Cost: 20000, Note: "Berkas pernyataan"},
+	{Key: "wedding.mahar_untuk_pengajuan_kua", Name: "Mahar (utk pengajuan KUA)", Subject: "bersama", Quantity: "1 rincian", Cost: 0, Note: "Rincian mas kawin untuk akta"},
+	{Key: "wedding.lain_lain", Name: "Lain Lain", Subject: "bersama", Quantity: "1 berkas", Cost: 0, Note: "Mis. rekomendasi numpang nikah dari KUA asal"},
+}

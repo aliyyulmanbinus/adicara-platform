@@ -334,11 +334,11 @@ Simpan sebagai `tests/fixtures/planner-dashboard.json` dan gunakan untuk menguji
                   "venue_name": "Sasana Kriya Ballroom", "city": "Jakarta Selatan" }
   },
   "sessions": [
-    { "id": "11111111-1111-4111-8111-111111111111", "scope_key": "lamaran", "name": "Lamaran", "icon": "💍", "is_system": false, "sort_order": 1, "session_date": "2026-10-10" },
+    { "id": "11111111-1111-4111-8111-111111111111", "scope_key": "lamaran", "name": "Lamaran", "icon": "💍", "is_system": false, "sort_order": 1, "session_date": "2026-10-15" },
     { "id": "22222222-2222-4222-8222-222222222222", "scope_key": "akad", "name": "Akad Nikah", "icon": "📜", "is_system": false, "sort_order": 2, "session_date": "2027-03-28" },
     { "id": "33333333-3333-4333-8333-333333333333", "scope_key": "resepsi", "name": "Resepsi", "icon": "🏛️", "is_system": false, "sort_order": 3, "session_date": "2027-03-28" }
   ],
-  "timeline": { "total": 50, "completed": 15, "in_progress": 2, "overdue": 0, "urgent": [] },
+  "timeline": { "total": 50, "completed": 15, "in_progress": 29, "overdue": 0, "urgent": [] },
   "finance": {
     "target_budget": 75000000, "total_estimate": 74150000, "total_paid": 33550000, "remaining": 40600000, "overpaid": 0,
     "savings_target": 75000000, "savings_collected": 47500000, "free_cash": 13950000, "cash_deficit": 26650000,
@@ -351,9 +351,9 @@ Simpan sebagai `tests/fixtures/planner-dashboard.json` dan gunakan untuk menguji
     "sent": 14, "rsvp": { "attending": 12, "declined": 2, "maybe": 2, "unconfirmed": 4, "attending_pax": 27 }
   },
   "admin_docs": { "label": "Kelengkapan Berkas KUA", "completed": 9, "total": 15,
-                  "pending": ["FC KTP Ortu CMP", "FC KTP Ortu CMW", "Pas Foto 2x3", "Pas Foto 4x6", "Surat ket. belum nikah"] },
+                  "pending": ["FC KTP Ortu CMP", "FC KTP Ortu CMW", "Pas Foto Background Biru 2x3 (3pcs)", "Pas Foto Background Biru 4x6 (3pcs)", "Surat ket. belum nikah dr setempat"] },
   "rundown": { "sessions": 3, "agendas": 33, "completed": 0, "in_progress": 0, "songs": 30, "current_agenda": null,
-               "next_session": { "name": "Lamaran", "date": "2026-10-10", "start_time": null } }
+               "next_session": { "name": "Lamaran", "date": "2026-10-15", "start_time": null } }
 }
 ```
 
@@ -681,7 +681,7 @@ Daftar centang **dibangkitkan dari `type.templates_available`** (template yang d
 | `rundown` | centang | `rundown: true` |
 | `playlist` | centang | `playlist: true` |
 
-Teks centang dari kamus `TEMPLATE_LABELS` yang dikunci oleh **kunci template/preset** (bukan jenis acara): `wedding_pdf_44` → "Lengkap (44 tugas dari Wedding Planner)", `wedding_essential_22` → "Esensial (22 tugas)", `general` → "Jadwal umum (15 tugas)", `admin_docs` → "Berkas administrasi / perizinan", `budget_lines` → "Pos anggaran (nominal 0 atau persentase pagu)", `shopping_list` → "Daftar belanja", `rundown` → "Rundown per sesi", `playlist` → "Playlist". Jumlah persis di luar nama preset **tidak** ditulis (berbeda per jenis dan belum ada sumbernya di API). Semua centang awal aktif **kecuali** preset opsional; teks bantu: "Template hanya struktur dan perkiraan yang bisa diubah semua, tanpa pembayaran, vendor, atau tamu." Sesi bawaan selalu dibuat (tidak ada centangnya).
+Teks centang dari kamus `TEMPLATE_LABELS` yang dikunci oleh **kunci template/preset** (bukan jenis acara): `wedding_pdf_44` → "Lengkap (44 tugas dari Wedding Planner)", `wedding_essential_22` → "Esensial (22 tugas)", `general` → "Jadwal standar jenis acara" (tanpa angka: `general` membuat 18 tugas untuk tujuh jenis dan 15 untuk `other`; [02 BE §5.5](../02_TIMELINE_DAN_TUGAS/BE.md#55-template-jenis-non-pernikahan-usulan-adicara), [02 FE bab 13 butir 3](../02_TIMELINE_DAN_TUGAS/FE.md#13-celah-dan-keputusan-yang-menunggu-pemilik-produk)), `admin_docs` → "Berkas administrasi / perizinan", `budget_lines` → "Pos anggaran (nominal 0 atau persentase pagu)", `shopping_list` → "Daftar belanja", `rundown` → "Rundown per sesi", `playlist` → "Playlist". Jumlah persis di luar nama preset **tidak** ditulis (berbeda per jenis dan belum ada sumbernya di API). Semua centang awal aktif **kecuali** preset opsional; teks bantu: "Template hanya struktur dan perkiraan yang bisa diubah semua, tanpa pembayaran, vendor, atau tamu." Sesi bawaan selalu dibuat (tidak ada centangnya).
 
 ### 8.5 Pengiriman dan hasil
 
@@ -731,7 +731,7 @@ Teks centang dari kamus `TEMPLATE_LABELS` yang dikunci oleh **kunci template/pre
 │ │ TIMELINE & TUGAS                 [Buka ➜] │ │ KEUANGAN & TABUNGAN              [Buka ➜] │ │
 │ │ 15 dari 50 selesai                        │ │ [donut: terbayar | sisa]                  │ │
 │ │ [███░░░░░░░] 30%                          │ │ Estimasi Rp 74.150.000                    │ │
-│ │ Berjalan: 2   Terlambat: 0                │ │ Terbayar Rp 33.550.000 (45,2%)            │ │
+│ │ Berjalan: 29  Terlambat: 0                │ │ Terbayar Rp 33.550.000 (45,2%)            │ │
 │ │ Tugas mendesak (7 hari ke depan):         │ │ Sisa tagihan Rp 40.600.000                │ │
 │ │   Tidak ada tugas mendesak                │ │ Tabungan Rp 47.500.000 / Rp 75.000.000    │ │
 │ │                                           │ │ (!) Kas bebas Rp 13.950.000 · kurang      │ │
@@ -749,13 +749,15 @@ Teks centang dari kamus `TEMPLATE_LABELS` yang dikunci oleh **kunci template/pre
 │ ┌───────────────────────────────────────────┐ ┌───────────────────────────────────────────┐ │
 │ │ KELENGKAPAN BERKAS KUA           [Buka ➜] │ │ RUNDOWN HARI-H                   [Buka ➜] │ │
 │ │ 9 dari 15 berkas                          │ │ 3 sesi · 33 agenda · 30 lagu              │ │
-│ │ [██████░░░░] 60%                          │ │ Sesi terdekat: 💍 Lamaran — 10 Okt 2026   │ │
+│ │ [██████░░░░] 60%                          │ │ Sesi terdekat: 💍 Lamaran — 15 Okt 2026   │ │
 │ │ Menunggu: FC KTP Ortu CMP, FC KTP Ortu    │ │                                           │ │
 │ │ CMW, Pas Foto 2x3, Pas Foto 4x6, Surat    │ │                                           │ │
 │ │ ket. belum nikah (+1 lainnya)             │ │                                           │ │
 │ └───────────────────────────────────────────┘ └───────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+Nama berkas pada widget Berkas disingkat di gambar; fixture (bab 4.4) memuat nama PDF penuh ("Pas Foto Background Biru 2x3 (3pcs)", "Surat ket. belum nikah dr setempat"), yang di UI terpotong dengan elipsis CSS.
 
 **Keadaan hari ini** (backend asli, `ready: true` hanya untuk Dashboard, semua widget `null`). Sub-navigasi menu yang belum ada tampil nonaktif (tanda kurung = abu-abu, bukan tautan); judul switcher dipotong dengan ellipsis CSS bila tidak muat; widget tanpa tautan Buka:
 
@@ -815,11 +817,11 @@ Empat keadaan sebuah widget (contoh Vendor; aturannya di tabel 9.4):
 Catatan:
 
 - **Hero**: kapital berasal dari CSS `text-transform` pada judul dan nama (datanya tetap "Bismillah Nikah", "Sinta Maharani"). Lencana CONTOH di baris nama. Ikon 📅/📍 hanya ilustrasi (bab 9.2).
-- **Timeline**: "Berjalan: n" hanya tampil bila `in_progress > 0` (Proyek Contoh punya 2), "Terlambat: n" selalu. Daftar "Tugas mendesak" kosong menampilkan "Tidak ada tugas mendesak". Subjudul daftar "Tugas mendesak (7 hari ke depan)": jendela dan urutannya ditetapkan [BE §5.1](BE.md#51-response) (belum selesai, tenggat ≤ hari ini + 7, yang sudah lewat ikut).
+- **Timeline**: "Berjalan: n" hanya tampil bila `in_progress > 0` (Proyek Contoh punya 29: status PDF Hal. 3, [02 BE §4.6](../02_TIMELINE_DAN_TUGAS/BE.md#46-sambungan-ke-menu-01)), "Terlambat: n" selalu. Daftar "Tugas mendesak" kosong menampilkan "Tidak ada tugas mendesak". Subjudul daftar "Tugas mendesak (7 hari ke depan)": jendela dan urutannya ditetapkan [BE §5.1](BE.md#51-response) (belum selesai, tenggat ≤ hari ini + 7, yang sudah lewat ikut).
 - **Keuangan**: donut SVG (bukan teks) di atas daftar angka; ketiga angka kas memakai `formatRupiah` penuh, bukan singkatan.
 - **Tamu**: "20 **T**amu" memakai `labels.guest` apa adanya (seminar: "Peserta").
 - **Berkas**: judul = `admin_docs.label`; pada `soon`/`error` datanya tidak ada, jadi judul tetap "Berkas & Perizinan" (tabel 9.4; bab 15, butir 11).
-- **Rundown**: "Sesi terdekat: Lamaran — 10 Okt 2026" butuh sesi Lamaran bertanggal. [BE §4.5](BE.md#45-proyek-contoh): overlay sampel mengisinya dengan tanggal mulai tugas `wedding.lamaran` (H-169), jadi baru ada setelah Menu 02 terdaftar. Hari ini Lamaran tanpa tanggal (jenis ini biasanya beda hari, sehingga tidak ikut Hari-H) dan baris itu tidak tampil (bab 15, butir 10).
+- **Rundown**: "Sesi terdekat: Lamaran — 15 Okt 2026" butuh sesi Lamaran bertanggal. [BE §4.5](BE.md#45-proyek-contoh): overlay sampel mengisinya dengan tanggal mulai tugas `wedding.lamaran` (H-169 diskalakan 175/180, jadi 15 Okt 2026 untuk contoh yang dibuat 4 Okt 2026; [02 BE §4.6](../02_TIMELINE_DAN_TUGAS/BE.md#46-sambungan-ke-menu-01)), jadi baru ada setelah Menu 02 terdaftar. Hari ini Lamaran tanpa tanggal (jenis ini biasanya beda hari, sehingga tidak ikut Hari-H) dan baris itu tidak tampil (bab 15, butir 10).
 
 ### 9.2 Hero dan hitung mundur (`HeroCountdown`)
 
@@ -1147,8 +1149,8 @@ Temuan saat mencocokkan dokumen ini dengan backend yang sudah jadi. Dokumen ini 
 7. **Partial Astro** (9.5) belum dijalankan end-to-end; bila bermasalah, gunakan JSON lewat BFF `GET …/dashboard` (sudah tersedia dan dibatasi 60/menit).
 8. **Deskripsi singkat jenis acara** (8.2) belum punya sumber di registry; kamus statis berkunci `key` adalah solusi sementara. Bila ingin disimpan di backend, tambahkan ke `EventTypeSpec`.
 9. **Kartu selesai tidak punya tujuan "Arsip & Kenangan".** Halaman itu tidak ada di spec mana pun. Sementara, kartu `completed`/`archived` memakai "Lihat Ringkasan ➜" ke workspace yang sama. Bila produk ingin tampilan arsip/kenangan tersendiri, itu menu baru.
-10. **Tanggal sesi Lamaran pada Proyek Contoh berbeda antar dokumen.** [BE §4.5](BE.md#45-proyek-contoh): overlay sampel mengisinya dengan tanggal mulai tugas `wedding.lamaran` (H-169), yaitu Hari-H − 169 hari: 10 Okt 2026 untuk contoh yang dibuat 4 Okt 2026. Wireframe dan fixture bab ini memakai 10 Okt 2026; wireframe Menu 03 menulis 15 Okt 2026, dan salah satunya perlu disamakan (di luar cakupan Menu 01). Sampai Menu 02 dan overlay-nya ada, Lamaran tidak bertanggal dan baris "Sesi terdekat" tidak tampil.
-11. **Sumber `admin_docs.label`.** Registry hanya punya `labels.guest` dan `labels.guest_menu`; label widget Berkas diisi provider Menu 02 ([BE §5.1](BE.md#51-response)). Spec Menu 02 belum menyebut nilainya per jenis acara; FE membaca apa adanya dan memakai "Berkas & Perizinan" saat datanya belum ada.
+10. **Tanggal sesi Lamaran pada Proyek Contoh — selesai (2026-10-21).** Versi awal dokumen ini menulis 10 Okt 2026 (Hari-H − 169 hari, tanpa penskalaan), sedangkan wireframe Menu 03 menulis 15 Okt. Algoritma generator ([02 BE §4.1](../02_TIMELINE_DAN_TUGAS/BE.md#41-generator-jadwal), dijalankan) mengalikan offset dengan 175/180 untuk contoh yang dibuat 4 Okt 2026, sehingga tugas `wedding.lamaran` jatuh pada **15 Okt 2026**; wireframe, fixture, dan teks bab ini sudah disamakan. Sampai Menu 02 dan overlay-nya ada, Lamaran tidak bertanggal dan baris "Sesi terdekat" tidak tampil.
+11. **Sumber `admin_docs.label` — selesai (2026-10-21).** Diisi provider Menu 02 dari `EventTypeSpec.AdminLabel` ([02 BE §4.6](../02_TIMELINE_DAN_TUGAS/BE.md#46-sambungan-ke-menu-01), nilainya di [TEMPLATE_EVENT bab 4.1](../00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md#41-subjek-dokumen-label-widget-dan-panduan-milik-menu-02)): pernikahan "Kelengkapan Berkas KUA", jenis lain "Kelengkapan Perizinan". FE tetap membaca apa adanya dan memakai "Berkas & Perizinan" saat datanya belum ada.
 
 ---
 

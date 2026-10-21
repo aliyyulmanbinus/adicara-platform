@@ -2,6 +2,113 @@
 
 Riwayat revisi folder `docs/APP_SPEC/PLANNER_SPEC`. Hasil validasi hanya dicatat setelah dijalankan.
 
+## 2026-10-21 (keputusan) — `excelize` disetujui
+
+Pemilik produk menyetujui dependensi `github.com/xuri/excelize/v2` v2.11.0 untuk ekspor `.xlsx` Menu 02 (CSV tidak dipilih). Status "menunggu persetujuan/dapat dicabut" diganti "disetujui" di 02 BE (§4.4, bab 8 butir 6 dan penutup bab 8, daftar keputusan di akhir), kontrak bab 1.4, dan catatan implementasi. Pustaka PDF di kontrak bab 1.4 tetap belum disetujui. Entri sebelumnya di berkas ini yang menyebut `excelize` sebagai "perlu keputusan" atau "menunggu persetujuan" adalah catatan sejarah dan tidak diubah. Tidak ada perubahan kode.
+
+## 2026-10-21 (lanjutan) — FE menu 02: dicocokkan dengan backend asli dan dirinci
+
+Permintaan: apakah `02_TIMELINE_DAN_TUGAS/FE.md` sudah sesuai, dan bila belum, perbaiki dan detailkan sebagai acuan developer lain. Backend menu 02 dijalankan terhadap PostgreSQL 16.2 sementara (`planner_fe02_scratch_test`, dihapus setelahnya): 120 panggilan ke semua 17 endpoint menghasilkan 119 respons (821 objek JSON, 33 jenis galat) yang dibandingkan dengan tipe di `FE.md` lewat parser atas blok kode dokumen. **Tipe bab 4.2 sudah benar: nol selisih.** Yang ternyata kurang atau salah ada pada perilaku di sekitar tipe, bukan pada bentuk datanya. Semua ✔ terbukti dengan eksekusi.
+
+| # | Temuan | Koreksi |
+|---|---|---|
+| ✔ 1 | **Aturan konfirmasi `replace_all` salah.** FE.md menyuruh meminta konfirmasi hanya bila ada kemajuan; server meminta konfirmasi bila proyek punya tugas satu pun (`replace_all` pada 18 tugas "belum" → `400 confirm: required`) | `generatorImpact`/`docsImpact` (kode, diuji: keputusan lokal = status server pada keadaan nyata); 02 FE bab 5, 7.5 |
+| ✔ 2 | **Label `general` "Jadwal umum (15 tugas)" salah** di 01 FE bab 8.4 dan 02 FE: seminar dan enam jenis lain mendapat **18** tugas, hanya `other` 15 | "Jadwal standar jenis acara" (tanpa angka, sesuai aturan 01 FE bab 8.4 sendiri); 02 FE bab 13 butir 3 |
+| ✔ 3 | **`PATCH` `phase_order` tidak menyalin `phase_name`** (POST menyalin): tugas pindah ke fase 4 membawa nama fase 2 | FE mengirim keduanya (`phaseNameOf`); dicatat sebagai butir 20 di 02 BE bab 8 (perbaikan server opsional) |
+| ✔ 4 | **Alasan galat tanpa teks**: `must not be after end_date`, `must keep every shifted task within the project schedule window`, `must be greater than 0`, `cannot be combined with vendor_id`, `must be one of …`, `must be a session scope_key` | `timelineFieldMessage` mencakup semua alasan di `fixtures/planner-errors.json` (49 galat), diuji |
+| ✔ 5 | **Angka dan permintaan yang dijawab `invalid_json` tanpa nama kolom**: `nominal_cost` desimal atau string, UUID bukan UUID, body kosong tanpa `{}` | aturan permintaan 02 FE bab 4.1; `timelineApi` selalu mengirim `{}` |
+| ✔ 6 | **`sort_order` bukan nomor tampilan** (mulai dari 19 pada proyek yang punya tugas kustom setelah `replace_template`, berlubang setelah hapus) | `taskNumbers` untuk kolom "No" |
+| ✔ 7 | **Wireframe berkas** menampilkan baris yang belum dikirim sebagai "✓ Di anggaran" | diperbaiki (nomor 13 `[Kirim]`; keadaan sesudah kirim dijelaskan terpisah) |
+| ✔ 8 | **Mekanisme render dan pembaruan sesudah aksi tidak ditetapkan**; fixture hanya tiga baris contoh | satu sumber render + partial (bab 2.4, 7.6), lima berkas fixture asli di `02_TIMELINE_DAN_TUGAS/fixtures/` |
+| ○ 9 | Ekspor: tanpa `Cache-Control` dan tanpa `Retry-After` pada `429`; sesi sistem bernama "Umum / Semua Sesi" | BFF menambah `no-store`; chip memakai teks tetap "Umum"; dicatat di 02 FE bab 13 |
+
+Tiga sumber diperiksa sama persis untuk 50 tugas Proyek Contoh (tabel BE §5 → fixture yang dibangun dari tabel → respons HTTP backend). Nilai widget dashboard yang dihasilkan sama dengan fixture 01 FE.
+
+**Ditambahkan ke `FE.md`** (692 → ±1.340 baris): kontrak props, state URL, katalog endpoint, contoh respons asli, katalog galat, `timelineApi.ts`, alur interaksi A–M dengan atribut data, salinan teks, `messages.ts` yang diuji, lingkungan lokal, dan riwayat. Kode di dokumen (`types`, `timeline`, `timelineApi`, `messages`, `props`) diekstrak langsung dari dokumen: `tsc` strict bersih, 19 tes lulus (9 dari 9 mutasi menjatuhkan tes), dan ke-17 fungsi `timelineApi` dijalankan terhadap backend asli.
+
+**Dokumen yang berubah.** `02_TIMELINE_DAN_TUGAS/FE.md` (hampir seluruhnya) dan `fixtures/` (baru, lima berkas); `02_TIMELINE_DAN_TUGAS/BE.md` (bab 8 butir 20); `01_DASHBOARD/FE.md` (label `general` di bab 8.4); `README.md` menu 02 (status).
+
+**Belum dijalankan:** frontend itu sendiri (halaman, partial Astro, dialog, seret-lepas, Gantt tergambar, unduhan) tidak ada; bentuk `vendor_*` pada tugas, `sync-budget` dengan `linked: true`, dan `409 conflict` tidak teramati pada backend yang berjalan; `.xlsx` belum dibuka di aplikasi spreadsheet.
+
+## 2026-10-21 — Menu 02 (BE) diimplementasikan: koreksi spesifikasi dari hasil membangunnya
+
+Backend menu 02 sudah menjadi kode ([dokumen](../../backend/planner/2026-10-21-planner-menu-02.md)): 17 endpoint, provider, applier, dan overlay terpasang di menu 01, ekspor `.xlsx`, dan `excelize` v2.11.0 ditambahkan atas permintaan pemilik. Membangunnya dan mengujinya terhadap PostgreSQL 16.2 menemukan hal berikut; semua ✔ terbukti dengan eksekusi.
+
+| # | Temuan | Koreksi |
+|---|---|---|
+| ✔ 1 | **`PATCH` tidak aman tanpa kunci**: ia membaca, menggabung, lalu menulis semua kolom, jadi dua tab yang mengubah kolom berbeda saling menimpa; 02 BE §4.2 menyatakan penulisan satu baris tidak butuh kunci | `PATCH` tugas dan dokumen memegang kunci proyek; status, hapus, dan sinkron biaya tidak (02 BE §4.2, bab 8 butir 15) |
+| ✔ 2 | **Kontrak `generate-defaults` kurang**: `preset` kosong dan `mode` kosong tidak ditetapkan, sedangkan wizard memang punya kasus "tugas Adicara saja" tanpa preset dasar | endpoint: `preset` wajib, `mode` bawaan `append`; applier menerima preset kosong untuk pernikahan (02 BE §2, §4.1, bab 8 butir 16) |
+| ✔ 3 | **`Avail < 3` memenuhi dua peringatan sekaligus** (`lead_time_too_short` dan `lead_time_compressed`), dan `count` tidak ditetapkan | satu peringatan; `too_short` menggantikan `compressed`; `count` = tugas yang dibuat; tanpa tugas baru tanpa peringatan (02 BE §4.1) |
+| ✔ 4 | **`subject_role` kosong = `bersama` tidak berlaku untuk delapan jenis lain**: subjek mereka `panitia`, `lembaga`, `umum` | bawaan `bersama` (pernikahan) atau `umum` (02 BE §2, bab 8 butir 18) |
+| ✔ 5 | **Sinkron KUA di dua kasus tepi**: sesi `akad` bisa sudah dihapus pengguna, dan pos tunggu `biaya_kua` bisa sudah dipakai berkas lain; 02 BE §4.5 tidak menyebut kasusnya | sesi hilang → `all`; pos yang sudah bertaut tidak diambil alih, berkas KUA mendapat pos baru di `akad` (tes `TestSyncBudget` kasus G) |
+| ✔ 6 | **Batas jumlah, `max(sort_order)+1`, dan "daftar lengkap" berbalapan** (tanpa kunci: 52 tugas dari batas 51, dua pos untuk satu berkas) sudah terbukti pada audit spesifikasi; kini terbukti pada kode | enam `POST /tasks` serentak pada 499 tugas → tepat satu `201`; delapan `sync-budget` serentak → satu pos |
+| ○ 7 | Pembatas laju per pengguna tidak diekspor dari paket `planner`; Menu 02 menjadi salinan ketiga | disalin; ekstraksi dicatat di 02 BE bab 8 butir 13 |
+
+Terbukti dengan kode: data template (44 + 6 + 15 + 15 umum + 21 + 22) sama dengan tabel spesifikasi (`TestTemplatesMatchSpec` membaca tabelnya); uji emas Proyek Contoh untuk baris **Timeline** dan **Dokumen** kontrak bab 9 (44 tugas PDF, 15 berkas 9/6, tiga tugas berdurasi 2 hari, Lamaran 15 Okt 2026, widget Timeline `50/15/29/0` dan Legalitas `9/15`); wizard atomik dengan applier sungguhan; isolasi di 17 endpoint; ekspor `.xlsx` dibaca kembali.
+
+**Dokumen yang berubah.** `02_TIMELINE_DAN_TUGAS/BE.md` (status, bab 6 dengan nama tes yang sungguh ada dan hasil, bab 7 selesai, bab 8 butir 15–19); kontrak bab 9–10 (status uji); `README.md` dan `FE.md` menu ini (status: backend ada, frontend belum).
+
+**Status implementasi:** menu 01 dan 02 backend. Frontend dan menu 03–06 masih spesifikasi; widget keuangan, vendor, tamu, dan rundown serta template-nya masih kosong. Uji emas baris Anggaran, Tabungan, Skenario, Seserahan, Vendor, Tamu, Rundown, dan Playlist belum bisa dijalankan.
+
+**Belum dijalankan:** image Docker, PostgreSQL 18, Nginx di depan rute baru, beberapa replika API, `.xlsx` di Excel/Numbers/LibreOffice, dan tipe TypeScript `FE.md` terhadap respons sungguhan.
+
+## 2026-10-21 (lanjutan) — BE menu 02: celah yang tersisa ditutup dengan eksekusi
+
+Permintaan: perbaiki kekurangan audit sebelumnya dan fokus ke `02_TIMELINE_DAN_TUGAS/BE.md`. Butir yang tadinya hanya penalaran (○) dijalankan, dan yang belum pernah dijalankan (ekspor, balapan) dibuat dan diperiksa. Database sementara baru (`planner_spec02_scratch_test`, migrasi 001–012, 50 tugas dan 16 berkas) dihapus setelahnya; prototipe ekspor ada di modul Go sementara di luar repo.
+
+| # | Temuan | Koreksi |
+|---|---|---|
+| ✔ 17 | **Satu tugas template melanggar horizon**: Seminar "Undang dan konfirmasi pembicara" H-70…H-56 di atas `R = 60`; penskalaan menaruhnya sebelum awal jadwal sehingga selalu dijepit dan durasinya menyusut. Skrip atas seluruh template (44 + 6 pernikahan, 15 umum, 21 khusus): hanya ini yang melanggar; tidak ada kunci `template_key` ganda (maks. 58 karakter) | TEMPLATE_EVENT: H-58…H-50 (setelah panitia inti, selesai tepat sebelum registrasi H-50); aturan "offset di `0…R`" ditambahkan di bab 1; `TestEveryTemplateOffsetIsWithinItsHorizon` |
+| ✔ 18 | **Awalan `'` yang diwajibkan kontrak tampak di sel**: `excelize` v2.9.0 dan v2.11.0 menyimpan teks berawalan `=` sebagai string bersama (`t="s"`, tanpa `<f>`; dibaca ulang dengan parser XML Python), jadi sel tidak pernah menjadi formula, dan `'` ditulis sebagai karakter biasa (tidak ada `quotePrefix` pada `Style`) | kontrak bab 2 butir 5 dan 02 BE §4.4 mencatat perilaku; keputusan (pertahankan atau cabut aturan) di 02 BE bab 8 butir 12 |
+| ✔ 19 | **`notes` boleh baris baru, tetapi `cleanText` Menu 01 menolak semua karakter kontrol** (`unicode.IsControl('\n')` benar) | pembantu baru `cleanNote` (02 BE §3.4) |
+| ✔ 20 | **Klik ganda sinkron biaya**: dua sesi berbalapan. Dengan `FOR UPDATE` pada baris dokumen: 1 pos; tanpa kunci (kontrol): 2 pos | kunci menjadi bagian kontrak (02 BE §4.5) |
+| ✔ 21 | **Batas 500 tugas bocor tanpa kunci**: dua `POST /tasks` serentak pada batas 51 dengan 50 tugas: dengan `LockProject` 51 tugas (satu `task_limit_reached`), tanpa kunci 52. Generator dan `apply-template` juga bisa melewati batas dalam satu panggilan | semua penulisan massal mengambil `LockProject`; generator memeriksa jumlah **setelah** penyisipan, semua-atau-tidak (02 BE §4.1, §4.2, §3.4) |
+| ✔ 22 | **Urut ulang tak lengkap**: pernyataan §4.2 persis. Daftar lengkap → 50 nilai 1…50; kurang satu, ganda, atau berisi id tugas proyek lain → 49 baris berubah ≠ 50 dan tugas proyek lain tidak tersentuh | tabel hasil di 02 BE §4.2 |
+| ✔ 23 | **Urutan `sort_order` template non-pernikahan tidak ditentukan**: tiga tugas khusus akan menumpuk di akhir meski tanggalnya di tengah | kronologis (offset mulai menurun, seri menurut urutan template); diperiksa untuk tujuh jenis: urutan 15 tugas umum tetap, fase tak pernah turun (02 BE §5.5) |
+| ✔ 24 | **Ekspor hanya satu paragraf**: kolom, format sel, aturan Gantt tidak ditentukan | tabel kolom, aturan Gantt mingguan yang sama dengan `buildGantt` FE, `safeCell`, nama berkas; prototipe dibangun dan dibaca kembali: 51 baris, 4 judul berbahaya jadi teks, tanggal sungguhan, 50 × 26 sel Gantt cocok dengan perhitungan hari demi hari (nol selisih, 61 sel terisi) |
+| ✔ 25 | **Angka batas tanpa dasar**: pada 500 tugas (catatan 200 karakter) respons 370 kB, pada 200 dokumen 114 kB; ringkasan 0,2 ms dan daftar 0,15 ms (`EXPLAIN ANALYZE`) | angka menjadi batas tampilan, bukan kinerja (02 BE §3.4, bab 8 butir 3) |
+| ✔ 26 | **Syarat `confirm` belum berupa kueri**: tugas ber-`template_key` dengan `status <> 'belum'` atau `vendor_id`: **44** pada Proyek Contoh, **0** bila semua `belum`; dokumen: `finished 9, linked 1` dengan berkas KUA tertaut 600.000; setelah hapus template pos tetap ada dengan angka 600.000 dan tanpa tautan | kueri ditulis di 02 BE §4.1 dan §4.7 |
+| ○ 27 | **Pembatas laju per pengguna tidak diekspor** dari paket `planner`; Menu 02 menjadi salinan ketiga | pilihan bawaan menyalin; ekstraksi dicatat di 02 BE bab 8 butir 13 |
+
+**Dokumen yang berubah.** `02_TIMELINE_DAN_TUGAS/BE.md` (status, §3.4, §4.1, §4.2, §4.4 ditulis ulang, §4.5, §4.7, §5.5, §6, §7, bab 8 butir 3, 6, 12–14), `00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md` (offset Seminar, aturan offset di bab 1), `00_KONTRAK_BERSAMA/README.md` (bab 2 butir 5 dan bab 10). FE menu 02 tidak diubah.
+
+**Belum dijalankan:** modul `plannertimeline` di repo (usecase, handler, pemetaan galat), isolasi antar pengguna pada endpoint, uji emas Proyek Contoh, pembatas laju ekspor, dan berkas `.xlsx` **belum dibuka di Excel, Numbers, atau LibreOffice** (tampilan akhir awalan `'` disimpulkan dari isi berkas). Dependensi `excelize` di repo menunggu persetujuan; hanya dipakai di modul percobaan.
+
+**Perlu keputusan produk:** 02 BE bab 8 butir 6 (dependensi `excelize`) dan butir 8 (isi template dan teks panduan non-pernikahan); butir 12–14 baru (awalan `'`, salinan `userLimiter`, offset Seminar).
+
+## 2026-10-21 — Audit menu 02 Timeline & Tugas: disamakan dengan pola menu 01
+
+`02_TIMELINE_DAN_TUGAS/{README,BE,FE}.md` dibandingkan dengan pola yang dihasilkan audit menu 01 (BE disamakan dengan kode, FE sebagai acuan bangun, README dengan status), dengan kode menu 01 yang sudah jadi (`planner/domain/repository.go`, `summary.go`, `eventtype.go`, migrasi 007), kontrak, PDF, dan dokumen menu lain. ✔ = terbukti dengan eksekusi; ○ = dari pembacaan atau penalaran.
+
+| # | Temuan | Koreksi |
+|---|---|---|
+| ✔ 1 | **Tanggal sesi Lamaran Proyek Contoh bertentangan antar dokumen.** 01 FE menulis 10 Okt 2026 (Hari-H − 169 tanpa penskalaan), 03 FE menulis 15 Okt. Algoritma generator mengalikan offset dengan `175/180` untuk contoh yang dibuat 4 Okt 2026 (kode Go acuan lulus tes): tugas `wedding.lamaran` jatuh pada **15 Okt 2026** | 01 FE (fixture, wireframe, teks) memakai 15 Okt; 02 BE §4.6 mencatatnya; butir 10 di 01 FE bab 15 ditutup |
+| ✔ 2 | **Sinkron biaya gagal untuk berkas bernama > 150 karakter**: `planner_admin_docs.document_name` boleh 255, `planner_budget_items.item_name` dibatasi 150 (`23514`) | `left(nama, 150)` pada pos baru (02 BE §4.5) |
+| ✔ 3 | **Galat FK tugas datang pada waktu berbeda**: vendor lintas proyek `23503` pada pernyataan (`planner_tasks_vendor_id_project_id_fkey`), sesi tak dikenal baru saat `COMMIT` (FK ditunda); `end_date < start_date` memicu CHECK tak bernama `planner_tasks_check` | usecase memeriksa vendor, sesi, dan tanggal lebih dulu dan memetakan galatnya (02 BE bab 1, §3.4) |
+| ✔ 4 | **Durasi PDF hanya terjaga tanpa pemampatan**: pada `Avail` 175 dan 180 semua 44 durasi sama dengan PDF; pada `Avail` 120 sampai 10 tiga tugas 2 hari (3, 4, 12) menjadi 1 hari | dicatat di 02 BE §4.1 |
+| ✔ 5 | **Status Proyek Contoh**: PDF Hal. 3 memuat 15 *Selesai* dan 29 *Proses* (tidak ada *Belum*), jadi widget Timeline contoh `in_progress = 29`, bukan 2 seperti fixture 01 FE | 02 BE §4.6 menetapkan overlay; fixture dan teks 01 FE disamakan |
+| ✔ 6 | **Sinkron biaya tidak aman terhadap klik ganda**: `planner_budget_items` tidak punya indeks unik pada `admin_doc_id`, jadi dua permintaan bisa membuat dua pos | baris dokumen dikunci `FOR UPDATE` dalam transaksi (02 BE §4.5; kasus berbalapan dijalankan pada entri lanjutan di atas: 1 pos dengan kunci, 2 tanpa) |
+| ○ 7 | **Batas modul tidak tercatat**: sinkron biaya (Menu 02) menulis ke tabel milik Menu 03 | dicatat sebagai pengecualian SQL kedua di kontrak bab 1.1 dan bab 8 (alternatif antarmuka Go disebut di 02 BE bab 8) |
+| ○ 8 | **`GET /tasks?scope=all` ambigu**: "semua sesi" atau "tugas Umum" (`all` juga `scope_key` sesi sistem) | `scope=all` hanya tugas Umum; tanpa parameter = semua |
+| ○ 9 | **BE tidak menjelaskan sambungan ke kode menu 01**: satu modul dengan dua kunci (`timeline`, `admin_docs`) padahal tiap antarmuka punya satu `Key()`; `ApplyMode` hanya `append`; bidang registry yang harus ditambah; urutan overlay | 02 BE §4.6 dan §2 |
+| ○ 10 | **DTO tidak mengikuti pola menu 01**: tag `binding:"required"` (menjawab `invalid_json` tanpa nama kolom), sintaks Go tak valid (`Title, SubEventScope … *string`), `Created, Skipped int` tanpa tag JSON, tipe `Warning` tak terdefinisi, bentuk respons per endpoint tidak ada | DTO ditulis ulang tanpa `binding`, `domain.Notice`, bab 3.3 bentuk respons |
+| ○ 11 | **`admin_docs.label` tidak didefinisikan** (01 FE bab 15 butir 11) dan **teks panduan jenis non-pernikahan dirujuk ke TEMPLATE_EVENT yang tidak memuatnya** (dicatat juga di dokumen implementasi menu 01); filter subjek wireframe 4 chip padahal registry 5 subjek (`ortu_cpp`, `ortu_cpw` terpisah) | `AdminLabel`, `AdminSubjects`, `AdminGuide` + teks panduan di TEMPLATE_EVENT bab 4.1; README/FE memakai 6 chip |
+| ○ 12 | **FE bertentangan dengan 01 FE**: `AppLayout` (seharusnya `PlannerLayout`), nama preset "dari registry" (registry hanya membawa kunci; 01 FE sudah memutuskan kamus `TEMPLATE_LABELS`), pemuatan data tanpa `GET projects/:id` (status arsip, zona waktu), tombol "Kirim ke anggaran" tak konsisten di wireframe, contoh "Batas DP Venue" bukan tugas PDF, ekspor `.xlsx` butuh `backendFetchRaw` yang tak ada di rencana BFF | FE ditulis ulang; README memakai "Visit Venue Pernikahan" |
+| ○ 13 | **`replace_template` menghapus kemajuan dan tautan tanpa konfirmasi** (hanya `replace_all` yang meminta) | `confirm` wajib bila ada kemajuan (02 BE §4.1, §4.7) |
+| ○ 14 | **Tanpa batas jumlah dan jendela tanggal** sementara daftar tanpa paginasi dan Gantt menggambar rentang tanggal | 500 tugas, 200 berkas, jendela `Hari-H − 1095` s/d `akhir acara + 365` (angka usulan); kode `task_limit_reached`, `admin_doc_limit_reached` di kontrak (ukuran pada batas diukur di entri lanjutan, #25) |
+| ○ 15 | Kunci tugas 43 (`wedding.final_fitting`) tidak mengikuti aturan "judul huruf kecil bergaris-bawah"; kunci dokumen juga dikurasi | aturan dijelaskan (kurung dibuang; kunci di tabel adalah konstanta) |
+| ○ 16 | Nama kunci ringkasan `selesai/proses/belum` berbeda dari `TimelineSummary` (`completed/in_progress`) | `completed/in_progress/not_started/overdue` |
+
+Tidak berubah karena **sudah benar**: DDL migrasi 007 identik dengan blok SQL 02 BE (perbandingan teks); 44 nama, urutan, durasi, dan status serta 15 nama berkas dan statusnya (9/6) dan 4 langkah panduan cocok dengan PDF (nama tugas 43 hanya berbeda karakter privat pada font PDF); tanggal pada wireframe Tab Jadwal cocok dengan generator.
+
+**Dokumen yang berubah.** `02_TIMELINE_DAN_TUGAS/BE.md` (status, DTO, bentuk respons, validasi, SQL sinkron, generator dengan kode acuan, sambungan ke menu 01, template non-pernikahan, tabel pengujian dengan status, urutan kerja, celah); `FE.md` ditulis ulang mengikuti 01 FE (routing, alur data, prasyarat, tipe dan fixture, library yang dijalankan, wireframe, galat, aksesibilitas, tes, QA, urutan kerja, celah); `README.md` (status, tabel 9 jenis, integrasi); `00_KONTRAK_BERSAMA/README.md` (pengecualian SQL, bidang registry `AdminLabel`, kode galat dan warning baru, validasi); `TEMPLATE_EVENT.md` bab 4.1 (subjek dokumen, label widget, panduan perizinan usulan); `01_DASHBOARD/FE.md` (butir 10 dan 11, fixture, wireframe) dan `01_DASHBOARD/BE.md` §5.2 (catatan waktu sebagai parameter).
+
+**Divalidasi** (PostgreSQL 16.2 lokal, database sementara `planner_spec02_scratch_test`, sudah dihapus; database `adicara` tidak disentuh): migrasi 001–012 naik; 50 tugas dan 15 berkas Proyek Contoh dimasukkan dari tabel 02 BE; kueri provider dan ringkasan (`total 50, completed 15, in_progress 29, not_started 6, overdue 0` pada 4 Okt 2026; `overdue 1` pada 4 Nov; `urgent` tugas 16–18 pada 1 Nov), `admin_docs` (9/15 dan lima nama pertama), urut ulang (50 tugas, 50 nilai berbeda), geser (35 tugas), `append` idempoten, dan blok SQL sinkron biaya §4.5 dijalankan **persis seperti tertulis** per pernyataan, ditambah delapan kasus perilaku. Kode Go acuan `Plan`: lima tes lulus. Kode TypeScript di 02 FE (tipe, `timeline.ts`) diekstrak dari dokumen: `tsc` strict dengan `noUncheckedIndexedAccess` bersih dan 10 tes `node:test` lulus terhadap fixture 50 tugas. Nama, durasi, status, dan panduan dibandingkan dengan PDF memakai `pdfminer`.
+
+**Belum dijalankan:** modul Go `plannertimeline`, endpoint, uji emas Proyek Contoh, apa pun di browser (Astro, dialog, seret-lepas, Gantt tergambar), dan perbandingan tipe FE dengan respons backend asli (backend belum ada).
+
+**Perlu keputusan produk:** 02 BE bab 8 (label preset, judul widget Legalitas, batas dan jendela tanggal, `confirm` pada `replace_template`, batas modul sinkron biaya, dependensi `excelize`, status "proses" untuk 29 tugas contoh, panduan perizinan usulan, sinkron satu arah, ringkasan tidak per sesi) dan 02 FE bab 13.
+
 ## 2026-10-21 — Menu 01 (BE) diimplementasikan: koreksi spesifikasi dari hasil membangunnya
 
 Backend menu 01 sudah menjadi kode ([dokumen](../../backend/planner/2026-10-21-planner-menu-01.md)). Membangunnya dan mengujinya terhadap PostgreSQL 16.2 menemukan hal berikut; semua ✔ terbukti dengan eksekusi.

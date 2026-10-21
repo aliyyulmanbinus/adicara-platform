@@ -20,6 +20,11 @@ Kontrak yang berlaku adalah [`backend/docs/openapi.yaml`](../backend/docs/openap
 | `GET/PATCH/DELETE /v1/planner/projects/:id` · `PATCH .../status` | Bearer | Detail (+ `shiftable_tasks`), ubah (geser jadwal opsional), hapus (`?confirm=<judul>`), ubah status. Proyek bukan milik pemanggil dan id non-UUID: `404`. Proyek `archived` baca-saja kecuali status dan hapus (`409 project_read_only`). |
 | `GET /v1/planner/projects/:id/dashboard` | Bearer | Enam widget; 60/menit/pengguna. Widget `null` bila modulnya belum ada. |
 | `GET/POST .../sessions` · `POST .../sessions/reorder` · `PUT/DELETE .../sessions/:session_id` | Bearer | Master sesi bersama. |
+| `GET/POST /v1/planner/projects/:id/tasks` · `PATCH/DELETE .../tasks/:task_id` · `PATCH .../tasks/:task_id/status` | Bearer | Menu 02: tugas persiapan (saring `status`, `category`, `scope`, `phase`; `summary` seluruh proyek). Maks 500 per proyek. |
+| `POST .../tasks/reorder` · `POST .../tasks/shift` · `POST .../tasks/generate-defaults` | Bearer | Urut ulang (daftar lengkap), geser manual tugas template yang belum selesai, dan buat jadwal dari template (`append`, `replace_template`, `replace_all` + `confirm`). |
+| `GET .../tasks/export-spreadsheet` | Bearer | `.xlsx` semua tugas + Gantt mingguan; 10/menit/pengguna. |
+| `GET/POST .../admin-docs` · `PATCH/DELETE .../admin-docs/:doc_id` · `PATCH .../admin-docs/:doc_id/status` · `POST .../admin-docs/reorder` | Bearer | Menu 02: dokumen legalitas/perizinan. Maks 200 per proyek. |
+| `POST .../admin-docs/apply-template` · `POST .../admin-docs/:doc_id/sync-budget` | Bearer | Berkas standar jenis acara; salin biaya berkas ke pos anggaran (idempoten, `201` bila pos baru). |
 
 Path backend tidak memakai prefix `/api`. Lewat Nginx (origin tunggal) path yang sama tersedia sebagai `/api/v1/...`: Nginx membuang `/api` sebelum meneruskan, jadi `/api/v1/auth/login` sampai ke backend sebagai `/v1/auth/login`. Hanya `/api/v1/*` yang diteruskan; `/healthz` tetap di root. Aturan input dan detail mekanisme ada di [Session & JWT Authentication](backend/authentication/session-authentication.md).
 
@@ -48,7 +53,7 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 | 401 | `unauthorized` (kredensial/token salah atau tidak ada; juga akun nonaktif atau terhapus pada rute terlindungi dan refresh, serta token yang terbit sebelum ganti password) |
 | 403 | `account_inactive` |
 | 404 | `not_found` |
-| 409 | `email_taken`, `username_taken`, `project_read_only`, `project_limit_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `conflict` (Planner) |
+| 409 | `email_taken`, `username_taken`, `project_read_only`, `project_limit_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `task_limit_reached`, `admin_doc_limit_reached`, `conflict` (Planner) |
 | 429 | `rate_limited` |
 | 500 | `internal` |
 | 503 | `database_unavailable` |
@@ -57,7 +62,7 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 
 `/v1/auth/{register,login,refresh,logout}` dibatasi `AUTH_RATE_LIMIT` percobaan per IP klien per menit (default 10). IP klien dibaca dari `X-Real-IP`, hanya jika koneksi berasal dari proxy di `TRUSTED_PROXIES`. Server perantara (Astro) wajib meneruskan header itu, jika tidak semua pengguna berbagi satu bucket. Nginx menambah batas sendiri di depan backend untuk `/auth/{login,register}` (form web) dan `/api/v1/auth/{login,register}` (5 per menit per IP klien, burst 10) dan menjawab `429` dengan body error API yang sama; IP klien di Nginx diambil dari `X-Forwarded-For` bila koneksi datang dari proxy privat/loopback ([Nginx](devops/nginx.md)).
 
-Planner membatasi per **pengguna** (bukan IP): `POST /v1/planner/projects` 10 per menit dan `GET .../dashboard` 60 per menit, dihitung di memori tiap proses.
+Planner membatasi per **pengguna** (bukan IP): `POST /v1/planner/projects` 10 per menit, `GET .../dashboard` 60 per menit, dan `GET .../tasks/export-spreadsheet` 10 per menit, dihitung di memori tiap proses.
 
 ## CORS
 

@@ -11,6 +11,7 @@ Backend dibangun menggunakan Golang dengan pola **Module-Based Clean Architectur
 - [Pengerasan autentikasi (2026-10-04)](authentication/2026-10-04-auth-hardening.md)
 - [Manajemen Profil User](profile/user-profile.md)
 - [Planner menu 01: proyek, sesi, registry, dashboard](planner/2026-10-21-planner-menu-01.md)
+- [Planner menu 02: timeline, tugas, dokumen legalitas](planner/2026-10-21-planner-menu-02.md)
 - [Migrasi 005–012: skema Planner](migrations/2026-10-21-planner-migrations-005-012.md)
 - [Changelog](CHANGELOG.md)
 

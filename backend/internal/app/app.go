@@ -24,6 +24,9 @@ import (
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/domain"
 	plannerrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/repository"
 	plannerusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/usecase"
+	timelinehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/delivery/http"
+	timelinerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/repository"
+	timelineusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/usecase"
 	profilehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/delivery/http"
 	profileusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/usecase"
 )
@@ -66,16 +69,28 @@ func Build(ctx context.Context) (*App, error) {
 	profileSvc := profileusecase.New(idn)
 	profilehttp.RegisterRoutes(ginEngine, idn, profileSvc)
 
-	// Planner menu 01 (projects, sessions, dashboard). The other planner
-	// modules add themselves here when they are built, e.g.
-	//   plannerSvc.RegisterSummary(timelineSvc, ...)           dashboard widgets
-	//   plannerSvc.RegisterTemplateAppliers(timelineSvc, ...)  wizard templates
-	// Until then their widgets are null and their templates are not offered.
+	// Planner: menu 01 (projects, sessions, dashboard) is the host; every other
+	// planner module adds itself to it here when it is built:
+	//   RegisterSummary           dashboard widgets
+	//   RegisterTemplateAppliers  wizard templates
+	//   RegisterSampleOverlays    the Wedding_Planner.pdf dataset of the sample project
+	// Until a module is registered its widget is null and its template is not
+	// offered. One registry instance serves every module (lead times, subjects).
+	registry := domain.DefaultRegistry()
+	plannerTx := plannerrepo.NewTxManager(pool)
 	plannerSvc := plannerusecase.New(
-		plannerrepo.NewPostgresRepository(pool), plannerrepo.NewTxManager(pool), domain.DefaultRegistry(),
+		plannerrepo.NewPostgresRepository(pool), plannerTx, registry,
 		plannerusecase.Options{MaxProjects: cfg.PlannerMaxProjects},
 	)
+
+	// Menu 02: timeline and administrative documents (two keys: timeline, admin_docs).
+	timelineSvc := timelineusecase.New(timelinerepo.NewPostgresRepository(pool), plannerTx, registry, timelineusecase.Options{})
+	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider())
+	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier())
+	plannerSvc.RegisterSampleOverlays(timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay())
+
 	plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
+	timelinehttp.RegisterRoutes(ginEngine, idn, plannerSvc, timelineSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)
