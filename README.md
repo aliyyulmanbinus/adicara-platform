@@ -23,7 +23,7 @@ Adicara adalah platform undangan digital dan perayaan yang mobile-first untuk In
 
 PostgreSQL lokal tersedia pada port `5432`. Migrasi dijalankan otomatis oleh API saat start. Jangan gunakan nilai `.env.example` untuk produksi.
 
-> Alur Compose belum diverifikasi pada lingkungan implementasi (Docker tidak tersedia); lihat [docs/devops/docker.md](docs/devops/docker.md).
+> Compose produksi (`deploy/docker-compose.prod.yml`) berjalan di VPS sejak 2026-10-11. Alur `docker compose up` lokal (`docker-compose.yml`) belum diverifikasi karena Docker tidak tersedia pada lingkungan implementasi; lihat [docs/devops/docker.md](docs/devops/docker.md).
 
 ## Menjalankan tanpa Docker
 
@@ -69,7 +69,7 @@ go build ./cmd/api
 ## Struktur utama
 
 - `frontend/` — Astro, design system, halaman marketing, template undangan, dan alur login (endpoint `/auth/*`, middleware `/dashboard`).
-- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
+- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`, `planner`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
 - `contracts/openapi.yaml` — **backup** kontrak API versi lama (cookie session + undangan); tidak sesuai backend dan tidak di-lint CI. Kontrak yang berlaku dan di-lint: `backend/docs/openapi.yaml`.
 - `deploy/` — Nginx dan Compose produksi.
 - `docs/` — arsitektur, operasi, dan catatan perubahan.
@@ -77,6 +77,8 @@ go build ./cmd/api
 ## Status saat ini
 
 Berfungsi end-to-end (diuji dengan PostgreSQL 16 dan Chrome): registrasi, login (email atau username), sesi dengan refresh token otomatis, logout, dan perlindungan `/dashboard`.
+
+Backend saja (belum ada halaman): API Planner menu 01 (proyek, sesi, dashboard) di `/v1/planner/*`, diuji dengan PostgreSQL 16; widget dashboard dan template terisi saat menu 02–06 dibangun ([catatan](docs/backend/planner/2026-10-21-planner-menu-01.md)).
 
 Belum berfungsi: pembuatan dan pengelolaan undangan, tamu, RSVP, serta halaman publik `/i/[slug]`. Modul undangan dihapus dari backend dan menunggu dibangun ulang; halaman frontend-nya masih memanggil API lama.
 

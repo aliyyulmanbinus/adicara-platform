@@ -31,6 +31,8 @@ services:
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-}
       AUTH_RATE_LIMIT: ${AUTH_RATE_LIMIT:-}
+      DB_MAX_CONNS: ${DB_MAX_CONNS:-}
+      PLANNER_MAX_PROJECTS: ${PLANNER_MAX_PROJECTS:-}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       MIGRATE_ON_START: ${MIGRATE_ON_START:-}
       # Same-origin traffic needs no CORS; allow only the public origin.

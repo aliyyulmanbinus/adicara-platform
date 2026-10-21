@@ -102,7 +102,7 @@ func legacySchema(t *testing.T, db *sql.DB) string {
 }
 
 // latestVersion is the newest migration in sql/; bump it with each new file.
-const latestVersion = 4
+const latestVersion = 12
 
 func assertCurrentSchema(t *testing.T, db *sql.DB) {
 	t.Helper()
@@ -224,8 +224,9 @@ func TestAuthHardeningMigrationKeepsExistingData(t *testing.T) {
 		t.Fatalf("existing sessions must keep a NULL rotated_at, %d rows match", n)
 	}
 
-	if err := goose.Down(db, "sql"); err != nil {
-		t.Fatalf("rolling back 004 must work: %v", err)
+	// Back to version 3: this also runs every planner Down (005-012) before 004's.
+	if err := goose.DownTo(db, "sql", 3); err != nil {
+		t.Fatalf("rolling back 004 (and the planner migrations above it) must work: %v", err)
 	}
 	if n := count(t, db, `SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND column_name IN ('password_changed_at','rotated_at')`); n != 0 {
 		t.Fatal("the down migration must remove both columns")
@@ -238,4 +239,46 @@ func TestAuthHardeningMigrationKeepsExistingData(t *testing.T) {
 		t.Fatalf("re-applying 004 after a rollback must work: %v", err)
 	}
 	assertCurrentSchema(t, db)
+}
+
+// The planner schema (005-012) must apply on top of a populated auth schema,
+// roll back completely (including the timezone trigger function) without
+// touching accounts, and apply again.
+func TestPlannerMigrationsRollBackAndReapply(t *testing.T) {
+	dsn, db := testDB(t)
+	if err := Up(dsn); err != nil {
+		t.Fatal(err)
+	}
+
+	plannerObjects := `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+		WHERE n.nspname = 'public' AND c.relname LIKE 'planner\_%' AND c.relkind IN ('r', 'v')`
+	if n := count(t, db, plannerObjects); n != 15 {
+		t.Fatalf("%d planner tables and views, want 14 tables + the planner_budget_lines view", n)
+	}
+
+	mustExec(t, db, `
+		INSERT INTO users (id, email, password_hash, username) VALUES ('11111111-1111-1111-1111-111111111111', 'a@example.com', 'h', 'ani');
+		INSERT INTO planner_projects (id, user_id, event_type, title, event_date, prep_start_date)
+			VALUES ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'wedding', 'Nikah', '2027-03-28', '2026-10-21');`)
+
+	if err := goose.DownTo(db, "sql", 4); err != nil {
+		t.Fatalf("rolling back 005-012 must work: %v", err)
+	}
+	if n := count(t, db, plannerObjects); n != 0 {
+		t.Fatalf("%d planner objects survived the rollback", n)
+	}
+	if n := count(t, db, `SELECT count(*) FROM pg_proc WHERE proname = 'planner_check_timezone'`); n != 0 {
+		t.Fatal("the down migration must drop the timezone trigger function")
+	}
+	if n := count(t, db, `SELECT count(*) FROM users`); n != 1 {
+		t.Fatalf("rolling back the planner schema touched accounts: %d users", n)
+	}
+
+	if err := Up(dsn); err != nil {
+		t.Fatalf("re-applying the planner migrations: %v", err)
+	}
+	assertCurrentSchema(t, db)
+	if n := count(t, db, plannerObjects); n != 15 {
+		t.Fatalf("%d planner objects after re-applying, want 15", n)
+	}
 }

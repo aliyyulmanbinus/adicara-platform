@@ -68,4 +68,4 @@ Setelah deploy, periksa `curl --fail http://127.0.0.1/healthz`, lalu buka `http:
 
 Periksa log backend dengan `docker compose logs backend` (format teks Gin dan `log`, bukan JSON). Jangan menyalin log yang mungkin berisi data pribadi ke kanal publik.
 
-Deployment ini belum dijalankan pada VPS dari lingkungan implementasi saat ini.
+Deployment pertama backend baru ke VPS ini dijalankan pada 2026-10-11; hasil dan hal yang belum terverifikasi dicatat di [catatan merge](../devops/2026-10-11-merge-backend-into-development.md#hasil-deploy-produksi-2026-10-11).

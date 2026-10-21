@@ -39,6 +39,17 @@ Referensi role. Baris bawaan: `1 = admin`, `2 = customer`. Kolom: `id` (smallint
 
 Indeks `refresh_sessions_user_idx` pada `(user_id, revoked_at)`. Baris yang melewati `expires_at` dihapus otomatis saat backend start dan setiap jam.
 
+### Planner (`planner_*`)
+
+Tabel milik menu 01, dipakai kodenya:
+
+| Tabel | Catatan |
+|---|---|
+| `planner_projects` | Satu baris per acara; satu pengguna banyak proyek (`user_id` → `users`, `ON DELETE CASCADE`). `event_type` (9 nilai, `CHECK`), `title` (1–255, dipangkas, tanpa karakter kontrol), `event_date`, `event_end_date` (nullable), `prep_start_date`, `timezone` (IANA kanonik, dijaga `CHECK` dan pemicu), `target_budget`/`savings_target` (rupiah utuh `BIGINT`, 0…10¹³), `status` (`active`/`completed`/`archived`), `is_sample` (maks satu per pengguna, indeks unik parsial), `client_token` (unik per pengguna), `metadata` (`JSONB`, divalidasi usecase terhadap registry), `invitation_id` (tanpa FK sampai modul undangan ada). |
+| `planner_event_sessions` | Master sesi bersama semua modul Planner: `scope_key` unik per proyek, nama unik per proyek tanpa membedakan huruf besar-kecil, satu baris sistem `all` per proyek. |
+
+Tabel modul lain (`planner_tasks`, `planner_admin_docs`, `planner_vendors`, `planner_budget_*`, `planner_contributors`, `planner_savings_entries`, `planner_shopping_items`, `planner_guests`, `planner_rundowns`, `planner_playlists`, view `planner_budget_lines`) sudah dibuat tetapi belum punya kode; skemanya ada di `BE.md` modul masing-masing. FK dari tabel-tabel itu ke `planner_event_sessions` bertipe `DEFERRABLE INITIALLY DEFERRED` ([alasan](backend/migrations/2026-10-21-planner-migrations-005-012.md#aturan-yang-dijaga-skema)).
+
 goose menyimpan versi migrasi di tabel `goose_db_version`.
 
 ## Migrasi
@@ -47,6 +58,7 @@ goose menyimpan versi migrasi di tabel `goose_db_version`.
 - `002_000_users.sql` — akun pengguna
 - `003_000_refresh_sessions.sql` — sesi refresh token
 - `004_000_auth_hardening.sql` — `users.password_changed_at` dan `refresh_sessions.rotated_at` (nullable; kompatibel dengan image sebelumnya). Detail: [migrasi 004](backend/migrations/2026-10-04-auth-hardening-columns.md)
+- `005`–`012` — skema Planner (14 tabel + view). Detail: [migrasi 005–012](backend/migrations/2026-10-21-planner-migrations-005-012.md)
 
 Prosedur manual, termasuk mereset database yang masih berskema lama: [schema-migrations](backend/migrations/schema-migrations.md). Ringkasnya, dari `backend/`: `make migrate-up` dan `make migrate-fresh` (**destruktif**).
 
@@ -54,4 +66,4 @@ Tabel undangan, tamu, dan RSVP dari versi sebelumnya sudah tidak dipakai dan aka
 
 ## Data pribadi
 
-Skema saat ini menyimpan email, username, nama opsional, dan hash password. Tidak ada nomor telepon atau data tamu. Kebijakan retensi dan penghapusan akun masih perlu ditetapkan sebelum produksi publik. Data tamu dan RSVP, bila modul undangan kembali, hanya boleh tersedia pada endpoint pemilik.
+Skema saat ini menyimpan email, username, nama opsional, dan hash password, serta judul dan atribut acara di `planner_projects`. Tabel `planner_guests` (nama dan telepon tamu) sudah ada tetapi belum ada kode yang mengisinya. Kebijakan retensi dan penghapusan akun masih perlu ditetapkan sebelum produksi publik. Data tamu dan RSVP, bila modul undangan kembali, hanya boleh tersedia pada endpoint pemilik.

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/app"
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/config"

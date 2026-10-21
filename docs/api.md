@@ -14,6 +14,12 @@ Kontrak yang berlaku adalah [`backend/docs/openapi.yaml`](../backend/docs/openap
 | `POST /v1/auth/password` | Bearer | Body `{current_password, new_password}`. `204`. Mencabut **semua** sesi refresh dan membuat access token yang terbit sebelumnya `401`. |
 | `GET /v1/me` | Bearer | `200 {"data": {"user": {id, email, username, name}}}`. |
 | `PATCH /v1/me` | Bearer | Body `{name}` (wajib, tidak kosong). `200 {"data": {id, email, username, name}}`. |
+| `GET /v1/planner/event-types` | Bearer | Registry sembilan jenis acara + `templates_available`. |
+| `GET/POST /v1/planner/projects` | Bearer | Daftar kartu Hub (`?status=`, `?view=lite` untuk project switcher) dan pembuatan proyek (atomik, `client_token`, 10/menit/pengguna). |
+| `GET /v1/planner/projects/summary` · `POST /v1/planner/projects/sample` | Bearer | Metrik portofolio; membuat Proyek Contoh (idempoten). |
+| `GET/PATCH/DELETE /v1/planner/projects/:id` · `PATCH .../status` | Bearer | Detail (+ `shiftable_tasks`), ubah (geser jadwal opsional), hapus (`?confirm=<judul>`), ubah status. Proyek bukan milik pemanggil dan id non-UUID: `404`. Proyek `archived` baca-saja kecuali status dan hapus (`409 project_read_only`). |
+| `GET /v1/planner/projects/:id/dashboard` | Bearer | Enam widget; 60/menit/pengguna. Widget `null` bila modulnya belum ada. |
+| `GET/POST .../sessions` · `POST .../sessions/reorder` · `PUT/DELETE .../sessions/:session_id` | Bearer | Master sesi bersama. |
 
 Path backend tidak memakai prefix `/api`. Lewat Nginx (origin tunggal) path yang sama tersedia sebagai `/api/v1/...`: Nginx membuang `/api` sebelum meneruskan, jadi `/api/v1/auth/login` sampai ke backend sebagai `/v1/auth/login`. Hanya `/api/v1/*` yang diteruskan; `/healthz` tetap di root. Aturan input dan detail mekanisme ada di [Session & JWT Authentication](backend/authentication/session-authentication.md).
 
@@ -34,15 +40,15 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 }
 ```
 
-`code` stabil dan dimaksudkan untuk dibaca mesin; `message` berbahasa Inggris dan dapat berubah, jadi klien sebaiknya memetakan `code` ke teksnya sendiri.
+`code` stabil dan dimaksudkan untuk dibaca mesin; `message` berbahasa Inggris dan dapat berubah, jadi klien sebaiknya memetakan `code` ke teksnya sendiri. Pada galat validasi Planner (`invalid_input`, `invalid_metadata`, `invalid_date`, `invalid_timezone`) `message` berbentuk `<field>: <alasan>` agar formulir dapat menandai kolomnya. `error.details` hanya ada bila klien butuh konteks (mis. `session_in_use` memuat `usage`).
 
 | Status | Kode |
 |---|---|
-| 400 | `invalid_json`, `invalid_input`, `invalid_email`, `invalid_username`, `weak_password`, `password_too_long` |
+| 400 | `invalid_json`, `invalid_input`, `invalid_email`, `invalid_username`, `weak_password`, `password_too_long`, `invalid_metadata`, `invalid_scope`, `invalid_date`, `invalid_timezone`, `invalid_template` (Planner) |
 | 401 | `unauthorized` (kredensial/token salah atau tidak ada; juga akun nonaktif atau terhapus pada rute terlindungi dan refresh, serta token yang terbit sebelum ganti password) |
 | 403 | `account_inactive` |
 | 404 | `not_found` |
-| 409 | `email_taken`, `username_taken` |
+| 409 | `email_taken`, `username_taken`, `project_read_only`, `project_limit_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `conflict` (Planner) |
 | 429 | `rate_limited` |
 | 500 | `internal` |
 | 503 | `database_unavailable` |
@@ -50,6 +56,8 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 ## Rate limit
 
 `/v1/auth/{register,login,refresh,logout}` dibatasi `AUTH_RATE_LIMIT` percobaan per IP klien per menit (default 10). IP klien dibaca dari `X-Real-IP`, hanya jika koneksi berasal dari proxy di `TRUSTED_PROXIES`. Server perantara (Astro) wajib meneruskan header itu, jika tidak semua pengguna berbagi satu bucket. Nginx menambah batas sendiri di depan backend untuk `/auth/{login,register}` (form web) dan `/api/v1/auth/{login,register}` (5 per menit per IP klien, burst 10) dan menjawab `429` dengan body error API yang sama; IP klien di Nginx diambil dari `X-Forwarded-For` bila koneksi datang dari proxy privat/loopback ([Nginx](devops/nginx.md)).
+
+Planner membatasi per **pengguna** (bukan IP): `POST /v1/planner/projects` 10 per menit dan `GET .../dashboard` 60 per menit, dihitung di memori tiap proses.
 
 ## CORS
 

@@ -10,6 +10,7 @@ Semua file `.sql` disimpan dalam `internal/migrate/sql/`. File-file tersebut di-
 2. **`002_000_users.sql`**: Tabel utama untuk menyimpan identitas pengguna, memiliki relasi referensial ke `m_role`.
 3. **`003_000_refresh_sessions.sql`**: Tabel penyimpan token sesi (*refresh token*), memiliki relasi *Foreign Key* (dengan set hapus *cascade*) ke tabel `users`.
 4. **`004_000_auth_hardening.sql`**: Menambah `users.password_changed_at` dan `refresh_sessions.rotated_at` (keduanya nullable; kompatibel dengan image sebelumnya). Detail: [2026-10-04-auth-hardening-columns.md](2026-10-04-auth-hardening-columns.md).
+5. **`005`–`012`**: skema Planner (proyek, master sesi, vendor, tugas, keuangan, belanja, tamu, rundown). Detail: [2026-10-21-planner-migrations-005-012.md](2026-10-21-planner-migrations-005-012.md).
 
 ## Menjalankan Migrasi Manual
 Selain otomatis lewat `MIGRATE_ON_START`, tersedia perintah `cmd/migrate` (juga ada di image Docker sebagai `/adicara-migrate`):

@@ -22,6 +22,11 @@ type Config struct {
 	CORSOrigins    []string
 	AuthRateLimit  int
 	TrustedProxies []string
+	// DBMaxConns caps the pgx pool (DB_MAX_CONNS).
+	DBMaxConns int32
+	// PlannerMaxProjects caps real (non-sample) planner projects per user
+	// (PLANNER_MAX_PROJECTS). A technical limit, not a product one.
+	PlannerMaxProjects int
 }
 
 // defaultTrustedProxies covers loopback and private networks, which is where
@@ -81,6 +86,15 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("AUTH_RATE_LIMIT must be a non-negative integer")
 	}
 
+	dbMaxConns, err := strconv.Atoi(getenv("DB_MAX_CONNS", "10"))
+	if err != nil || dbMaxConns < 1 || dbMaxConns > 1000 {
+		return Config{}, fmt.Errorf("DB_MAX_CONNS must be an integer between 1 and 1000")
+	}
+	plannerMaxProjects, err := strconv.Atoi(getenv("PLANNER_MAX_PROJECTS", "100"))
+	if err != nil || plannerMaxProjects < 1 {
+		return Config{}, fmt.Errorf("PLANNER_MAX_PROJECTS must be a positive integer")
+	}
+
 	return Config{
 		AppEnv:         appEnv,
 		HTTPAddr:       httpAddr(),
@@ -92,6 +106,9 @@ func Load() (Config, error) {
 		CORSOrigins:    splitCSV(getenv("CORS_ORIGINS", "http://localhost:5173")),
 		AuthRateLimit:  authRateLimit,
 		TrustedProxies: splitCSV(getenv("TRUSTED_PROXIES", defaultTrustedProxies)),
+
+		DBMaxConns:         int32(dbMaxConns),
+		PlannerMaxProjects: plannerMaxProjects,
 	}, nil
 }
 

@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Adicara API
-  description: Backend API untuk platform Adicara (Auth, Health, Profile).
+  description: Backend API untuk platform Adicara (Auth, Health, Profile, Planner menu 01).
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -11,6 +11,10 @@ servers:
       Same-origin through Nginx (browser, production). Nginx drops the `/api` prefix, so
       `/api/v1/auth/login` reaches the backend as `/v1/auth/login`. Only `/api/v1/*` is
       forwarded; `/healthz` is not under `/api`.
+
+tags:
+  - name: Planner
+    description: Menu 01 of the Planner service. Every route needs a bearer token.
 
 components:
   securitySchemes:
@@ -31,10 +35,22 @@ components:
                 Machine-readable. Auth codes: invalid_json, invalid_input, invalid_email,
                 invalid_username, weak_password, password_too_long, email_taken,
                 username_taken, unauthorized, account_inactive, not_found, rate_limited, internal.
+                Planner codes: invalid_metadata, invalid_scope, invalid_date, invalid_timezone,
+                invalid_template (400); project_read_only, project_limit_reached,
+                session_in_use, session_name_taken, session_limit_reached, conflict (409).
               example: weak_password
             message:
               type: string
-              description: English, for logs. Clients should map `code` to their own text.
+              description: >-
+                English, for logs. Clients should map `code` to their own text. Planner validation
+                errors (`invalid_input`, `invalid_metadata`, `invalid_date`, `invalid_timezone`)
+                read `<field>: <reason>` so a form can mark the field.
+            details:
+              type: object
+              additionalProperties: true
+              description: >-
+                Present only where the client needs more to act on the error, e.g.
+                `session_in_use` carries `usage` (rows that still point at the session).
     User:
       type: object
       properties:
@@ -65,6 +81,585 @@ components:
           type: integer
           description: Access token lifetime in seconds.
           example: 900
+    # ---------- Planner (menu 01: projects, sessions, dashboard) ----------
+    PhaseInfo:
+      type: object
+      description: >-
+        Computed by the server in the project's own time zone (never from the device clock).
+        `upcoming` before `event_date`; `ongoing` from `event_date` to `event_end_date`
+        (or `event_date` for a one-day event); `finished` afterwards.
+      required: [days_remaining, phase, day_number, total_days]
+      properties:
+        days_remaining:
+          type: integer
+          description: Calendar days from today to `event_date`; 0 or negative from Hari-H on.
+          example: 175
+        phase:
+          type: string
+          enum: [upcoming, ongoing, finished]
+        day_number:
+          type: integer
+          description: N-th day while `ongoing`, otherwise 0.
+        total_days:
+          type: integer
+          description: 1 for a one-day event.
+    PlannerProject:
+      allOf:
+        - $ref: '#/components/schemas/PhaseInfo'
+        - type: object
+          required: [id, event_type, title, event_date, prep_start_date, timezone, target_budget, status, is_sample]
+          properties:
+            id:
+              type: string
+              format: uuid
+            event_type:
+              $ref: '#/components/schemas/PlannerEventTypeKey'
+            title:
+              type: string
+              maxLength: 255
+            event_date:
+              type: string
+              format: date
+              description: Hari-H (the first day of a multi-day event).
+            event_end_date:
+              type: string
+              format: date
+              nullable: true
+              description: null = one-day event.
+            prep_start_date:
+              type: string
+              format: date
+            timezone:
+              type: string
+              example: Asia/Jakarta
+            target_budget:
+              type: integer
+              format: int64
+              description: Whole rupiah, 0 to 10^13.
+            savings_target:
+              type: integer
+              format: int64
+              nullable: true
+              description: null = follows `target_budget`.
+            status:
+              $ref: '#/components/schemas/PlannerProjectStatus'
+            is_sample:
+              type: boolean
+            skipped_vendor_categories:
+              type: array
+              items:
+                type: string
+            invitation_id:
+              type: string
+              format: uuid
+              nullable: true
+            metadata:
+              type: object
+              additionalProperties: true
+              description: Keys depend on the event type (`GET /v1/planner/event-types`).
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    PlannerEventTypeKey:
+      type: string
+      enum: [wedding, khitanan, aqiqah, peresmian, launching, birthday, wisuda, seminar, other]
+    PlannerProjectStatus:
+      type: string
+      enum: [active, completed, archived]
+    PlannerNotice:
+      type: object
+      required: [code, message, count]
+      properties:
+        code:
+          type: string
+          description: >-
+            Warnings: `tasks_overdue_after_shift`. Hints: `tasks_not_shifted`,
+            `sessions_dates_unchanged`. Template warnings such as `lead_time_compressed` come from
+            the module that owns the template.
+        message:
+          type: string
+        count:
+          type: integer
+        shift_days:
+          type: integer
+          description: Only on `tasks_not_shifted`.
+    PlannerApplyResult:
+      type: object
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerTemplatesAvailable:
+      type: object
+      description: >-
+        What the wizard may offer for the event type: templates the type owns AND whose module
+        is built. Empty until the other planner modules exist.
+      properties:
+        timeline_presets:
+          type: array
+          items:
+            type: string
+          example: [wedding_pdf_44, wedding_essential_22]
+        include_adicara_tasks:
+          type: boolean
+        admin_docs:
+          type: boolean
+        budget_lines:
+          type: boolean
+        shopping_list:
+          type: boolean
+        rundown:
+          type: boolean
+        playlist:
+          type: boolean
+    PlannerEventType:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/PlannerEventTypeKey'
+        label:
+          type: string
+          example: Pernikahan
+        icon:
+          type: string
+          example: "\U0001F48D"
+        lead_time_days:
+          type: integer
+          description: Standard horizon of the timeline template.
+        sessions:
+          type: array
+          description: Default sessions created with every project of this type.
+          items:
+            type: object
+            properties:
+              scope_key:
+                type: string
+              name:
+                type: string
+              icon:
+                type: string
+              same_day:
+                type: boolean
+                description: Born with `session_date` = `event_date`.
+        metadata_fields:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+                enum: [string, int, date]
+              max_len:
+                type: integer
+              min:
+                type: integer
+              max:
+                type: integer
+              required:
+                type: boolean
+        labels:
+          type: object
+          properties:
+            guest:
+              type: string
+              example: Tamu
+            guest_menu:
+              type: string
+              example: Buku Tamu & RSVP
+        templates_available:
+          $ref: '#/components/schemas/PlannerTemplatesAvailable'
+    PlannerInitTemplates:
+      type: object
+      description: >-
+        Only what is requested is created. A template the event type does not own, or whose
+        module is not built, is refused with `invalid_template`.
+      properties:
+        timeline_preset:
+          type: string
+          nullable: true
+          example: wedding_pdf_44
+        include_adicara_tasks:
+          type: boolean
+        admin_docs:
+          type: boolean
+        budget_lines:
+          type: boolean
+        shopping_list:
+          type: boolean
+        rundown:
+          type: boolean
+        playlist:
+          type: boolean
+    PlannerInitProjectRequest:
+      type: object
+      required: [event_type, title, event_date]
+      properties:
+        event_type:
+          $ref: '#/components/schemas/PlannerEventTypeKey'
+        title:
+          type: string
+          description: Trimmed; 1 to 255 characters, no control characters.
+        event_date:
+          type: string
+          format: date
+          description: Not before today (in the project time zone) and at most 1826 days ahead.
+        event_end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Not before `event_date`, at most 30 days after it.
+        prep_start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Default is today in the project time zone; must not be after `event_date`.
+        timezone:
+          type: string
+          nullable: true
+          description: Canonical IANA name (`Asia/Jakarta`, `UTC`). Default `Asia/Jakarta`.
+        target_budget:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000000000000
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Validated against the registry of the event type.
+        templates:
+          $ref: '#/components/schemas/PlannerInitTemplates'
+        client_token:
+          type: string
+          minLength: 8
+          maxLength: 64
+          description: >-
+            Generated by the wizard when it opens. Repeating a request with the same token
+            returns the original project (`200`, `created: false`) without running templates again.
+    PlannerUpdateProjectRequest:
+      type: object
+      description: >-
+        PATCH: only the fields sent change. Because JSON `null` and "not sent" are
+        indistinguishable for a plain field, clearing uses the `clear_*` flags.
+      properties:
+        title:
+          type: string
+        event_date:
+          type: string
+          format: date
+          description: >-
+            Past dates are allowed (correcting data). `event_end_date` moves with it unless it is
+            sent too; sessions dated on the old Hari-H follow.
+        event_end_date:
+          type: string
+          format: date
+        clear_event_end_date:
+          type: boolean
+        prep_start_date:
+          type: string
+          format: date
+        timezone:
+          type: string
+        target_budget:
+          type: integer
+          format: int64
+        savings_target:
+          type: integer
+          format: int64
+        clear_savings_target:
+          type: boolean
+          description: Back to following `target_budget`.
+        skipped_vendor_categories:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+          description: 'JSON Merge Patch: a key is replaced, `null` deletes it, an absent key stays.'
+        shift_tasks:
+          type: boolean
+          description: >-
+            Move the template tasks that are not done by the same number of days, in the same
+            transaction as the date change. Ignored when the date does not change.
+    PlannerProjectCard:
+      allOf:
+        - $ref: '#/components/schemas/PhaseInfo'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            event_type:
+              $ref: '#/components/schemas/PlannerEventTypeKey'
+            title:
+              type: string
+            event_date:
+              type: string
+              format: date
+            event_end_date:
+              type: string
+              format: date
+            status:
+              $ref: '#/components/schemas/PlannerProjectStatus'
+            is_sample:
+              type: boolean
+            target_budget:
+              type: integer
+              format: int64
+            total_estimate:
+              type: integer
+              format: int64
+            total_paid:
+              type: integer
+              format: int64
+            total_tasks:
+              type: integer
+            completed_tasks:
+              type: integer
+            guest_pax_count:
+              type: integer
+            metadata:
+              type: object
+              additionalProperties: true
+    PlannerProjectLite:
+      type: object
+      description: Project switcher row, without aggregates.
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_type:
+          $ref: '#/components/schemas/PlannerEventTypeKey'
+        title:
+          type: string
+        event_date:
+          type: string
+          format: date
+        event_end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PlannerProjectStatus'
+        is_sample:
+          type: boolean
+        days_remaining:
+          type: integer
+        phase:
+          type: string
+          enum: [upcoming, ongoing, finished]
+    PlannerPortfolioSummary:
+      type: object
+      properties:
+        active_count:
+          type: integer
+          description: The sample project is never counted in any number.
+        completed_count:
+          type: integer
+        archived_count:
+          type: integer
+        combined_target_budget:
+          type: integer
+          format: int64
+          description: Sum of `target_budget` of the active, non-sample projects.
+        nearest_project:
+          allOf:
+            - $ref: '#/components/schemas/PlannerProjectCard'
+          description: Active, non-sample, not `finished`, earliest `event_date`; absent when none.
+        projects:
+          type: array
+          description: All projects including the sample; tabs, categories and search are filtered by the client.
+          items:
+            $ref: '#/components/schemas/PlannerProjectCard'
+    PlannerSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope_key:
+          type: string
+          pattern: '^[a-z0-9_]{1,40}$'
+          description: Generated by the server from the name; never changes.
+        name:
+          type: string
+        icon:
+          type: string
+        is_system:
+          type: boolean
+          description: True only for `all` ("Umum / Semua Sesi"), which cannot be changed or deleted.
+        sort_order:
+          type: integer
+        session_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          example: '07:30'
+        end_time:
+          type: string
+          example: '09:00'
+        location_name:
+          type: string
+    PlannerSessionUsage:
+      type: object
+      description: Rows that point at the session.
+      properties:
+        tasks:
+          type: integer
+        vendors:
+          type: integer
+        budget_items:
+          type: integer
+        scenario_items:
+          type: integer
+        shopping_items:
+          type: integer
+        guests:
+          type: integer
+        agendas:
+          type: integer
+    PlannerSessionWithUsage:
+      allOf:
+        - $ref: '#/components/schemas/PlannerSession'
+        - type: object
+          properties:
+            usage:
+              $ref: '#/components/schemas/PlannerSessionUsage'
+    PlannerSessionRequest:
+      type: object
+      required: [name]
+      description: >-
+        Used by POST and PUT. PUT replaces the session: optional fields that are not sent are
+        cleared, so a form must send all of them.
+      properties:
+        name:
+          type: string
+          description: Trimmed; 1 to 100 characters; unique in the project, case-insensitively.
+        icon:
+          type: string
+          description: 1 to 8 characters; default 📋.
+        session_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          description: '"HH:MM" or "HH.MM".'
+        end_time:
+          type: string
+        location_name:
+          type: string
+          maxLength: 150
+    PlannerDashboard:
+      type: object
+      description: >-
+        Each widget is `null` when the module that fills it is not built or registered, an
+        `{error}` object when its provider failed, or the module's summary. The summaries are
+        defined by the owning modules; their fields are listed in PLANNER_SPEC/01_DASHBOARD/BE.md §5.1.
+      properties:
+        server_time:
+          type: string
+          format: date-time
+          description: For correcting the device clock on a seconds countdown.
+        project:
+          allOf:
+            - $ref: '#/components/schemas/PhaseInfo'
+            - type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                event_type:
+                  $ref: '#/components/schemas/PlannerEventTypeKey'
+                title:
+                  type: string
+                event_date:
+                  type: string
+                  format: date
+                event_end_date:
+                  type: string
+                  format: date
+                  nullable: true
+                status:
+                  $ref: '#/components/schemas/PlannerProjectStatus'
+                is_sample:
+                  type: boolean
+                invitation_linked:
+                  type: boolean
+                  description: false = standalone mode.
+                target_budget:
+                  type: integer
+                  format: int64
+                savings_target:
+                  type: integer
+                  format: int64
+                  nullable: true
+                timezone:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties: true
+        sessions:
+          type: array
+          description: Without the system session and without `usage`.
+          items:
+            $ref: '#/components/schemas/PlannerSession'
+        timeline:
+          $ref: '#/components/schemas/PlannerWidget'
+        finance:
+          $ref: '#/components/schemas/PlannerWidget'
+        vendors:
+          $ref: '#/components/schemas/PlannerWidget'
+        guests:
+          $ref: '#/components/schemas/PlannerWidget'
+        admin_docs:
+          $ref: '#/components/schemas/PlannerWidget'
+        rundown:
+          $ref: '#/components/schemas/PlannerWidget'
+    PlannerWidget:
+      type: object
+      nullable: true
+      additionalProperties: true
+      description: >-
+        `null`, or `{"error": "internal" | "timeout"}` when the provider failed, or the summary
+        object of the owning module.
+    PlannerCreated:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            project:
+              $ref: '#/components/schemas/PlannerProject'
+            created:
+              type: boolean
+            applied:
+              type: object
+              description: Only when `created` is true. One entry per template that was applied.
+              additionalProperties:
+                $ref: '#/components/schemas/PlannerApplyResult'
+  parameters:
+    PlannerProjectId:
+      name: projectId
+      in: path
+      required: true
+      description: >-
+        A canonical UUID. An id that is not a UUID, an unknown project and another user's
+        project all answer 404.
+      schema:
+        type: string
+        format: uuid
   responses:
     BadRequest:
       description: Invalid input (see `error.code`).
@@ -87,6 +682,21 @@ components:
       description: >-
         Too many attempts from this client IP. The IP is read from `X-Real-IP`, and only
         when the connection comes from a trusted proxy (`TRUSTED_PROXIES`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PlannerNotFound:
+      description: >-
+        `not_found`: the project (or session) does not exist or is not the caller's. Both look the same.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PlannerConflict:
+      description: >-
+        `project_read_only` (the project is archived; only reopening and deleting it work) or
+        `conflict` (a concurrent change; safe to retry).
       content:
         application/json:
           schema:
@@ -386,3 +996,501 @@ paths:
           description: Profile updated successfully (`data` = id, email, username, name)
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # ---------- Planner (menu 01) ----------
+  /v1/planner/event-types:
+    get:
+      tags: [Planner]
+      summary: Event type registry
+      operationId: plannerEventTypes
+      description: >-
+        The nine event types (icon, label, default sessions, metadata fields, labels) and the
+        templates that can be requested for each. Static per release.
+      responses:
+        '200':
+          description: Registry
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: public, max-age=3600
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlannerEventType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/planner/projects:
+    get:
+      tags: [Planner]
+      summary: List projects (Hub cards, or the lightweight switcher list)
+      operationId: plannerListProjects
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, archived, all]
+            default: all
+        - name: view
+          in: query
+          description: '`lite` returns only what the project switcher needs, without aggregates.'
+          schema:
+            type: string
+            enum: [lite]
+      responses:
+        '200':
+          description: >-
+            Active projects first (nearest date first), then completed, then archived (latest first).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: '#/components/schemas/PlannerProjectCard'
+                        - $ref: '#/components/schemas/PlannerProjectLite'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Planner]
+      summary: Create a project
+      operationId: plannerCreateProject
+      description: >-
+        Atomic: the project, its default sessions and every requested template are created in
+        one transaction, or nothing is. Limited to 10 per minute per user and to
+        `PLANNER_MAX_PROJECTS` (default 100) real projects per user (the sample does not count).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerInitProjectRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerCreated'
+        '200':
+          description: 'The `client_token` was already used; the original project, no templates re-run (`created: false`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: '`project_limit_reached`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: '`rate_limited`: more than 10 creations in a minute.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/summary:
+    get:
+      tags: [Planner]
+      summary: Portfolio metrics and cards
+      operationId: plannerProjectsSummary
+      responses:
+        '200':
+          description: Metrics (the sample project is never counted) and all cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerPortfolioSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/planner/projects/sample:
+    post:
+      tags: [Planner]
+      summary: Create the sample project
+      operationId: plannerCreateSample
+      description: >-
+        "Contoh: Pernikahan Sinta & Arif", Hari-H 175 days from today, budget Rp 75.000.000. At
+        most one per user and idempotent, also under concurrent requests. It receives every
+        template that is available plus the dataset overlays of the modules that exist; until
+        modules 02-06 are built it holds the sessions and metadata only.
+      responses:
+        '201':
+          description: Created now.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerCreated'
+        '200':
+          description: 'The user already had one (`created: false`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannerCreated'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/planner/projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner]
+      summary: Project detail
+      operationId: plannerGetProject
+      responses:
+        '200':
+          description: >-
+            `shiftable_tasks` is the number of template tasks that are not done: when it is above
+            zero the client asks whether to shift them before it saves a new date.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: '#/components/schemas/PlannerProject'
+                      shiftable_tasks:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    patch:
+      tags: [Planner]
+      summary: Update a project
+      operationId: plannerUpdateProject
+      description: >-
+        Runs under a row lock. A date change also moves the sessions dated on the old Hari-H and,
+        with `shift_tasks`, the unfinished template tasks, all in the same transaction.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateProjectRequest'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: '#/components/schemas/PlannerProject'
+                      warnings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PlannerNotice'
+                      hints:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PlannerNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          $ref: '#/components/responses/PlannerConflict'
+    delete:
+      tags: [Planner]
+      summary: Delete a project permanently
+      operationId: plannerDeleteProject
+      description: Removes everything under the project. Allowed on an archived project.
+      parameters:
+        - name: confirm
+          in: query
+          required: true
+          description: 'Must equal the stored title exactly, else `400 invalid_input: confirm`.'
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+
+  /v1/planner/projects/{projectId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    patch:
+      tags: [Planner]
+      summary: Change the project status
+      operationId: plannerChangeStatus
+      description: >-
+        Any transition between `active`, `completed` and `archived`. Allowed on an archived
+        project (it is how an archive is reopened).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/PlannerProjectStatus'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      project:
+                        $ref: '#/components/schemas/PlannerProject'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+
+  /v1/planner/projects/{projectId}/dashboard:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner]
+      summary: Workspace dashboard
+      operationId: plannerDashboard
+      description: >-
+        Six widgets, each filled by one provider of another module. Providers run in parallel
+        (at most 3 at once) under a 3 s deadline; one that fails, panics or is slow only
+        affects its own widget. Limited to 60 requests per minute per user.
+      responses:
+        '200':
+          description: Dashboard.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerDashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/sessions:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner]
+      summary: List sessions
+      operationId: plannerListSessions
+      description: All sessions including the system session `all`, each with `usage`.
+      responses:
+        '200':
+          description: Sessions in display order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlannerSessionWithUsage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner]
+      summary: Create a session
+      operationId: plannerCreateSession
+      description: At most 20 non-system sessions per project. `scope_key` is generated from the name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerSessionRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`session_name_taken`, `session_limit_reached`, `project_read_only` or `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/sessions/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner]
+      summary: Reorder sessions
+      operationId: plannerReorderSessions
+      description: >-
+        `session_ids` must list every non-system session of the project exactly once; they get
+        `sort_order` 1..n and `all` stays 0.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_ids]
+              properties:
+                session_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: All sessions in the new order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlannerSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          $ref: '#/components/responses/PlannerConflict'
+
+  /v1/planner/projects/{projectId}/sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags: [Planner]
+      summary: Replace a session
+      operationId: plannerUpdateSession
+      description: >-
+        Replaces name, icon, date, times and location (fields not sent are cleared).
+        `scope_key` never changes. The system session cannot be modified (`400 invalid_input`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerSessionRequest'
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerSession'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          $ref: '#/components/responses/PlannerConflict'
+    delete:
+      tags: [Planner]
+      summary: Delete a session
+      operationId: plannerDeleteSession
+      description: >-
+        In one transaction (under a lock on the project) everything that points at the session
+        (tasks, vendors, budget items, scenario items, shopping items, guests) is moved to
+        `move_to`, `active_sub_events` of scenarios is cleaned, and the session is deleted. Budget
+        and scenario items whose `item_key` would collide in the target lose the key instead of
+        failing; totals do not change. A session with rundown agendas needs `delete_agendas=true`.
+      parameters:
+        - name: move_to
+          in: query
+          description: '`scope_key` of the destination; default `all`. Must exist and differ from the deleted session.'
+          schema:
+            type: string
+        - name: delete_agendas
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: >-
+            `session_in_use` (with `error.details.usage`), `project_read_only` or `conflict`
+            (safe to retry).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

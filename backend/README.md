@@ -36,6 +36,8 @@ Backend API untuk platform Adicara. Saat ini hanya mencakup modul inti: **Auth**
 | `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` | `15m` / `168h` | Format durasi Go. |
 | `MIGRATE_ON_START` | `true` | |
 | `AUTH_RATE_LIMIT` | `10` | Percobaan per IP per menit untuk `/v1/auth/{register,login,refresh,logout}`; `0` menonaktifkan. |
+| `DB_MAX_CONNS` | `10` | Ukuran pool koneksi (1–1000). Bawaan pgxpool hanya `max(4, CPU)`, terlalu kecil karena `BearerAuth` memakai satu koneksi per request dan dashboard planner menyebar ke beberapa query. |
+| `PLANNER_MAX_PROJECTS` | `100` | Batas proyek Planner per pengguna, tanpa proyek contoh (`409 project_limit_reached`). Batas teknis, bukan batas produk. |
 | `TRUSTED_PROXIES` | loopback + jaringan privat | Proxy yang boleh mengirim `X-Real-IP` (CSV IP/CIDR). Nilai tidak valid menghentikan start. |
 | `CORS_ORIGINS` | `http://localhost:5173` | Tidak diperlukan pada alur normal (browser tidak memanggil backend langsung). |
 
@@ -48,6 +50,7 @@ Backend API untuk platform Adicara. Saat ini hanya mencakup modul inti: **Auth**
 | Health | `GET /healthz` |
 | Auth | `POST /v1/auth/register` · `/login` · `/refresh` · `/logout` · `/password` |
 | Profile | `GET /v1/me` · `PATCH /v1/me` |
+| Planner (menu 01) | `GET /v1/planner/event-types` · `/projects` (daftar, buat, ringkasan, contoh) · `/projects/:id` (detail, ubah, status, hapus, dashboard) · `/projects/:id/sessions` (CRUD, urutan). Detail: [docs/backend/planner](../docs/backend/planner/2026-10-21-planner-menu-01.md) |
 
 Kontrak lengkap dan satu-satunya yang berlaku: [`docs/openapi.yaml`](docs/openapi.yaml) (`../contracts/openapi.yaml` hanya backup versi lama). Ringkasan, format error, dan rate limit: [docs/api.md](../docs/api.md). Docker: `/adicara-api -healthcheck` dan `/adicara-migrate` ([docs/devops/docker.md](../docs/devops/docker.md)).
 

@@ -6,6 +6,7 @@ type Error struct {
 	Status  int    `json:"-"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
+	Details any    `json:"details,omitempty"`
 }
 
 func (e *Error) Error() string { return e.Code + ": " + e.Message }
@@ -23,6 +24,13 @@ func Entitlement(message string) *Error      { return New(402, "entitlement_deni
 func RateLimited(message string) *Error      { return New(429, "rate_limited", message) }
 func Unavailable(code, message string) *Error {
 	return New(503, code, message)
+}
+
+func (e *Error) WithDetails(details any) *Error {
+	cp := *e
+	cp.Details = details
+
+	return &cp
 }
 
 func Wrap(err error, status int, code, message string) *Error {

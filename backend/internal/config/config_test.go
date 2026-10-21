@@ -76,3 +76,36 @@ func TestLoadAcceptsStrongSecretInProduction(t *testing.T) {
 		t.Fatalf("a %d-character secret must be accepted: %v", minJWTSecretLen, err)
 	}
 }
+
+func TestLoadPoolAndPlannerLimits(t *testing.T) {
+	setEnv(t, "development", "")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DBMaxConns != 10 || cfg.PlannerMaxProjects != 100 {
+		t.Fatalf("defaults = %d conns / %d projects, want 10 / 100", cfg.DBMaxConns, cfg.PlannerMaxProjects)
+	}
+
+	t.Setenv("DB_MAX_CONNS", "25")
+	t.Setenv("PLANNER_MAX_PROJECTS", "5")
+	if cfg, err = Load(); err != nil || cfg.DBMaxConns != 25 || cfg.PlannerMaxProjects != 5 {
+		t.Fatalf("overrides: %+v %v", cfg, err)
+	}
+}
+
+func TestLoadRejectsBadPoolAndPlannerLimits(t *testing.T) {
+	for _, tc := range []struct{ key, value string }{
+		{"DB_MAX_CONNS", "0"}, {"DB_MAX_CONNS", "-3"}, {"DB_MAX_CONNS", "many"}, {"DB_MAX_CONNS", "1001"},
+		{"PLANNER_MAX_PROJECTS", "0"}, {"PLANNER_MAX_PROJECTS", "-1"}, {"PLANNER_MAX_PROJECTS", "lots"},
+	} {
+		t.Run(tc.key+"="+tc.value, func(t *testing.T) {
+			setEnv(t, "development", "")
+			t.Setenv(tc.key, tc.value)
+			_, err := Load()
+			if err == nil || !strings.Contains(err.Error(), tc.key) {
+				t.Fatalf("err = %v, want one naming %s", err, tc.key)
+			}
+		})
+	}
+}

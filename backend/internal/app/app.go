@@ -20,6 +20,10 @@ import (
 	authrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/auth/repository"
 	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/auth/usecase"
 	healthhttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/health/delivery/http"
+	plannerhttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/delivery/http"
+	"github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/domain"
+	plannerrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/repository"
+	plannerusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/planner/usecase"
 	profilehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/delivery/http"
 	profileusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/usecase"
 )
@@ -43,7 +47,7 @@ func Build(ctx context.Context) (*App, error) {
 		return nil, err
 	}
 
-	pool, err := db.Connect(ctx, cfg.DatabaseURL)
+	pool, err := db.Connect(ctx, cfg.DatabaseURL, cfg.DBMaxConns)
 	if err != nil {
 		return nil, err
 	}
@@ -62,9 +66,23 @@ func Build(ctx context.Context) (*App, error) {
 	profileSvc := profileusecase.New(idn)
 	profilehttp.RegisterRoutes(ginEngine, idn, profileSvc)
 
+	// Planner menu 01 (projects, sessions, dashboard). The other planner
+	// modules add themselves here when they are built, e.g.
+	//   plannerSvc.RegisterSummary(timelineSvc, ...)           dashboard widgets
+	//   plannerSvc.RegisterTemplateAppliers(timelineSvc, ...)  wizard templates
+	// Until then their widgets are null and their templates are not offered.
+	plannerSvc := plannerusecase.New(
+		plannerrepo.NewPostgresRepository(pool), plannerrepo.NewTxManager(pool), domain.DefaultRegistry(),
+		plannerusecase.Options{MaxProjects: cfg.PlannerMaxProjects},
+	)
+	plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
+
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)
 	mux.Handle("/v1/me", ginEngine)
+	// app.go routes through an explicit ServeMux: without this line every
+	// /v1/planner/* request answers 404.
+	mux.Handle("/v1/planner/", ginEngine)
 	mux.Handle("/healthz", ginEngine)
 	var h http.Handler = mux
 

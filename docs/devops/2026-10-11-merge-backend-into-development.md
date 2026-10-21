@@ -62,14 +62,26 @@ Dijalankan di macOS (Go 1.27.1, Node 22.17.1, PostgreSQL 16.2 lokal) setelah res
 
 Build dan Compose ditiru secara native; hasilnya di [Docker](docker.md#validasi). Temuan: tidak ada `.dockerignore`, sehingga `COPY . .` mengirim `backend/.env` dan `frontend/node_modules` milik host ke build. `backend/.dockerignore` dan `frontend/.dockerignore` ditambahkan; konteks backend turun dari 36,7 MB ke 0,1 MB dan frontend dari 270,6 MB ke 1,1 MB tanpa membuang file yang dilacak git.
 
+## Hasil deploy produksi (2026-10-11)
+
+Dicatat dari log container dan sesi `psql` yang ditunjukkan pemilik, serta laporan pemilik. Tidak diamati langsung oleh penulis catatan ini.
+
+- Sebelum deploy dijalankan ulang, checkout di VPS sudah di `9d0a4f2` tetapi container masih memakai image lama (`d008422…`, aktif 5–7 hari) dan `/opt/adicara/.env` belum memiliki `JWT_SECRET`. Itu konsisten dengan deploy pertama yang berhenti di `compose config` tanpa mengganti apa pun.
+- Setelah `JWT_SECRET` diisi dan deploy dijalankan ulang, log backend menampilkan `migrate: found the pre-goose schema; moved 8 tables to schema "legacy_20261011_132532"`, migrasi 001–004 `OK`, `goose: successfully migrated database to version: 4`, route `/healthz`, `/v1/auth/*`, dan `/v1/me` terdaftar, lalu `adicara-api listening on :8080`. `/healthz` menjawab 200 setiap 10 detik (healthcheck container). Frontend Astro `listening` di port 4321.
+- `\dt+` pada schema `public`: `goose_db_version`, `m_role`, `refresh_sessions` (0 bytes: belum ada login saat itu), dan `users`. Tabel lama berada di `legacy_20261011_132532`.
+- Pemilik melaporkan daftar dan login berhasil di `https://adicara.id`.
+- Backend berjalan dalam mode debug Gin (log: `Running in "debug" mode`); `GIN_MODE=release` belum diset di Compose produksi. Tidak memengaruhi fungsi.
+
+Terkonfirmasi setelah deploy: (1) container nginx memakai konfigurasi terbaru (dilaporkan pemilik; keluaran `diff` tidak dilihat). Risikonya: `git reset --hard` mengganti `deploy/nginx/adicara.conf` dengan inode baru, dan bind mount satu file di Docker dapat tetap melihat file lama. (2) Proxy Sumopod mengirim `X-Forwarded-For`: baris log akses nginx untuk `GET /auth/masuk` menampilkan IP publik pengunjung (bukan alamat proxy atau container) dan nilai `X-Forwarded-For` yang sama; alamatnya sengaja tidak dicatat di sini. Belum diamati: IP klien pada log backend untuk `POST /v1/auth/login`. Backup database sebelum deploy tidak dibuat: pemilik memutuskan tidak perlu karena proyek masih di awal pengembangan (keputusan 2026-10-11).
+
 ## Belum diverifikasi
 
-- Docker tidak tersedia: `docker compose up`, build image backend/frontend, dan `nginx:1.29-alpine` belum dijalankan. Workflow CI (`redocly lint`, job `docker`) tidak dijalankan lokal.
-- Perilaku di belakang proxy Sumopod yang sebenarnya (apakah mengirim `X-Forwarded-For`).
+- Docker tidak tersedia secara lokal: `docker compose up` untuk `docker-compose.yml` (dev) belum dijalankan. Image yang dibangun CI dan Compose produksi sudah berjalan di VPS (lihat di atas). `redocly lint` dan job `docker` CI tidak dijalankan lokal.
+- Rate limit backend per IP klien di produksi (log backend untuk `POST /v1/auth/login` belum diperiksa).
 - Panduan PowerShell di `docs/local-development.md` belum dijalankan di Windows.
 
-## Tindakan operator sebelum deploy ke `main`
+## Tindakan operator untuk deploy ini
 
-1. `JWT_SECRET` di `/opt/adicara/.env` di VPS (`openssl rand -hex 32`); tanpanya deploy berhenti di `compose config` dan versi lama tetap melayani ([deployment](../deployment.md#batasan-yang-diketahui)).
-2. Cadangkan database produksi. Deploy pertama memindahkan semua tabel lama (akun, undangan, tamu, RSVP, foto) ke schema `legacy_<waktu>`. Data tetap ada tetapi **tidak dilayani**, akun lama tidak dapat login (pengguna mendaftar ulang), dan rollback image tidak memulihkan skema. [Backup dan restore](backup-restore.md).
+1. `JWT_SECRET` di `/opt/adicara/.env` di VPS (`openssl rand -hex 32`); tanpanya deploy berhenti di `compose config` dan versi lama tetap melayani ([deployment](../deployment.md#batasan-yang-diketahui)). Sudah diisi sebelum deploy dijalankan ulang.
+2. Cadangkan database produksi (tidak dilakukan; keputusan pemilik 2026-10-11, proyek masih awal pengembangan). Deploy pertama memindahkan semua tabel lama (akun, undangan, tamu, RSVP, foto) ke schema `legacy_<waktu>`. Data tetap ada tetapi **tidak dilayani**, akun lama tidak dapat login (pengguna mendaftar ulang), dan rollback image tidak memulihkan skema. [Backup dan restore](backup-restore.md).
 3. Pahami bahwa fitur undangan yang kini aktif di `main` akan hilang dari produksi sampai modul undangan dibangun ulang.
