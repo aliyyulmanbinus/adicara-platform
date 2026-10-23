@@ -50,6 +50,7 @@ Handler tidak mengandung SQL dan repository tidak menentukan status HTTP. `domai
 | `internal/modules/planner` | Planner menu 01: proyek, master sesi, registry jenis acara, dashboard. Modul Planner lain mendaftar ke dalamnya lewat `SummaryProvider`, `TemplateApplier`, dan `SampleOverlay`. [Dokumen](backend/planner/2026-10-21-planner-menu-01.md). |
 | `internal/modules/plannertimeline` | Planner menu 02: tugas/jadwal persiapan dan dokumen legalitas (penskalaan jadwal dari template, ekspor `.xlsx`, sinkron biaya ke anggaran). Vendor, tamu, dan rundown belum dibangun. [Dokumen](backend/planner/2026-10-21-planner-menu-02.md). |
 | `internal/modules/plannerfinance` | Planner menu 03: skenario anggaran (Smart Adjust), kontributor dan setoran tabungan, pos anggaran dengan pembayaran per tahap, matriks, arus kas, template pos, dan ekspor `.xlsx`. Semua angka anggaran dibaca dari view `planner_budget_lines`. [Dokumen](backend/planner/2026-10-21-planner-menu-03.md). |
+| `internal/modules/plannervendor` | Planner menu 04: pipeline vendor (pagu dibaca dari skenario aktif, tidak disimpan), `lock-deal` yang menautkan kesepakatan ke pos anggaran tanpa pos ganda, daftar belanja dengan gulungan (*rollup*) ke satu pos anggaran, template 37 barang seserahan, stok souvenir, dan dua ekspor `.xlsx`. Menulis `planner_budget_items` dengan SQL (pengecualian keempat kontrak). [Dokumen](backend/planner/2026-10-23-planner-menu-04.md). |
 
 Modul `profile` memakai usecase `auth` untuk membaca dan mengubah pengguna.
 

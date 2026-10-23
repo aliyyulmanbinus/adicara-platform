@@ -30,6 +30,9 @@ import (
 	timelinehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/delivery/http"
 	timelinerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/repository"
 	timelineusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/usecase"
+	vendorhttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannervendor/delivery/http"
+	vendorrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannervendor/repository"
+	vendorusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannervendor/usecase"
 	profilehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/delivery/http"
 	profileusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/profile/usecase"
 )
@@ -91,16 +94,25 @@ func Build(ctx context.Context) (*App, error) {
 
 	// Menu 03: finance (scenarios, savings, budget lines; one key each: finance, budget, finance).
 	// Its overlay must run after menu 02's (the Lamaran session date feeds the milestones) and
-	// before the vendor module's, once that exists (it links vendors to the lines this overlay fills).
+	// before the vendor module's (it links vendors to the lines this overlay fills).
 	financeSvc := financeusecase.New(financerepo.NewPostgresRepository(pool), plannerTx, registry, financeusecase.Options{})
 
-	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider())
-	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier())
-	plannerSvc.RegisterSampleOverlays(timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay())
+	// Menu 04: vendors and the shopping list (provider vendors, applier shopping, overlays vendors and shopping).
+	// Its overlays run last: they point sample budget lines and one sample task at the vendors, and the shopping
+	// overlay needs the items its applier made. The shopping applier runs after the budget one (TemplateKeys order).
+	vendorSvc := vendorusecase.New(vendorrepo.NewPostgresRepository(pool), plannerTx, registry, vendorusecase.Options{})
+
+	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider())
+	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier(), vendorSvc.Applier())
+	plannerSvc.RegisterSampleOverlays(
+		timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay(),
+		vendorSvc.VendorsOverlay(), vendorSvc.ShoppingOverlay(),
+	)
 
 	plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
 	timelinehttp.RegisterRoutes(ginEngine, idn, plannerSvc, timelineSvc)
 	financehttp.RegisterRoutes(ginEngine, idn, plannerSvc, financeSvc)
+	vendorhttp.RegisterRoutes(ginEngine, idn, plannerSvc, vendorSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)

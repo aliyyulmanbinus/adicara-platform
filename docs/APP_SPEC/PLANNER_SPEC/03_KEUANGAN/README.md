@@ -109,7 +109,7 @@ Mekanisme lengkap: [kontrak bab 8](../00_KONTRAK_BERSAMA/README.md#8-matriks-int
 | Sesi → 03 | master sesi: `sub_event_scope` pos dan item skenario (FK komposit); `active_sub_events` skenario dibersihkan saat sesi dihapus; `session_date` membentuk milestone tabungan |
 | 02 Dokumen → 03 Pos | `planner_budget_items.admin_doc_id` + `POST …/admin-docs/:id/sync-budget` (SQL langsung ke tabel 03; pengecualian kontrak bab 1.1) |
 | 04 Vendor → 03 Pos | `lock-deal`: menautkan atau membuat pos tanpa duplikasi (kunci `item_key`); pos bersama beberapa kategori tidak ditimpa |
-| 03 Skenario → 04 Vendor | skenario aktif memberi plafon `budget_limit` vendor lewat `category_key → budget_item_keys` |
+| 03 Skenario → 04 Vendor | skenario aktif memberi pagu vendor lewat `category_key → budget_item_keys`; dibaca setiap kali daftar vendor dibuka (tidak disalin ke tabel vendor, jadi ikut berganti bersama skenario) |
 | 04 Belanja → 03 Pos | `planner_shopping_items.budget_item_id` + `rollup_source='shopping'`; angka dihitung view, bukan salinan; pembayaran pos itu terkunci |
 | 05 Tamu → 03 Pos | proyeksi porsi dari RSVP mengisi `quantity` pos berharga satuan atas aksi pengguna (tidak otomatis) |
 | 03 → 01 Proyek | opsi Apply skenario menulis `target_budget` dan `savings_target` (SQL langsung; pengecualian ketiga, [BE bab 9 butir 4](BE.md#9-celah-dan-keputusan-yang-menunggu-pemilik-produk)); target tabungan lain lewat `PATCH` proyek |

@@ -27,6 +27,12 @@ tags:
       realisation of the budget lines (payments, matrix, cash flow, export). Every route needs a bearer
       token and goes through the same project guard as menu 01 (another user's project is 404; an
       archived project is read-only, `GET` and the export still work).
+  - name: Planner Vendor
+    description: >-
+      Menu 04 of the Planner service: the vendor pipeline (with the limit of each category read from the active
+      scenario, and the lock-deal that ties a deal to the budget) and the shopping list (with its rollup into a
+      budget line, the template and the exports). Every route needs a bearer token and goes through the same project
+      guard as menu 01 (another user's project is 404; an archived project is read-only, `GET` and the exports still work).
 
 components:
   securitySchemes:
@@ -53,6 +59,9 @@ components:
                 Finance codes: invalid_stage (400); max_scenarios_reached, scenario_item_limit_reached,
                 budget_item_limit_reached, contributor_limit_reached, savings_entry_limit_reached,
                 contributor_in_use, vendor_already_linked, rollup_locked (409).
+                Vendor codes: invalid_phone (400); vendor_limit_reached, shopping_item_limit_reached,
+                rollup_conflict (409); lock-deal and the rollup also answer budget_item_limit_reached when a
+                new line would pass the limit of menu 03.
               example: weak_password
             message:
               type: string
@@ -196,6 +205,8 @@ components:
             template: `lead_time_compressed`, `lead_time_too_short`, `scope_fallback` and
             `budget_link_lost` (menus 02 and 03), `estimate_differs` (sync to the budget).
             `scope_fallback` also comes from the budget template and from scenario presets.
+            Menu 04: `unit_pricing`, `shared_budget_item` (lock-deal), `budget_link_released` (a vendor left
+            `fix`), `estimate_differs` (a vendor update) and `budget_link_lost` (replacing the shopping template).
         message:
           type: string
         count:
@@ -336,6 +347,29 @@ components:
           description: >-
             Roles a savings contributor can have for this event type; every type lists `other` (the
             default). Menu 03.
+        vendor_categories:
+          type: array
+          description: >-
+            The vendor checklist of this event type, in order. The line each category is paid from stays
+            on the server. Menu 04.
+          items:
+            type: object
+            required: [key, label]
+            properties:
+              key:
+                type: string
+                example: catering
+              label:
+                type: string
+                example: Catering
+        shopping_categories:
+          type: array
+          description: >-
+            Suggested categories of the shopping list; the category of an item is free text, stored as
+            typed. Menu 04.
+          items:
+            type: string
+          example: [Perangkat Alat Solat, Make Up & Skin Care]
     PlannerInitTemplates:
       type: object
       description: >-
@@ -1966,6 +2000,627 @@ components:
               type: integer
               format: int64
               description: '`total_target` - Σ estimate; negative = over the ceiling.'
+    PlannerLinePayment:
+      type: object
+      description: >-
+        The effective figures of one budget line (the view `planner_budget_lines`): read from the
+        line that points at the vendor, or, for a limit group, from the line the group shares.
+      required: [budget_item_id, item_name, estimate, paid, remaining, payment_status]
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+        item_name:
+          type: string
+        estimate:
+          type: integer
+          format: int64
+          description: 'effective (from the shopping list when the line rolls up)'
+        paid:
+          type: integer
+          format: int64
+        remaining:
+          type: integer
+          format: int64
+          description: '< 0 = overpaid'
+        payment_status:
+          type: string
+          enum: [unpaid, dp_paid, partial, settled]
+    PlannerVendor:
+      type: object
+      description: >-
+        A vendor with its limit and, when a budget line points at it, the payment of that line.
+        `budget_limit` is never stored for a scenario limit: it is read from the active scenario
+        every time.
+      required: [id, sub_event_scope, category_key, category_label, vendor_name, budget_limit, limit_source, agreed_price, status, sort_order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sub_event_scope:
+          type: string
+        category_key:
+          type: string
+        category_label:
+          type: string
+        vendor_name:
+          type: string
+        pic_name:
+          type: string
+        phone_number:
+          type: string
+        formatted_wa_number:
+          type: string
+          description: '62…; the wa.me link is built by the client'
+        portfolio_url:
+          type: string
+        budget_limit:
+          type: integer
+          format: int64
+          description: 'effective limit; 0 when `limit_source` is group or none'
+        limit_source:
+          type: string
+          enum: [manual, scenario, group, none]
+        limit_group:
+          type: string
+          description: 'item_key of the group when `limit_source` is group'
+        agreed_price:
+          type: integer
+          format: int64
+          description: '0 = no offer yet'
+        price_delta:
+          type: integer
+          format: int64
+          description: '`budget_limit` − `agreed_price` (positive = saving); absent when either is 0 or `limit_source` is group/none'
+        status:
+          type: string
+          enum: [rencana, negosiasi, fix, batal]
+        notes:
+          type: string
+        sort_order:
+          type: integer
+        payment:
+          $ref: '#/components/schemas/PlannerLinePayment'
+    PlannerLimitGroup:
+      type: object
+      description: >-
+        One scenario line that several vendor categories share (wedding: `venue_dekor`,
+        `rias_busana`, `hiburan`), compared with what their vendors ask.
+      required: [item_key, sub_event_scope, limit, total_agreed, members, priced, vendor_ids]
+      properties:
+        item_key:
+          type: string
+        sub_event_scope:
+          type: string
+          description: 'session of the scenario line (may be ''all'')'
+        limit:
+          type: integer
+          format: int64
+        total_agreed:
+          type: integer
+          format: int64
+          description: 'Σ `agreed_price` of the members that are not cancelled (offers and deals)'
+        delta:
+          type: integer
+          format: int64
+          description: '`limit` − `total_agreed`; absent while no member has an offer'
+        members:
+          type: integer
+        priced:
+          type: integer
+          description: 'members with `agreed_price` > 0'
+        vendor_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        line:
+          $ref: '#/components/schemas/PlannerLinePayment'
+    PlannerVendorCategoryState:
+      type: object
+      description: >-
+        One category of the checklist: the categories of the event type, then the custom ones in
+        use.
+      required: [key, label, state, vendors, custom, skipped]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        state:
+          type: string
+          enum: [fix, pipeline, empty]
+        vendors:
+          type: integer
+          description: 'not cancelled'
+        custom:
+          type: boolean
+          description: 'not in the registry of the event type'
+        skipped:
+          type: boolean
+          description: 'listed in planner_projects.skipped_vendor_categories'
+    PlannerVendorKPI:
+      type: object
+      description: >-
+        Always the whole project; skipped categories are left out of `categories_total`.
+      required: [categories_total, categories_fixed, skipped, fixed_vendors, pipeline, fixed_total, pipeline_offers, groups_total, groups_over]
+      properties:
+        categories_total:
+          type: integer
+          description: 'registry ∪ custom categories in use, without the skipped ones'
+        categories_fixed:
+          type: integer
+          description: 'of those, with at least one fixed vendor'
+        skipped:
+          type: integer
+        fixed_vendors:
+          type: integer
+        pipeline:
+          type: integer
+          description: 'planned + negotiating'
+        fixed_total:
+          type: integer
+          format: int64
+        pipeline_offers:
+          type: integer
+          format: int64
+          description: 'Σ `agreed_price` (> 0) of planned and negotiating vendors'
+        groups_total:
+          type: integer
+        groups_over:
+          type: integer
+          description: 'groups with `delta` < 0'
+    PlannerVendorOverview:
+      type: object
+      description: >-
+        `kpi`, `categories` and `limit_groups` always describe the whole project; `vendors` is
+        filtered by the query.
+      required: [kpi, categories, limit_groups, vendors]
+      properties:
+        kpi:
+          $ref: '#/components/schemas/PlannerVendorKPI'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerVendorCategoryState'
+          description: 'idem'
+        limit_groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerLimitGroup'
+          description: 'idem'
+        vendors:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerVendor'
+          description: 'filtered by ?scope=&status=&category='
+    PlannerVendorRequest:
+      type: object
+      description: >-
+        POST and PUT. PUT replaces the vendor entirely: `pic_name`, `phone_number`, `portfolio_url`
+        and `notes` that are not sent are cleared, and `budget_limit` 0 means "follow the active
+        scenario".
+      required: [vendor_name]
+      properties:
+        sub_event_scope:
+          type: string
+        category_key:
+          type: string
+        category_label:
+          type: string
+        vendor_name:
+          type: string
+        pic_name:
+          type: string
+        phone_number:
+          type: string
+        portfolio_url:
+          type: string
+        budget_limit:
+          type: integer
+          format: int64
+          description: '0 = follow the active scenario'
+        agreed_price:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [rencana, negosiasi, fix, batal]
+        notes:
+          type: string
+    PlannerVendorStatusRequest:
+      type: object
+      description: >-
+        One-click pipeline move. `fix` needs `agreed_price` above 0.
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [rencana, negosiasi, fix, batal]
+    PlannerVendorResult:
+      type: object
+      description: >-
+        `warnings`: `estimate_differs` (PUT, the deal moved away from the estimate of the linked
+        line), `budget_link_released` (the vendor left `fix`).
+      required: [vendor, warnings]
+      properties:
+        vendor:
+          $ref: '#/components/schemas/PlannerVendor'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerLockDealRequest:
+      type: object
+      description: >-
+        The vendor becomes `fix` with the agreed price; with `sync_to_budget_items` the deal is also
+        tied to the budget.
+      required: [agreed_price]
+      properties:
+        agreed_price:
+          type: integer
+          format: int64
+        sync_to_budget_items:
+          type: boolean
+    PlannerSharedItem:
+      type: object
+      description: >-
+        A budget line that several categories share. It is not linked to the vendor and its estimate
+        is not changed.
+      required: [item_key, item_name, plan, total_agreed]
+      properties:
+        item_key:
+          type: string
+        item_name:
+          type: string
+          description: 'name of the line, or of the scenario line when there is no budget line yet'
+        budget_item_id:
+          type: string
+          format: uuid
+          description: 'absent when there is no budget line yet'
+        plan:
+          type: integer
+          format: int64
+          description: 'effective estimate of the line, or the scenario amount when there is no line'
+        total_agreed:
+          type: integer
+          format: int64
+    PlannerLockDealResult:
+      type: object
+      description: >-
+        `warnings`: `shared_budget_item`, `unit_pricing`.
+      required: [vendor, created, warnings]
+      properties:
+        vendor:
+          $ref: '#/components/schemas/PlannerVendor'
+        budget_item_id:
+          type: string
+          format: uuid
+          description: 'the line that was linked or created'
+        created:
+          type: boolean
+          description: 'a new line was made'
+        shared_item:
+          $ref: '#/components/schemas/PlannerSharedItem'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerShoppingItem:
+      type: object
+      description: >-
+        `quantity` and the prices are per unit; the totals are `round(quantity x price)`, computed
+        by the database.
+      required: [id, sub_event_scope, category, item_name, quantity, estimated_price, actual_price, estimated_total, actual_total, status, sort_order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        item_name:
+          type: string
+        quantity:
+          type: number
+          description: 'two decimals'
+        unit:
+          type: string
+        estimated_price:
+          type: integer
+          format: int64
+          description: 'per unit'
+        actual_price:
+          type: integer
+          format: int64
+          description: 'per unit; 0 = not bought yet'
+        estimated_total:
+          type: integer
+          format: int64
+          description: 'round(`quantity` × `estimated_price`), computed by the database'
+        actual_total:
+          type: integer
+          format: int64
+        price_delta:
+          type: integer
+          format: int64
+          description: '`estimated_total` − `actual_total` (positive = saving); absent while `actual_price` is 0'
+        purchase_location:
+          type: string
+        vendor_id:
+          type: string
+          format: uuid
+        vendor_name:
+          type: string
+        budget_item_id:
+          type: string
+          format: uuid
+          description: 'the rollup line; absent when the item is not rolled up'
+        purpose:
+          type: string
+          enum: [souvenir]
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+        sort_order:
+          type: integer
+        template_key:
+          type: string
+        notes:
+          type: string
+    PlannerShoppingKPI:
+      type: object
+      description: >-
+        Always the whole project.
+      required: [estimated_total, actual_total, done, in_progress, not_started, total]
+      properties:
+        estimated_total:
+          type: integer
+          format: int64
+          description: 'Σ `estimated_total` of every item'
+        actual_total:
+          type: integer
+          format: int64
+          description: 'Σ `actual_total` of the finished items'
+        done:
+          type: integer
+        in_progress:
+          type: integer
+        not_started:
+          type: integer
+        total:
+          type: integer
+        souvenir_stock:
+          type: integer
+          format: int64
+          description: 'floor(Σ `quantity`) of the finished souvenir items; absent when no item is a souvenir'
+    PlannerRollupLine:
+      type: object
+      description: >-
+        A budget line whose estimate and paid total are computed from the shopping list.
+      required: [budget_item_id, item_name, sub_event_scope, estimate, paid, linked_items]
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+        item_name:
+          type: string
+        sub_event_scope:
+          type: string
+        estimate:
+          type: integer
+          format: int64
+        paid:
+          type: integer
+          format: int64
+        linked_items:
+          type: integer
+    PlannerRollupTarget:
+      type: object
+      description: >-
+        The line behind the button "compute the line from this list": the default line of the event
+        type, the fallback line `perlengkapan` when the default one is held by a vendor, a document
+        or a unit price, or the line that would be made.
+      required: [item_key, item_name, sub_event_scope, rollup, has_payments, estimate, paid]
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+          description: 'absent when the line does not exist yet: it will be created'
+        item_key:
+          type: string
+        item_name:
+          type: string
+        sub_event_scope:
+          type: string
+        rollup:
+          type: boolean
+          description: 'already computed from the shopping list'
+        has_payments:
+          type: boolean
+          description: 'stored payments > 0: switching it on needs confirm'
+        estimate:
+          type: integer
+          format: int64
+        paid:
+          type: integer
+          format: int64
+    PlannerShoppingOverview:
+      type: object
+      description: >-
+        `kpi`, `rollups` and `default_target` describe the whole project; `items` is filtered by the
+        query.
+      required: [kpi, rollups, default_target, items]
+      properties:
+        kpi:
+          $ref: '#/components/schemas/PlannerShoppingKPI'
+        rollups:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerRollupLine'
+        default_target:
+          $ref: '#/components/schemas/PlannerRollupTarget'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerShoppingItem'
+          description: 'filtered by ?scope=&category=&status='
+    PlannerShoppingItemRequest:
+      type: object
+      description: >-
+        POST. `budget_item_id` (optional) is a line that already rolls up the list; PUT never
+        changes the link.
+      required: [category, item_name]
+      properties:
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        item_name:
+          type: string
+        quantity:
+          type: number
+          description: 'empty = 1'
+        unit:
+          type: string
+        estimated_price:
+          type: integer
+          format: int64
+        actual_price:
+          type: integer
+          format: int64
+        purchase_location:
+          type: string
+        vendor_id:
+          type: string
+          format: uuid
+        budget_item_id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+          enum: [souvenir]
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+        notes:
+          type: string
+    PlannerUpdateShoppingItemRequest:
+      type: object
+      description: >-
+        PUT replaces the item, except the rollup link, the template key and the order.
+      required: [category, item_name]
+      properties:
+        sub_event_scope:
+          type: string
+        category:
+          type: string
+        item_name:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        estimated_price:
+          type: integer
+          format: int64
+        actual_price:
+          type: integer
+          format: int64
+        purchase_location:
+          type: string
+        vendor_id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+          enum: [souvenir]
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+        notes:
+          type: string
+    PlannerShoppingStatusRequest:
+      type: object
+      description: >-
+        Finishing an item whose actual price is 0 copies the estimate into it.
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [belum, proses, selesai]
+    PlannerShoppingTemplateRequest:
+      type: object
+      description: >-
+        `append` (the default) adds the items whose `template_key` is not there yet.
+        `replace_template` first deletes every template item; it needs `confirm` when one of them
+        carries work of the user.
+      properties:
+        mode:
+          type: string
+          enum: [append, replace_template]
+        confirm:
+          type: boolean
+    PlannerShoppingTemplateResult:
+      type: object
+      description: >-
+        `warnings`: `budget_link_lost`.
+      required: [created, skipped, deleted, warnings]
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        deleted:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerLinkToBudgetRequest:
+      type: object
+      description: >-
+        Both ids are optional: no `budget_item_id` = the default line; no `item_ids` = every item
+        that is not linked to a line yet.
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+          description: 'empty = the default line of the registry (`default_target`)'
+        item_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 'empty = every item that is not linked to another rollup line'
+        confirm:
+          type: boolean
+    PlannerLinkToBudgetResult:
+      type: object
+      required: [line, created, linked]
+      properties:
+        line:
+          $ref: '#/components/schemas/PlannerRollupLine'
+        created:
+          type: boolean
+          description: 'the line did not exist and was made'
+        linked:
+          type: integer
+          description: 'items that were linked now'
+    PlannerUnlinkFromBudgetRequest:
+      type: object
+      required: [budget_item_id]
+      properties:
+        budget_item_id:
+          type: string
+          format: uuid
+    PlannerUnlinkFromBudgetResult:
+      type: object
+      required: [unlinked]
+      properties:
+        unlinked:
+          type: integer
   parameters:
     PlannerTaskId:
       name: taskId
@@ -2032,6 +2687,22 @@ components:
       in: path
       required: true
       description: A canonical UUID of a budget line of the project.
+      schema:
+        type: string
+        format: uuid
+    PlannerVendorId:
+      name: vendorId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown vendor and another project's vendor answer 404.
+      schema:
+        type: string
+        format: uuid
+    PlannerShoppingItemId:
+      name: shoppingItemId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown item and another project's item answer 404.
       schema:
         type: string
         format: uuid
@@ -4560,6 +5231,669 @@ paths:
           $ref: '#/components/responses/PlannerNotFound'
         '429':
           description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/vendors:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Vendor]
+      summary: List the vendors
+      operationId: plannerListVendors
+      description: >-
+        The vendors in display order with the limit of each, plus the KPI, the checklist of
+        categories and the limit groups. The KPI, the categories and the groups always describe
+        the whole project; only `vendors` is filtered. The limit of a vendor is read from the
+        active scenario every time, so it never goes stale: its own session is tried first and
+        then `all`.
+      parameters:
+        - name: scope
+          in: query
+          description: 'Empty = every session, `all` = the general vendors only, any other `scope_key` = that session.'
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 'One of the four statuses.'
+          schema:
+            type: string
+            enum: [rencana, negosiasi, fix, batal]
+        - name: category
+          in: query
+          description: 'A `category_key`.'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerVendorOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Vendor]
+      summary: Add a vendor
+      operationId: plannerCreateVendor
+      description: >-
+        A candidate (status `rencana` unless the body says otherwise). `category_key` is a key
+        of `vendor_categories` of the event type, or empty for a custom category, whose key is
+        derived from `category_label`. At most 200 per project. `phone_number` is kept as typed
+        and `formatted_wa_number` (62...) is derived from it; only Indonesian numbers are
+        accepted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerVendorRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerVendorResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`vendor_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/vendors/export-contacts:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Vendor]
+      summary: Export the contacts of the fixed vendors as .xlsx
+      operationId: plannerExportVendorContacts
+      description: >-
+        One sheet, "Kontak Vendor": the vendors with status `fix`, in order, with the contact
+        only (no price, limit or note: the sheet goes to the organiser or the committee). Text
+        that starts with `=`, `+`, `-` or `@` is prefixed with an apostrophe. Limited to 10
+        requests per minute per user, shared with the shopping export. Works on an archived
+        project.
+      parameters:
+        - name: format
+          in: query
+          description: 'Only `xlsx`.'
+          required: true
+          schema:
+            type: string
+            enum: [xlsx]
+      responses:
+        '200':
+          description: The workbook.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="vendor-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"'
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/vendors/{vendorId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerVendorId'
+    get:
+      tags: [Planner Vendor]
+      summary: Get a vendor
+      operationId: plannerGetVendor
+      description: >-
+        The vendor with its limit and the payment of the line that points at it.
+      responses:
+        '200':
+          description: The vendor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerVendor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    put:
+      tags: [Planner Vendor]
+      summary: Replace a vendor
+      operationId: plannerUpdateVendor
+      description: >-
+        Replaces the vendor entirely. The estimate of the linked budget line is never changed
+        here (only lock-deal does that). A deal that moved away from the estimate of the linked
+        line answers `estimate_differs`; leaving `fix` releases the line and answers
+        `budget_link_released`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerVendorRequest'
+      responses:
+        '200':
+          description: The vendor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerVendorResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Vendor]
+      summary: Delete a vendor
+      operationId: plannerDeleteVendor
+      description: >-
+        Tasks, budget lines, shopping items and agendas that point at the vendor keep existing
+        with an empty vendor.
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/vendors/{vendorId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerVendorId'
+    patch:
+      tags: [Planner Vendor]
+      summary: Move a vendor in the pipeline
+      operationId: plannerSetVendorStatus
+      description: >-
+        `fix` needs `agreed_price` above 0 (`invalid_input`, `agreed_price: must be greater than
+        0 when status is fix`). Leaving `fix` releases the budget line and answers
+        `budget_link_released`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerVendorStatusRequest'
+      responses:
+        '200':
+          description: The vendor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerVendorResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/vendors/{vendorId}/lock-deal:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerVendorId'
+    post:
+      tags: [Planner Vendor]
+      summary: Lock a deal
+      operationId: plannerLockVendorDeal
+      description: >-
+        The vendor becomes `fix` with the agreed price. With `sync_to_budget_items` the deal is
+        also tied to the budget, never making a second line for the same cost: the line that
+        already points at the vendor is re-priced; a line that several categories share is
+        reported in `shared_item` and left alone; the dedicated line of the category (its
+        session first, then `all`) is linked and takes the deal as estimate; otherwise a new
+        line is made (name cut to 150 characters). A line priced per unit keeps quantity x unit
+        price (`unit_pricing`). The whole call runs under the project lock.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerLockDealRequest'
+      responses:
+        '200':
+          description: The vendor and what happened to the budget.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerLockDealResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`budget_item_limit_reached` (a new line would pass 300), `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Vendor]
+      summary: List the shopping items
+      operationId: plannerListShoppingItems
+      description: >-
+        The items in order, plus the KPI, the budget lines that roll the list up and the default
+        line for "compute the line from this list". The KPI, the rollups and the default line
+        describe the whole project; only `items` is filtered.
+      parameters:
+        - name: scope
+          in: query
+          description: 'Empty = every session, `all` = the general items only, any other `scope_key` = that session.'
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: 'The category text exactly as stored.'
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 'One of the three statuses.'
+          schema:
+            type: string
+            enum: [belum, proses, selesai]
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShoppingOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Vendor]
+      summary: Add a shopping item
+      operationId: plannerCreateShoppingItem
+      description: >-
+        At the end of the order; at most 1000 per project. `quantity` (0.01 to 1000000, two
+        decimals) defaults to 1 and the prices are per unit; `quantity x price` must not exceed
+        10^13 (`invalid_input`, never a 500). `budget_item_id` names a line that already rolls
+        up the list; an item made without it stays out of that line until it is linked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerShoppingItemRequest'
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShoppingItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`shopping_item_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/apply-template:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Vendor]
+      summary: Apply the shopping template
+      operationId: plannerApplyShoppingTemplate
+      description: >-
+        Only the wedding has a template (37 seserahan items); other event types answer
+        `invalid_template`. The wizard runs `append`.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerShoppingTemplateRequest'
+      responses:
+        '200':
+          description: The result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShoppingTemplateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`shopping_item_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/link-to-budget:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Vendor]
+      summary: Compute a budget line from the shopping list
+      operationId: plannerLinkShoppingToBudget
+      description: >-
+        Switches the rollup of a line on and points the items at it. The line becomes
+        `rollup_source: shopping` and the view sums its items: the total is never copied. A line
+        that already holds stored payments ignores them while it rolls up: that needs `confirm`
+        (`409 rollup_conflict`). A line priced per unit or held by a vendor or a document is
+        refused. Without `budget_item_id` the default line of the event type is used (the
+        fallback line `perlengkapan` when the default one cannot roll up), and made when it does
+        not exist. Items that already point at another line stay there. Idempotent.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerLinkToBudgetRequest'
+      responses:
+        '200':
+          description: The line.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerLinkToBudgetResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`rollup_conflict`, `budget_item_limit_reached` (the line to make would pass 300), `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/unlink-from-budget:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Vendor]
+      summary: Stop computing a budget line from the shopping list
+      operationId: plannerUnlinkShoppingFromBudget
+      description: >-
+        Releases every item from the line and switches the rollup off: the line goes back to the
+        figures stored in it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUnlinkFromBudgetRequest'
+      responses:
+        '200':
+          description: How many items were released.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerUnlinkFromBudgetResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/export-shopping-list:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Vendor]
+      summary: Export the shopping list as .xlsx
+      operationId: plannerExportShoppingList
+      description: >-
+        One sheet, "Daftar Belanja": every item in order with quantity, unit price, totals,
+        difference, address and status, and a TOTAL row. Amounts are numbers. Text that starts
+        with `=`, `+`, `-` or `@` is prefixed with an apostrophe. Limited to 10 requests per
+        minute per user, shared with the contact export. Works on an archived project.
+      parameters:
+        - name: format
+          in: query
+          description: 'Only `xlsx`.'
+          required: true
+          schema:
+            type: string
+            enum: [xlsx]
+      responses:
+        '200':
+          description: The workbook.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="belanja-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"'
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/{shoppingItemId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerShoppingItemId'
+    put:
+      tags: [Planner Vendor]
+      summary: Replace a shopping item
+      operationId: plannerUpdateShoppingItem
+      description: >-
+        Replaces the item, except its rollup link, template key and order.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerUpdateShoppingItemRequest'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShoppingItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Vendor]
+      summary: Delete a shopping item
+      operationId: plannerDeleteShoppingItem
+      description: >-
+        A budget line that rolls up the list recomputes its figures without the item.
+      responses:
+        '204':
+          description: Deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/shopping-items/{shoppingItemId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerShoppingItemId'
+    patch:
+      tags: [Planner Vendor]
+      summary: Move a shopping item
+      operationId: plannerSetShoppingItemStatus
+      description: >-
+        Finishing an item whose actual price is 0 copies the estimate into it (editable
+        afterwards). An actual price that is there is never overwritten, and moving back keeps
+        it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerShoppingStatusRequest'
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerShoppingItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
           content:
             application/json:
               schema:

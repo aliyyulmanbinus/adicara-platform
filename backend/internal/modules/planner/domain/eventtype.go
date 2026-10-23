@@ -5,12 +5,12 @@ package domain
 // The CHECK on planner_projects.event_type must list exactly these keys
 // (guarded by a test that reads pg_get_constraintdef).
 //
-// Fields owned by the other planner modules (vendor and shopping categories,
-// guest sides and categories, audio moment tags) are added here when those
-// modules are built; their data is in PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md.
-// Menu 02 added the document subjects, the legal widget title and the
-// bureaucracy guide (TEMPLATE_EVENT 4.1); menu 03 added the contributor roles
-// (TEMPLATE_EVENT 4).
+// Fields owned by the other planner modules (guest sides and categories, audio
+// moment tags) are added here when those modules are built; their data is in
+// PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md. Menu 02 added the document
+// subjects, the legal widget title and the bureaucracy guide (TEMPLATE_EVENT
+// 4.1); menu 03 added the contributor roles (TEMPLATE_EVENT 4); menu 04 added
+// the vendor and shopping categories and the shopping rollup line (vendorcatalog.go).
 
 const (
 	EventWedding   EventType = "wedding"
@@ -60,6 +60,21 @@ type Option struct {
 	Label string `json:"label"`
 }
 
+// VendorCategory is one entry of the vendor checklist of an event type (menu 04).
+// BudgetItemKeys are the item_keys of the budget lines and scenario items that
+// hold its cost (TEMPLATE_EVENT 15.2, 04 BE 5.1); empty = no line, only a manual
+// limit. They stay on the server.
+type VendorCategory struct {
+	Key            string   `json:"key"`
+	Label          string   `json:"label"`
+	BudgetItemKeys []string `json:"-"`
+}
+
+// ShoppingRollup is the budget line the shopping list is rolled up into by
+// default (TEMPLATE_EVENT 15.4). It is looked up by Key in any session; when the
+// project has no such line it is created with Name and Category.
+type ShoppingRollup struct{ Key, Name, Category string }
+
 // Guide is the callout above the document list: a title and exactly four steps.
 type Guide struct {
 	Title string   `json:"title"`
@@ -103,6 +118,12 @@ type EventTypeSpec struct {
 	// Owned by menu 03 (finance): the roles a savings contributor can have.
 	// Every type lists "other"; it is the default.
 	ContributorRoles []Option `json:"contributor_roles"`
+
+	// Owned by menu 04 (vendors and shopping). ShoppingCategories is plain text,
+	// stored as typed in planner_shopping_items.category.
+	VendorCategories   []VendorCategory `json:"vendor_categories"`
+	ShoppingCategories []string         `json:"shopping_categories"`
+	ShoppingRollup     ShoppingRollup   `json:"-"`
 }
 
 // TemplatesAvailable is the part of TemplateSet that can be requested now.
@@ -391,6 +412,9 @@ func DefaultRegistry() *Registry {
 			specs[i].AdminSubjects, specs[i].AdminGuide, specs[i].AdminLabel = generalAdminSubjects, generalAdminGuide, generalAdminLabel
 		}
 		specs[i].ContributorRoles = contributorRolesFor(specs[i].Key)
+		specs[i].VendorCategories = vendorCategoriesFor(specs[i].Key)
+		specs[i].ShoppingCategories = shoppingCategoriesFor(specs[i].Key)
+		specs[i].ShoppingRollup = shoppingRollupFor(specs[i].Key)
 	}
 
 	return NewRegistry(specs)

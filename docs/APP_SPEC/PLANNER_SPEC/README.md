@@ -2,7 +2,7 @@
 
 Cetak biru teknis layanan **Planner** pada platform **Adicara**, platform acara modular dengan tiga layanan: **Undangan Digital**, **Planner**, dan **Vendor/Gift**. Dokumen ini memodernisasi `Wedding_Planner.pdf` (spreadsheet 11 sheet) menjadi aplikasi web di atas arsitektur yang sudah ada: **Astro (SSR) di frontend, Go (Gin, Module-Based Clean Architecture) di backend, PostgreSQL** ([docs/architecture.md](../../architecture.md)).
 
-> **Status (2026-10-21):** **backend menu 01, 02, dan 03 sudah diimplementasikan** (modul `planner`, `plannertimeline`, dan `plannerfinance`, migrasi 005–012; dokumen [menu 01](../../backend/planner/2026-10-21-planner-menu-01.md), [menu 02](../../backend/planner/2026-10-21-planner-menu-02.md), dan [menu 03](../../backend/planner/2026-10-21-planner-menu-03.md)). Menu 04–06 dan seluruh frontend Planner masih spesifikasi. Fokus pembangunan saat ini adalah Planner. Yang sudah diuji pada spesifikasi: DDL migrasi 005–012 dan angka PDF pada basis data ([kontrak bab 10](00_KONTRAK_BERSAMA/README.md#10-validasi-spesifikasi)).
+> **Status (2026-10-23):** **backend menu 01, 02, 03, dan 04 sudah diimplementasikan** (modul `planner`, `plannertimeline`, `plannerfinance`, dan `plannervendor`, migrasi 005–012; dokumen [menu 01](../../backend/planner/2026-10-21-planner-menu-01.md), [menu 02](../../backend/planner/2026-10-21-planner-menu-02.md), [menu 03](../../backend/planner/2026-10-21-planner-menu-03.md), dan [menu 04](../../backend/planner/2026-10-23-planner-menu-04.md)). Menu 05–06 dan seluruh frontend Planner masih spesifikasi. Fokus pembangunan saat ini adalah Planner. Yang sudah diuji pada spesifikasi: DDL migrasi 005–012 dan angka PDF pada basis data ([kontrak bab 10](00_KONTRAK_BERSAMA/README.md#10-validasi-spesifikasi)).
 
 **Pernikahan adalah jenis acara paling lengkap dan menjadi acuan** (data dari PDF). Delapan jenis lain memakai kerangka yang sama dengan template usulan Adicara yang ditandai jelas.
 
@@ -17,7 +17,7 @@ Cetak biru teknis layanan **Planner** pada platform **Adicara**, platform acara 
 | [01_DASHBOARD](01_DASHBOARD/README.md) | Planner Hub, Workspace, proyek, master sesi, dashboard |
 | [02_TIMELINE_DAN_TUGAS](02_TIMELINE_DAN_TUGAS/README.md) | Jadwal/Gantt dan dokumen legalitas |
 | [03_KEUANGAN](03_KEUANGAN/README.md) | Simulasi, tabungan, realisasi |
-| [04_VENDOR_DAN_BELANJA](04_VENDOR_DAN_BELANJA/README.md) | Vendor dan belanja pengadaan |
+| [04_VENDOR_DAN_BELANJA](04_VENDOR_DAN_BELANJA/README.md) | Vendor dan belanja pengadaan (pagu, kunci kerja sama, gulungan ke anggaran) |
 | [05_BUKU_TAMU](05_BUKU_TAMU/README.md) | Tamu, RSVP, meja resepsionis |
 | [06_RUNDOWN_DAN_ACARA](06_RUNDOWN_DAN_ACARA/README.md) | Rundown dan playlist |
 | [CHANGELOG.md](CHANGELOG.md) | Riwayat revisi spesifikasi |

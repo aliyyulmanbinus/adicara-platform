@@ -379,7 +379,7 @@ Dicuplik dari respons nyata (tanggal digeser ke baseline 4 Okt 2026, id dipendek
   "status": "belum", "pic": "", "sort_order": 51, "notes": "", "origin": "custom", "overdue": false } }
 ```
 
-**Tugas dengan vendor** (kunci vendor muncul hanya bila ada): `…, "vendor_id": "…", "vendor_name": "Sasana Kriya Ballroom", "vendor_wa": "6281234567890", …`. *Bentuk dari [BE §2](BE.md#2-domain--dto-go) dan tes Go; belum teramati pada backend yang berjalan karena Menu 04 belum ada, jadi tipe `vendor_*` baru terbukti oleh tes Go.*
+**Tugas dengan vendor** (kunci vendor muncul hanya bila ada): `…, "vendor_id": "…", "vendor_name": "Sasana Kriya Ballroom", "vendor_wa": "6281234567890", …`. *Bentuk dari [BE §2](BE.md#2-domain--dto-go) dan tes Go; teramati pada backend yang berjalan sejak Menu 04 ada (2026-10-23): tugas `wedding.visit_venue_pernikahan` Proyek Contoh membawa `vendor_id`, `vendor_name` "Sasana Kriya Ballroom", dan `vendor_wa` "6281200000001".*
 
 **Ubah status** (`PATCH tasks/:tid/status` `{"status":"selesai"}`) mengembalikan `Task` utuh dengan `overdue` yang sudah dihitung ulang (`false` bila selesai). **Ubah fase**: kirim keduanya, `{"phase_order": 3, "phase_name": "Detail Acara & Perlengkapan"}`.
 
@@ -1263,7 +1263,7 @@ Dilakukan 2026-10-21 terhadap build backend cabang `backend/planner` dan Postgre
 4. **Uji diri pemeriksa**: ubah tipe dengan sengaja dan pastikan pemeriksa melapor. Lima mutasi dicoba dan semuanya dilaporkan: `vendor_id` dijadikan wajib, kunci `overdue` dibuang, literal `'proses'` dibuang dari `TaskStatus`, kunci wajib karangan ditambahkan ke `AdminDoc`, `shifted` diganti `string`.
 5. **Cocokkan fixture**: bangun ulang 50 tugas dari tabel BE §5 lewat `Plan` dan bandingkan dengan respons (setelah menggeser tanggal ke baseline 4 Okt): harus identik.
 
-Hasil 2026-10-21: 821 objek, **0 selisih** (rincian di bab 4.2). Yang **tidak** terbukti oleh panggilan nyata: bentuk `vendor_id`/`vendor_name`/`vendor_wa` pada tugas (Menu 04 belum ada; dibuktikan tes Go), hasil `sync-budget` dengan `linked: true` (butuh pos anggaran Menu 03), `409 conflict` (tabrakan kunci), dan galat `5xx`.
+Hasil 2026-10-21: 821 objek, **0 selisih** (rincian di bab 4.2). Yang **tidak** terbukti oleh panggilan nyata: hasil `sync-budget` dengan `linked: true` (butuh pos anggaran Menu 03), `409 conflict` (tabrakan kunci), dan galat `5xx`.
 
 ---
 
@@ -1313,8 +1313,8 @@ T1 dan sebagian T2–T3 dapat berjalan terhadap fixture; yang butuh backend suda
 
 Temuan saat mencocokkan dokumen ini dengan Menu 01 (kode dan dokumen), kontrak, PDF, SQL yang dijalankan, dan **backend yang berjalan**. Dokumen mengikuti pilihan yang tertulis.
 
-1. **Kontrak sudah dibuktikan, dengan tiga pengecualian** (bab 11.5): `vendor_*` pada tugas, `sync-budget` `linked: true`, dan `409 conflict` belum teramati pada backend yang berjalan (masing-masing menunggu Menu 04, Menu 03, dan tabrakan kunci). Tipenya mengikuti BE dan tes Go.
-2. **Daftar vendor untuk dropdown.** Bentuk respons `GET …/vendors` ([04 BE §3.1](../04_VENDOR_DAN_BELANJA/BE.md#31-vendor)) belum ditetapkan di level yang dibutuhkan (`id`, `vendor_name`); kolom Vendor disembunyikan sampai ada. Tautan tugas → vendor pada Proyek Contoh dibuat overlay Menu 04.
+1. **Kontrak sudah dibuktikan, dengan dua pengecualian** (bab 11.5): `sync-budget` `linked: true` dan `409 conflict` belum teramati pada backend yang berjalan (masing-masing menunggu pos anggaran Menu 03 dan tabrakan kunci). Tipenya mengikuti BE dan tes Go. `vendor_*` pada tugas, pengecualian ketiga sebelumnya, teramati 2026-10-23 setelah Menu 04 ada.
+2. **Daftar vendor untuk dropdown.** Bentuk respons `GET …/vendors` kini ditetapkan ([04 BE §3.3](../04_VENDOR_DAN_BELANJA/BE.md#33-bentuk-respons); tipe `VendorOverview`, [04 FE bab 4.2](../04_VENDOR_DAN_BELANJA/FE.md#42-tambahan-pada-srclibplannertypests)): dropdown membaca `vendors[]` (`id`, `vendor_name`, `category_label`) lewat `vendorApi.listVendors()`; kolom Vendor tetap disembunyikan sampai endpoint-nya ada. Tautan tugas → vendor pada Proyek Contoh dibuat overlay Menu 04 ([04 BE bab 5.2](../04_VENDOR_DAN_BELANJA/BE.md#52-vendor-proyek-contoh-fiktif): `wedding.visit_venue_pernikahan` → Sasana Kriya Ballroom).
 3. **Label preset `general` tanpa angka.** `TEMPLATE_LABELS` 01 FE semula "Jadwal umum (15 tugas)", padahal `general` menghasilkan **18** tugas untuk khitanan, aqiqah, peresmian, launching, ulang tahun, wisuda, dan seminar (15 + 3 khusus jenis) dan 15 hanya untuk `other` ([BE §5.5](BE.md#55-template-jenis-non-pernikahan-usulan-adicara)). Angka dibuang dan 01 FE bab 8.4 disesuaikan ("Jadwal standar jenis acara"). Bila produk ingin angka, registry perlu mengirim jumlah per jenis.
 4. **Ubah fase lewat PATCH tidak menyalin nama fase** (POST menyalin). Akibatnya satu tugas bisa membawa `phase_order 4` dengan `phase_name` fase lama. FE mengirim keduanya (bab 7.5) sehingga tidak terjadi; bila produk ingin server yang menyalin, itu perubahan BE kecil ([BE bab 8, butir 20](BE.md#8-celah-dan-keputusan-yang-menunggu-pemilik-produk)).
 5. **Satu sumber render dengan partial** (bab 2.4) belum dijalankan di browser. Alternatif sah: `location.reload()` sesudah tiap aksi tulis (lebih kasar, logika render tetap SSR). Memutuskan sebelum membangun T2.

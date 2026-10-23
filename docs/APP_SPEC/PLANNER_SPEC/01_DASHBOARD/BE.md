@@ -617,7 +617,7 @@ FROM planner_budget_lines WHERE project_id = $1;
 SELECT COALESCE(sum(amount), 0) FROM planner_savings_entries WHERE project_id = $1;
 ```
 
-**vendors** (`CategoriesTotal`/`CategoriesFixed` dihitung di Go dari `categories_in_use`, `categories_fixed`, registry, dan `project.SkippedVendorCategories`)
+**vendors** (`CategoriesTotal`/`CategoriesFixed` dihitung di Go dari `categories_in_use`, `categories_fixed`, registry, dan `project.SkippedVendorCategories`; kueri dijalankan terhadap data emas Menu 04: `fixed_vendors 7, pipeline 3`, 10 kategori terpakai, 7 fix. Menu 04 menghitung KPI yang sama dengan `BuildOverview`, [04 BE §2.8](../04_VENDOR_DAN_BELANJA/BE.md#28-kategori-kpi-dan-ringkasan); vendor `batal` tidak dihitung di mana pun). **Diimplementasikan 2026-10-23:** provider `vendors` memakai `BuildOverview` itu (bukan kueri di atas), jadi widget menghitung persis yang dihitung tab; pada Proyek Contoh hasilnya 10 / 7 / 0 / 7 / 3, diuji `TestSampleProjectVendorGolden`)
 ```sql
 SELECT count(*) FILTER (WHERE status = 'fix') AS fixed_vendors,
        count(*) FILTER (WHERE status IN ('rencana', 'negosiasi')) AS pipeline,

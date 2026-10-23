@@ -375,7 +375,7 @@ Template pos anggaran jenis non-pernikahan berupa **persentase dari `target_budg
 
 ### 15.2 Pemetaan kategori vendor → pos (`budget_item_keys`)
 
-Dipakai untuk pagu vendor dan `lock-deal` ([04 BE §2.1–2.2](../04_VENDOR_DAN_BELANJA/BE.md#21-pagu-vendor-dari-skenario-aktif)). Setiap `category_key` pada bagian "Kategori vendor" tiap jenis ada di sini, dan setiap `budget_item_keys` adalah `item_key` dari 15.1 untuk jenis yang sama; kategori yang berbagi satu pos (mis. `av` dan `streaming` → `av_streaming`) dibandingkan di tingkat kelompok pagu. Pemetaan pernikahan ada di 04 BE §5.1.
+Dipakai untuk pagu vendor dan `lock-deal` ([04 BE §2.1–2.2](../04_VENDOR_DAN_BELANJA/BE.md#21-pagu-vendor-dari-skenario-aktif)). Semua pos 15.1 dan semua preset `<jenis>_pct` berada di sesi Umum (`all`), jadi pencocokan mencoba sesi vendor lebih dulu lalu `all` (tanpa itu vendor yang ditempatkan di sesi nyata tidak mendapat pagu dan `lock-deal` membuat pos kedua). Setiap `category_key` pada bagian "Kategori vendor" tiap jenis ada di sini, dan setiap `budget_item_keys` adalah `item_key` dari 15.1 untuk jenis yang sama; kategori yang berbagi satu pos (mis. `av` dan `streaming` → `av_streaming`) dibandingkan di tingkat kelompok pagu. Pemetaan pernikahan ada di 04 BE §5.1.
 
 | Jenis | `category_key` vendor | `budget_item_keys` |
 |---|---|---|
@@ -429,6 +429,26 @@ Dipakai untuk pagu vendor dan `lock-deal` ([04 BE §2.1–2.2](../04_VENDOR_DAN_
 ### 15.3 Preset skenario non-pernikahan
 
 Tab Simulasi (03) memakai tabel 15.1 yang sama sebagai preset `<jenis>_pct` (mis. `seminar_pct`): `POST /scenarios {"preset_key": "seminar_pct", "total_target": N}` membuat item skenario dengan `item_key` dan nominal persentase. Dengan begitu skenario, pos Realisasi, dan vendor memakai kunci yang sama seperti pernikahan.
+
+### 15.4 Pos gulungan belanja
+
+Daftar belanja (Menu 04) dapat digulung ke satu pos anggaran: angka pos dihitung view `planner_budget_lines` dari barang yang menunjuknya ([04 BE §2.4](../04_VENDOR_DAN_BELANJA/BE.md#24-daftar-belanja-digulung-ke-anggaran-rollup)). Registry menyimpan pos bawaannya per jenis (`ShoppingRollup{Key, Name, Category}`); tombol "Hitung pos dari daftar belanja" mencari pos berkunci itu pada sesi mana pun dan membuatnya bila belum ada. Pernikahan: pos `seserahan` ada di 14 pos PDF ([03 BE §6.2](../03_KEUANGAN/BE.md#62-template-14-pos-realisasi-pdf-hal-56)). Delapan jenis lain: satu pos 15.1 yang paling dekat dengan kategori belanja jenis itu (pilihan Adicara; usulan sampai ditinjau pemilik produk, [04 BE bab 9 butir 6](../04_VENDOR_DAN_BELANJA/BE.md#9-celah-dan-keputusan-yang-menunggu-pemilik-produk)). `other` tidak punya pos 15.1 yang cocok, jadi `perlengkapan` dibuat (`source = 'manual'`, sesi Umum) bila belum ada. Menggulung mengganti estimasi persentase pos itu dengan jumlah belanja.
+
+| Jenis | `item_key` | Nama pos | Kategori | Ada di 15.1 |
+|---|---|---|---|:-:|
+| `wedding` | `seserahan` | Seserahan | Hantaran | ✔ (14 pos PDF) |
+| `khitanan` | `undangan_souvenir` | Undangan dan souvenir | Perlengkapan | ✔ |
+| `aqiqah` | `undangan_souvenir` | Undangan dan souvenir | Perlengkapan | ✔ |
+| `peresmian` | `prosesi_vip` | Prosesi peresmian dan VIP | Prosesi | ✔ |
+| `launching` | `merchandise_kit` | Merchandise/kit | Perlengkapan | ✔ |
+| `birthday` | `souvenir` | Souvenir | Perlengkapan | ✔ |
+| `wisuda` | `toga_atribut` | Toga dan atribut | Perlengkapan | ✔ |
+| `seminar` | `kit_sertifikat` | Kit dan sertifikat | Perlengkapan | ✔ |
+| `other` | `perlengkapan` | Perlengkapan | Perlengkapan | – (dibuat bila belum ada) |
+
+Kunci, nama, dan kategori pos non-pernikahan di atas sama dengan 15.1 (dibandingkan dengan skrip; `TestVendorCategoriesMatchTemplateEvent` menjaganya).
+
+**Pos cadangan.** Tiga pos di atas juga merupakan pos khusus kategori vendor menurut 15.2: peresmian `prosesi_vip` (kategori `mc`), wisuda `toga_atribut` (`toga`), seminar `kit_sertifikat` (`percetakan`). Begitu vendor itu dikunci, `lock-deal` menautkannya ke pos tersebut, dan pos yang bertaut vendor tidak dapat digulung. Ditemukan saat implementasi Menu 04 (2026-10-23); bila pos bawaan ada tetapi tidak dapat digulung, daftar belanja digulung ke pos cadangan `perlengkapan` (Kategori Perlengkapan, sesi Umum, dibuat sekali di luar persentase pagu), seperti `other` ([04 BE bab 2.4](../04_VENDOR_DAN_BELANJA/BE.md#24-daftar-belanja-digulung-ke-anggaran-rollup), [bab 9 butir 22](../04_VENDOR_DAN_BELANJA/BE.md#9-celah-dan-keputusan-yang-menunggu-pemilik-produk)). Alternatifnya mengubah 15.2 atau 15.4 dan menunggu keputusan pemilik produk.
 
 ## 16. Pustaka Template di Kode
 

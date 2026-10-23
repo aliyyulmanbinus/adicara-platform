@@ -1,0 +1,326 @@
+{
+  "kpi": {
+    "categories_total": 10,
+    "categories_fixed": 7,
+    "skipped": 0,
+    "fixed_vendors": 7,
+    "pipeline": 3,
+    "fixed_total": 58000000,
+    "pipeline_offers": 4300000,
+    "groups_total": 3,
+    "groups_over": 0
+  },
+  "categories": [
+    {
+      "key": "venue",
+      "label": "Venue",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "dekorasi",
+      "label": "Decoration",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "wo",
+      "label": "Wedding Organizer",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "mua",
+      "label": "MUA",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "catering",
+      "label": "Catering",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "fotografi",
+      "label": "Photography",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "attire",
+      "label": "Attire",
+      "state": "fix",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "hand_bouquet",
+      "label": "Hand Bouquet",
+      "state": "pipeline",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "mc",
+      "label": "MC",
+      "state": "pipeline",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    },
+    {
+      "key": "entertainment",
+      "label": "Entertainment",
+      "state": "pipeline",
+      "vendors": 1,
+      "custom": false,
+      "skipped": false
+    }
+  ],
+  "limit_groups": [
+    {
+      "item_key": "venue_dekor",
+      "sub_event_scope": "resepsi",
+      "limit": 20000000,
+      "total_agreed": 20000000,
+      "delta": 0,
+      "members": 2,
+      "priced": 2,
+      "vendor_ids": [
+        "00000000-0000-4000-8000-000400000001",
+        "00000000-0000-4000-8000-000400000002"
+      ],
+      "line": {
+        "budget_item_id": "00000000-0000-4000-8000-000300000010",
+        "item_name": "Sewa Gedung \u0026 Dekorasi",
+        "estimate": 20000000,
+        "paid": 900000,
+        "remaining": 19100000,
+        "payment_status": "dp_paid"
+      }
+    },
+    {
+      "item_key": "rias_busana",
+      "sub_event_scope": "resepsi",
+      "limit": 5000000,
+      "total_agreed": 5000000,
+      "delta": 0,
+      "members": 2,
+      "priced": 2,
+      "vendor_ids": [
+        "00000000-0000-4000-8000-000400000004",
+        "00000000-0000-4000-8000-000400000007"
+      ],
+      "line": {
+        "budget_item_id": "00000000-0000-4000-8000-000300000009",
+        "item_name": "Rias \u0026 Baju Pengantin",
+        "estimate": 5000000,
+        "paid": 600000,
+        "remaining": 4400000,
+        "payment_status": "dp_paid"
+      }
+    },
+    {
+      "item_key": "hiburan",
+      "sub_event_scope": "resepsi",
+      "limit": 3400000,
+      "total_agreed": 3400000,
+      "delta": 0,
+      "members": 2,
+      "priced": 2,
+      "vendor_ids": [
+        "00000000-0000-4000-8000-000400000009",
+        "00000000-0000-4000-8000-000400000010"
+      ],
+      "line": {
+        "budget_item_id": "00000000-0000-4000-8000-000300000014",
+        "item_name": "Hiburan \u0026 Pengisi acara",
+        "estimate": 3400000,
+        "paid": 3400000,
+        "remaining": 0,
+        "payment_status": "settled"
+      }
+    }
+  ],
+  "vendors": [
+    {
+      "id": "00000000-0000-4000-8000-000400000001",
+      "sub_event_scope": "resepsi",
+      "category_key": "venue",
+      "category_label": "Venue",
+      "vendor_name": "Sasana Kriya Ballroom",
+      "phone_number": "081200000001",
+      "formatted_wa_number": "6281200000001",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "venue_dekor",
+      "agreed_price": 12000000,
+      "status": "fix",
+      "sort_order": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000002",
+      "sub_event_scope": "resepsi",
+      "category_key": "dekorasi",
+      "category_label": "Decoration",
+      "vendor_name": "Pelaminan Mega Indah",
+      "phone_number": "081200000002",
+      "formatted_wa_number": "6281200000002",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "venue_dekor",
+      "agreed_price": 8000000,
+      "status": "fix",
+      "sort_order": 2
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000003",
+      "sub_event_scope": "resepsi",
+      "category_key": "wo",
+      "category_label": "Wedding Organizer",
+      "vendor_name": "Harmony Wedding Organizer",
+      "phone_number": "081200000003",
+      "formatted_wa_number": "6281200000003",
+      "budget_limit": 0,
+      "limit_source": "none",
+      "agreed_price": 5000000,
+      "status": "fix",
+      "sort_order": 3
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000004",
+      "sub_event_scope": "resepsi",
+      "category_key": "mua",
+      "category_label": "MUA",
+      "vendor_name": "Sanggar Rias Ayu",
+      "phone_number": "081200000004",
+      "formatted_wa_number": "6281200000004",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "rias_busana",
+      "agreed_price": 3500000,
+      "status": "fix",
+      "sort_order": 4
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000005",
+      "sub_event_scope": "resepsi",
+      "category_key": "catering",
+      "category_label": "Catering",
+      "vendor_name": "Katering Bu Minah (500 pax)",
+      "phone_number": "081200000005",
+      "formatted_wa_number": "6281200000005",
+      "budget_limit": 30000000,
+      "limit_source": "scenario",
+      "agreed_price": 25000000,
+      "price_delta": 5000000,
+      "status": "fix",
+      "sort_order": 5,
+      "payment": {
+        "budget_item_id": "00000000-0000-4000-8000-000300000008",
+        "item_name": "Catering",
+        "estimate": 25000000,
+        "paid": 15000000,
+        "remaining": 10000000,
+        "payment_status": "partial"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000006",
+      "sub_event_scope": "resepsi",
+      "category_key": "fotografi",
+      "category_label": "Photography",
+      "vendor_name": "Studio Cahaya",
+      "phone_number": "081200000006",
+      "formatted_wa_number": "6281200000006",
+      "budget_limit": 3000000,
+      "limit_source": "scenario",
+      "agreed_price": 3000000,
+      "price_delta": 0,
+      "status": "fix",
+      "sort_order": 6,
+      "payment": {
+        "budget_item_id": "00000000-0000-4000-8000-000300000012",
+        "item_name": "Dokumentasi",
+        "estimate": 3000000,
+        "paid": 300000,
+        "remaining": 2700000,
+        "payment_status": "dp_paid"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000007",
+      "sub_event_scope": "resepsi",
+      "category_key": "attire",
+      "category_label": "Attire",
+      "vendor_name": "Butik Kebaya Anggun",
+      "phone_number": "081200000007",
+      "formatted_wa_number": "6281200000007",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "rias_busana",
+      "agreed_price": 1500000,
+      "status": "fix",
+      "sort_order": 7
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000008",
+      "sub_event_scope": "resepsi",
+      "category_key": "hand_bouquet",
+      "category_label": "Hand Bouquet",
+      "vendor_name": "Fleur Hand Bouquet",
+      "phone_number": "081200000008",
+      "formatted_wa_number": "6281200000008",
+      "budget_limit": 0,
+      "limit_source": "none",
+      "agreed_price": 900000,
+      "status": "rencana",
+      "sort_order": 8
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000009",
+      "sub_event_scope": "resepsi",
+      "category_key": "mc",
+      "category_label": "MC",
+      "vendor_name": "Kang Dedi Master MC",
+      "phone_number": "081200000009",
+      "formatted_wa_number": "6281200000009",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "hiburan",
+      "agreed_price": 2000000,
+      "status": "negosiasi",
+      "sort_order": 9
+    },
+    {
+      "id": "00000000-0000-4000-8000-000400000010",
+      "sub_event_scope": "resepsi",
+      "category_key": "entertainment",
+      "category_label": "Entertainment",
+      "vendor_name": "Akustik Nada Kirana",
+      "phone_number": "081200000010",
+      "formatted_wa_number": "6281200000010",
+      "budget_limit": 0,
+      "limit_source": "group",
+      "limit_group": "hiburan",
+      "agreed_price": 1400000,
+      "status": "negosiasi",
+      "sort_order": 10
+    }
+  ]
+}

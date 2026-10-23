@@ -110,7 +110,7 @@ Detail acara dan konfirmasi kehadiran (RSVP): {tautan personal}
 Terima kasih.
 ```
 
-Baris yang datanya kosong dihilangkan. Judul/tanggal/venue berasal dari proyek dan sesi tamu (`session_date` bila ada); teks tidak menyebut jenis acara tertentu dan setiap sesi memakai tanggalnya sendiri. Nomor harus lolos `NormalizeWA` (sama dengan [04 BE §2.3](../04_VENDOR_DAN_BELANJA/BE.md#23-normalisasi-nomor-whatsapp)).
+Baris yang datanya kosong dihilangkan. Judul/tanggal/venue berasal dari proyek dan sesi tamu (`session_date` bila ada); teks tidak menyebut jenis acara tertentu dan setiap sesi memakai tanggalnya sendiri. Nomor harus lolos `NormalizeWA` (sama dengan [04 BE §2.3](../04_VENDOR_DAN_BELANJA/BE.md#23-normalisasi-nomor-whatsapp); fungsinya berada di `planner/domain/phone.go` supaya dapat diimpor modul ini tanpa mengimpor `plannervendor`).
 
 ### 2.5 Meja resepsionis hari-H
 - **Scan QR**: `POST .../guests/scan-qr` `{qr_code_token}` → `SELECT … WHERE project_id = $1 AND qr_code_token = $2` (token milik proyek lain tidak dikenali). Batas 120 permintaan/menit/pengguna.
@@ -124,7 +124,7 @@ RETURNING id, name, table_number, pax_actual, checked_in_at;
 ```
   Nol baris + tamu ada → `409 already_checked_in` beserta jam check-in sebelumnya (antarmuka menampilkan "Sudah masuk pukul 11.14"). `DELETE .../guests/:guest_id/checkin` membatalkan (tombol *Batal*).
 - **Walk-in**: tamu baru `rsvp_status = 'attending'`, `pax_count = pax_actual`, sudah check-in, token dibuat.
-- **Souvenir**: `souvenir_received` sebagai serah terima; stok souvenir = Σ `quantity` barang `purpose='souvenir'` berstatus `selesai` ([04 BE §2.5](../04_VENDOR_DAN_BELANJA/BE.md#25-stok-souvenir)); antarmuka menampilkan `stok − diserahkan`.
+- **Souvenir**: `souvenir_received` sebagai serah terima; stok souvenir = `floor(Σ quantity)` barang `purpose='souvenir'` berstatus `selesai` (jumlah barang boleh berdesimal, stok bilangan bulat; hilang bila tak ada barang bertanda souvenir; [04 BE §2.5](../04_VENDOR_DAN_BELANJA/BE.md#25-stok-souvenir)); antarmuka menampilkan `stok − diserahkan`.
 - **Batasan:** satu check-in per tamu. Tamu yang hadir pada dua sesi berbeda dicatat sebagai dua baris tamu, atau check-in per sesi ditunda ke fase berikutnya.
 
 ### 2.6 Impor dan ekspor
