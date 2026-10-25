@@ -502,7 +502,7 @@ File `src/pages/dashboard/api/planner/[...path].ts`; `export const prerender = f
 Langkah untuk setiap permintaan:
 
 1. `path = context.params.path` (mis. `projects/6347…/sessions`). Tolak `404 not_found` bila kosong, tak cocok `^[a-z0-9/_-]+$`, memuat `..` atau `//`, atau diawali/diakhiri `/`. (UUID memakai huruf kecil, angka, dan tanda hubung, jadi lolos.)
-2. Metode selain `GET` wajib `Content-Type: application/json`, selain itu `415 unsupported_media_type`. Body dibatasi 64 KiB (`400 invalid_json` bila lebih atau bukan JSON object); `DELETE` tidak meneruskan body.
+2. Metode selain `GET` wajib `Content-Type: application/json`, selain itu `415 unsupported_media_type`. Body dibatasi 64 KiB (`400 invalid_json` bila lebih atau bukan JSON object), **kecuali jalur `…/guests/bulk-import` (Menu 05, berkas impor sebagai JSON base64) yang dibatasi 7,5 MiB** ([05 FE bab 1.3](../05_BUKU_TAMU/FE.md#13-perubahan-pada-file-yang-sudah-ada)); `DELETE` tidak meneruskan body.
 3. Query string diteruskan dengan membangun ulang lewat `URLSearchParams` (di-encode ulang), bukan menyambung teks. Mis. `?confirm=Pernikahan%20Sinta%20%26%20Arif`.
 4. `backendFetch('/v1/planner/' + path + query, { method, body, accessToken, clientIP })`. Karena `backendFetch` hanya mendukung `GET|POST|PATCH|DELETE`, **tambahkan `'PUT'`** (bab 1.3).
 5. Jawaban: status backend diteruskan apa adanya. Sukses → `json(status, result.data)` (atau `204` tanpa body). Galat → `json(status, { error: result.error })` (termasuk `details`). `BackendUnavailableError` → `503 { error: { code: 'service_unavailable' } }`.

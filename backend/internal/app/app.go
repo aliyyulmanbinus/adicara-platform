@@ -27,6 +27,9 @@ import (
 	financehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/delivery/http"
 	financerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/repository"
 	financeusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerfinance/usecase"
+	guesthttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/delivery/http"
+	guestrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/repository"
+	guestusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/usecase"
 	timelinehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/delivery/http"
 	timelinerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/repository"
 	timelineusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/usecase"
@@ -102,17 +105,23 @@ func Build(ctx context.Context) (*App, error) {
 	// overlay needs the items its applier made. The shopping applier runs after the budget one (TemplateKeys order).
 	vendorSvc := vendorusecase.New(vendorrepo.NewPostgresRepository(pool), plannerTx, registry, vendorusecase.Options{})
 
-	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider())
+	// Menu 05: guests, RSVP and the reception desk (provider guests, overlay guests; no template: the wizard creates no
+	// guests). Its overlay depends on no other and runs last. Options.Invitations stays empty until the invitation module
+	// exists, so no guest has a personal link yet (05 BE 5); that module will also take guestSvc.RSVPWriter().
+	guestSvc := guestusecase.New(guestrepo.NewPostgresRepository(pool), plannerTx, registry, guestusecase.Options{})
+
+	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider(), guestSvc.Provider())
 	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier(), vendorSvc.Applier())
 	plannerSvc.RegisterSampleOverlays(
 		timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay(),
-		vendorSvc.VendorsOverlay(), vendorSvc.ShoppingOverlay(),
+		vendorSvc.VendorsOverlay(), vendorSvc.ShoppingOverlay(), guestSvc.GuestsOverlay(),
 	)
 
 	plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
 	timelinehttp.RegisterRoutes(ginEngine, idn, plannerSvc, timelineSvc)
 	financehttp.RegisterRoutes(ginEngine, idn, plannerSvc, financeSvc)
 	vendorhttp.RegisterRoutes(ginEngine, idn, plannerSvc, vendorSvc)
+	guesthttp.RegisterRoutes(ginEngine, idn, plannerSvc, guestSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)

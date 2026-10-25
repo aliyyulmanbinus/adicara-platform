@@ -5,12 +5,13 @@ package domain
 // The CHECK on planner_projects.event_type must list exactly these keys
 // (guarded by a test that reads pg_get_constraintdef).
 //
-// Fields owned by the other planner modules (guest sides and categories, audio
-// moment tags) are added here when those modules are built; their data is in
+// Fields owned by the other planner modules (audio moment tags) are added here
+// when those modules are built; their data is in
 // PLANNER_SPEC/00_KONTRAK_BERSAMA/TEMPLATE_EVENT.md. Menu 02 added the document
 // subjects, the legal widget title and the bureaucracy guide (TEMPLATE_EVENT
 // 4.1); menu 03 added the contributor roles (TEMPLATE_EVENT 4); menu 04 added
-// the vendor and shopping categories and the shopping rollup line (vendorcatalog.go).
+// the vendor and shopping categories and the shopping rollup line (vendorcatalog.go);
+// menu 05 added the guest sides and categories (guestcatalog.go, TEMPLATE_EVENT 4.2).
 
 const (
 	EventWedding   EventType = "wedding"
@@ -54,7 +55,7 @@ type FieldSpec struct {
 	Required bool      `json:"required"`
 }
 
-// Option is a key with its display label (document subjects).
+// Option is a key with its display label (document subjects, contributor roles, guest sides and categories).
 type Option struct {
 	Key   string `json:"key"`
 	Label string `json:"label"`
@@ -124,6 +125,11 @@ type EventTypeSpec struct {
 	VendorCategories   []VendorCategory `json:"vendor_categories"`
 	ShoppingCategories []string         `json:"shopping_categories"`
 	ShoppingRollup     ShoppingRollup   `json:"-"`
+
+	// Owned by menu 05 (guests). No sides = the guest list is not split (birthday, wisuda, other). Any other text a
+	// user types as a category is a custom category; the fallback "lainnya" is not part of the registry.
+	GuestSides      []Option `json:"guest_sides"`
+	GuestCategories []Option `json:"guest_categories"`
 }
 
 // TemplatesAvailable is the part of TemplateSet that can be requested now.
@@ -415,6 +421,8 @@ func DefaultRegistry() *Registry {
 		specs[i].VendorCategories = vendorCategoriesFor(specs[i].Key)
 		specs[i].ShoppingCategories = shoppingCategoriesFor(specs[i].Key)
 		specs[i].ShoppingRollup = shoppingRollupFor(specs[i].Key)
+		specs[i].GuestSides = guestSidesFor(specs[i].Key)
+		specs[i].GuestCategories = guestCategoriesFor(specs[i].Key)
 	}
 
 	return NewRegistry(specs)

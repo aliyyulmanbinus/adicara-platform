@@ -113,6 +113,22 @@ Langkah panduan pernikahan ada di [02 BE §5.4](../02_TIMELINE_DAN_TUGAS/BE.md#5
 
 Tugas khusus jenis pada bab 7–14 diisi kunci, kategori, dan fasenya dengan aturan [02 BE §5.5](../02_TIMELINE_DAN_TUGAS/BE.md#55-template-jenis-non-pernikahan-usulan-adicara).
 
+### 4.2 Label sisi dan kategori tamu (milik Menu 05)
+
+Tabel di atas hanya memuat kunci; label tampilan yang dikirim `GET /event-types` sebagai `guest_sides` dan `guest_categories` ([05 BE bab 7](../05_BUKU_TAMU/BE.md#7-sambungan-ke-menu-01)) ada di sini (format `kunci=Label`, dipisah `;`; tes keselarasan membaca baris ini). Label pernikahan mengikuti PDF Hal. 13 ("Teman Orang Tua"); label jenis lain adalah usulan Adicara, dan kata yang tabel bab 4 tulis tanpa label ("Internal"/"Eksternal" pada launching) memakai kata biasanya. Kunci cadangan `lainnya` (label "Lainnya") **tidak** ada di registry: ia dipakai bila kategori tidak diisi dan hanya muncul di penghitung bila ada tamu yang memakainya ([05 BE §2.8](../05_BUKU_TAMU/BE.md#28-ringkasan-penghitung-kategori-dan-pihak)).
+
+| Key | Sisi (`guest_side`) | Kategori |
+|---|---|---|
+| `wedding` | `pria=Pihak Pria (CPP)`; `wanita=Pihak Wanita (CPW)` | `teman=Teman`; `kolega=Kolega`; `keluarga=Keluarga`; `tetangga=Tetangga`; `teman_ortu=Teman Orang Tua`; `vip=VIP` |
+| `khitanan` | `keluarga_ayah=Keluarga Ayah`; `keluarga_ibu=Keluarga Ibu` | `keluarga=Keluarga`; `tetangga=Tetangga`; `teman=Teman`; `tokoh_agama=Tokoh Agama`; `vip=VIP` |
+| `aqiqah` | `keluarga_ayah=Keluarga Ayah`; `keluarga_ibu=Keluarga Ibu` | `keluarga=Keluarga`; `tetangga=Tetangga`; `teman=Teman`; `tokoh_agama=Tokoh Agama` |
+| `peresmian` | `internal=Tuan Rumah/Internal`; `eksternal=Undangan Eksternal` | `pimpinan_vip=Pimpinan/VIP`; `mitra=Mitra`; `media=Media`; `karyawan=Karyawan`; `warga_sekitar=Warga Sekitar`; `umum=Umum` |
+| `launching` | `internal=Internal`; `eksternal=Eksternal` | `media=Media`; `kreator=Kreator`; `mitra=Mitra`; `klien=Klien`; `vip=VIP`; `umum=Umum` |
+| `birthday` | – | `keluarga=Keluarga`; `teman_sekolah=Teman Sekolah`; `teman_kuliah=Teman Kuliah`; `komunitas=Komunitas`; `vip=VIP` |
+| `wisuda` | – | `wisudawan=Wisudawan`; `orang_tua=Orang Tua`; `dosen_pejabat=Dosen/Pejabat`; `tamu_undangan=Tamu Undangan`; `vip=VIP` |
+| `seminar` | `internal=Panitia/Internal`; `eksternal=Peserta Eksternal` | `pembicara=Pembicara`; `peserta=Peserta`; `sponsor=Sponsor`; `media=Media`; `vip=VIP` |
+| `other` | – | `umum=Umum`; `vip=VIP` |
+
 ## 5. Kolom Metadata Proyek (`planner_projects.metadata`)
 
 Semua jenis juga menerima `hero_title` (≤ 60 karakter; judul besar hero, mis. "Bismillah Nikah" pada PDF Hal. 1), `venue_name` (≤ 150), dan `city` (≤ 80). Kunci lain ditolak `400 invalid_metadata`.

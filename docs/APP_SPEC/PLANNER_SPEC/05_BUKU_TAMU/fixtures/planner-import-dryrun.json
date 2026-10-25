@@ -1,0 +1,74 @@
+{
+  "dry_run": true,
+  "total_rows": 6,
+  "valid_rows": 4,
+  "invalid_rows": 2,
+  "created": 0,
+  "skipped": 0,
+  "errors": [
+    {
+      "row": 3,
+      "field": "phone_number",
+      "reason": "must be an Indonesian phone number (08…, +62…)"
+    },
+    {
+      "row": 4,
+      "field": "guest_side",
+      "reason": "must be a registry side key"
+    }
+  ],
+  "duplicates": [
+    {
+      "row": 5,
+      "name": "Raditya Pratama & Pasangan",
+      "of_guest": "6fb5e62a-cb2f-59e6-bf48-c30a2a912ae0"
+    },
+    {
+      "row": 6,
+      "name": "dewi anggraini",
+      "of_row": 2
+    }
+  ],
+  "preview": [
+    {
+      "row": 2,
+      "name": "Dewi Anggraini",
+      "guest_side": "wanita",
+      "category": "teman",
+      "sub_event_scope": "resepsi",
+      "table_number": "T-20",
+      "pax_count": 2,
+      "formatted_wa_number": "6281200000201"
+    },
+    {
+      "row": 5,
+      "name": "Raditya Pratama & Pasangan",
+      "guest_side": "pria",
+      "category": "teman",
+      "sub_event_scope": "resepsi",
+      "table_number": "T-04",
+      "pax_count": 2,
+      "formatted_wa_number": "6281200000102"
+    },
+    {
+      "row": 6,
+      "name": "dewi anggraini",
+      "guest_side": "wanita",
+      "category": "teman",
+      "sub_event_scope": "resepsi",
+      "table_number": "T-20",
+      "pax_count": 2,
+      "formatted_wa_number": "6281200000201"
+    },
+    {
+      "row": 7,
+      "name": "Sinta Maharani",
+      "guest_side": "wanita",
+      "category": "keluarga",
+      "sub_event_scope": "akad",
+      "table_number": "FAM-03",
+      "pax_count": 3,
+      "formatted_wa_number": "6281200000203"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "confirmed_pax": 27,
+  "potential_pax": 12,
+  "declined_pax": 4,
+  "recommended_portions": 34,
+  "attending_guests": 12,
+  "declined_guests": 2,
+  "maybe_guests": 2,
+  "pending_guests": 4,
+  "buffer_percent": 25,
+  "buffer_pax": 0
+}
