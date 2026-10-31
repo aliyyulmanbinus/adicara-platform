@@ -30,6 +30,9 @@ import (
 	guesthttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/delivery/http"
 	guestrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/repository"
 	guestusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerguest/usecase"
+	rundownhttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerrundown/delivery/http"
+	rundownrepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerrundown/repository"
+	rundownusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannerrundown/usecase"
 	timelinehttp "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/delivery/http"
 	timelinerepo "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/repository"
 	timelineusecase "github.com/aliyyulmanbinus/adicara-platform/backend/internal/modules/plannertimeline/usecase"
@@ -110,8 +113,19 @@ func Build(ctx context.Context) (*App, error) {
 	// exists, so no guest has a personal link yet (05 BE 5); that module will also take guestSvc.RSVPWriter().
 	guestSvc := guestusecase.New(guestrepo.NewPostgresRepository(pool), plannerTx, registry, guestusecase.Options{})
 
-	plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider(), guestSvc.Provider())
-	plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier(), vendorSvc.Applier())
+	// Menu 06: the rundown and the playlist (provider rundown, appliers rundown and playlist; no overlay: the sample
+	// project holds the template, 33 agendas and 30 songs, all pending). The appliers run after every other one
+	// (TemplateKeys order) and need no row of another module.
+	rundownSvc := rundownusecase.New(rundownrepo.NewPostgresRepository(pool), plannerTx, registry, rundownusecase.Options{})
+
+	plannerSvc.RegisterSummary(
+		timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider(), guestSvc.Provider(),
+		rundownSvc.Provider(),
+	)
+	plannerSvc.RegisterTemplateAppliers(
+		timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier(), vendorSvc.Applier(),
+		rundownSvc.RundownApplier(), rundownSvc.PlaylistApplier(),
+	)
 	plannerSvc.RegisterSampleOverlays(
 		timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay(),
 		vendorSvc.VendorsOverlay(), vendorSvc.ShoppingOverlay(), guestSvc.GuestsOverlay(),
@@ -122,6 +136,7 @@ func Build(ctx context.Context) (*App, error) {
 	financehttp.RegisterRoutes(ginEngine, idn, plannerSvc, financeSvc)
 	vendorhttp.RegisterRoutes(ginEngine, idn, plannerSvc, vendorSvc)
 	guesthttp.RegisterRoutes(ginEngine, idn, plannerSvc, guestSvc)
+	rundownhttp.RegisterRoutes(ginEngine, idn, plannerSvc, rundownSvc)
 
 	mux := http.NewServeMux()
 	mux.Handle("/v1/auth/", ginEngine)

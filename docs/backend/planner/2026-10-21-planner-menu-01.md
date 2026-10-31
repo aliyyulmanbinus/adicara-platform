@@ -2,7 +2,7 @@
 
 Tanggal: 2026-10-21. Branch `backend/planner`. Spesifikasi: [PLANNER_SPEC/01_DASHBOARD/BE.md](../../APP_SPEC/PLANNER_SPEC/01_DASHBOARD/BE.md) dan [00_KONTRAK_BERSAMA](../../APP_SPEC/PLANNER_SPEC/00_KONTRAK_BERSAMA/README.md). Kontrak API: [`backend/docs/openapi.yaml`](../../../backend/docs/openapi.yaml) (tag `Planner`).
 
-Modul `planner` adalah fondasi enam menu Planner: ia memiliki proyek (`planner_projects`), master sesi bersama (`planner_event_sessions`), registry sembilan jenis acara, dan agregator dashboard. Modul 02–06 (timeline, keuangan, vendor, tamu, rundown) **belum ada**; menu 01 sengaja dibangun tanpa mengimpor mereka dan menyediakan titik sambungnya (bagian [Menyambungkan modul lain](#menyambungkan-modul-lain)).
+Modul `planner` adalah fondasi enam menu Planner: ia memiliki proyek (`planner_projects`), master sesi bersama (`planner_event_sessions`), registry sembilan jenis acara, dan agregator dashboard. Modul 02–06 (timeline, keuangan, vendor, tamu, rundown) dibangun sesudahnya (2026-10-21 sampai 2026-10-31; dokumen masing-masing ada di folder ini); menu 01 sengaja dibangun tanpa mengimpor mereka dan menyediakan titik sambungnya (bagian [Menyambungkan modul lain](#menyambungkan-modul-lain)).
 
 ## Yang ada
 

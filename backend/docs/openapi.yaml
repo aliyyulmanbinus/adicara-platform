@@ -41,6 +41,13 @@ tags:
       the list. Every route needs a bearer token and goes through the same project guard as menu 01 (another
       user's project is 404; an archived project is read-only, `GET`, the exports and the template still work).
       A guest that belongs to the invitation module alone (no project) is never visible here.
+  - name: Planner Rundown
+    description: >-
+      Menu 06 of the Planner service: the rundown of the event (agendas minute by minute per session, with the live
+      status of the event day and the WhatsApp text) and the playlist (songs tied to the agendas, with the sound cue
+      briefing). The sessions themselves belong to menu 01 (`/sessions`). Every route needs a bearer token and goes
+      through the same project guard as menu 01 (another user's project is 404; an archived project is read-only,
+      `GET` and the exports still work).
 
 components:
   securitySchemes:
@@ -215,6 +222,7 @@ components:
             `scope_fallback` also comes from the budget template and from scenario presets.
             Menu 04: `unit_pricing`, `shared_budget_item` (lock-deal), `budget_link_released` (a vendor left
             `fix`), `estimate_differs` (a vendor update) and `budget_link_lost` (replacing the shopping template).
+            Menu 06: `scope_missing` (the agendas of a session that was deleted were skipped; `count` is how many).
         message:
           type: string
         count:
@@ -408,6 +416,14 @@ components:
               label:
                 type: string
                 example: Teman Orang Tua
+        moment_tags:
+          type: array
+          description: >-
+            The audio moment tags this event type suggests for the playlist, in order. A song may carry any other
+            text. Menu 06.
+          items:
+            type: string
+            example: Akad Khidmat
     PlannerInitTemplates:
       type: object
       description: >-
@@ -3124,6 +3140,446 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PlannerGuestImportPreviewRow'
+    PlannerRundownVendor:
+      type: object
+      description: >-
+        The vendor of menu 04 that is in charge of an agenda; the WhatsApp link is built by the client from `formatted_wa_number`.
+      required: [id, vendor_name, category_label]
+      properties:
+        id:
+          type: string
+          format: uuid
+        vendor_name:
+          type: string
+        category_label:
+          type: string
+        pic_name:
+          type: string
+        phone_number:
+          type: string
+        formatted_wa_number:
+          type: string
+          description: The number in the `62…` form.
+          example: "6281234567890"
+    PlannerRundown:
+      type: object
+      description: >-
+        One agenda. Optional keys are left out when empty (an open agenda has no `end_time` and no `duration_minutes`); there is no `null`.
+        `duration_minutes` is the difference of the two clock times (plus a day when `ends_next_day`), not the length counted with the PDF's "+1".
+      required: [id, session_id, session_name, session_icon, scope_key, start_time, ends_next_day, activity_name, pic_name, description, highlights, status, linked_songs, sort_order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        session_name:
+          type: string
+        session_icon:
+          type: string
+        scope_key:
+          type: string
+        start_time:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          example: "07:46"
+        end_time:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          description: Left out for an open agenda ("10.40 - selesai").
+        ends_next_day:
+          type: boolean
+          description: The agenda ends after midnight (23:30 to 00:30 is 60 minutes).
+        duration_minutes:
+          type: integer
+          description: Left out for an open agenda.
+        activity_name:
+          type: string
+        pic_name:
+          type: string
+        vendor:
+          $ref: '#/components/schemas/PlannerRundownVendor'
+        description:
+          type: string
+        highlights:
+          type: string
+          description: One item per line, each starting with `- `.
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+        linked_songs:
+          type: integer
+          description: The songs of the playlist that point at this agenda.
+        sort_order:
+          type: integer
+        template_key:
+          type: string
+          description: Present on the agendas that came from the template.
+          example: wedding.rundown_05
+    PlannerRundownSession:
+      type: object
+      description: >-
+        A non-system session of the project with the figures of its agendas; a session without agendas has zeroes and no `first_start` or `last_end`.
+      required: [id, scope_key, name, icon, agenda_count, completed, in_progress, span_minutes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        scope_key:
+          type: string
+        name:
+          type: string
+        icon:
+          type: string
+        date:
+          type: string
+          format: date
+          description: The date of the session; left out when it has none.
+        agenda_count:
+          type: integer
+        completed:
+          type: integer
+        in_progress:
+          type: integer
+        span_minutes:
+          type: integer
+          description: From the first start to the latest end of the session, in minutes. Agendas that run in parallel or overlap are not added up.
+        first_start:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          example: "07:46"
+        last_end:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          description: The latest end (the start of an open agenda), counted across midnight.
+    PlannerRundownKPI:
+      type: object
+      description: >-
+        Always the whole project. There is no percentage: the client divides `completed` by `total_agendas`.
+      required: [sessions, total_agendas, completed, in_progress, pending, total_span_minutes, distinct_pics]
+      properties:
+        sessions:
+          type: integer
+          description: Non-system sessions of the project.
+        total_agendas:
+          type: integer
+        completed:
+          type: integer
+        in_progress:
+          type: integer
+        pending:
+          type: integer
+        total_span_minutes:
+          type: integer
+          description: The sum of the spans of the sessions.
+        distinct_pics:
+          type: integer
+          description: The people in charge. A linked vendor counts once, otherwise the `pic_name` compared without case and padding.
+    PlannerRundownOverview:
+      type: object
+      description: >-
+        `sessions` and `kpi` always describe the whole project; `items` follow `?session_id=`.
+      required: [sessions, kpi, items]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerRundownSession'
+        kpi:
+          $ref: '#/components/schemas/PlannerRundownKPI'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerRundown'
+    PlannerRundownLiveItem:
+      type: object
+      required: [id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    PlannerRundownLive:
+      type: object
+      description: >-
+        What the event-day screen polls every 5 seconds: no agenda text, only the status of each agenda.
+      required: [kpi, sessions, items, server_time]
+      properties:
+        kpi:
+          $ref: '#/components/schemas/PlannerRundownKPI'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerRundownSession'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerRundownLiveItem'
+        server_time:
+          type: string
+          format: date-time
+          description: The server clock, in UTC, so that "running for N minutes" does not depend on the device clock.
+    PlannerRundownRequest:
+      type: object
+      description: >-
+        Replaces the agenda whole (the status only moves through the status route).
+        Times: `07.46`, `7.46`, `07:46` and `7:46` are accepted and stored as `07:46`. Rules: without `end_time` the agenda is open and `ends_next_day` must be false; without `ends_next_day` the end must not be before the start; with it the end must be earlier than the start.
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          description: A non-system session of the project.
+        start_time:
+          type: string
+          example: "07.46"
+        end_time:
+          type: string
+          nullable: true
+          example: "07.50"
+        ends_next_day:
+          type: boolean
+        activity_name:
+          type: string
+          maxLength: 255
+        pic_name:
+          type: string
+          maxLength: 150
+        vendor_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: A vendor of this project.
+        description:
+          type: string
+          maxLength: 2000
+        highlights:
+          type: string
+          maxLength: 2000
+          description: One item per line, each starting with `- `.
+    PlannerRundownStatusRequest:
+      type: object
+      description: >-
+        Any move is allowed (the order pending, running, done is only how the screen presents it).
+      properties:
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+    PlannerRundownReorderRequest:
+      type: object
+      description: >-
+        `ids` must be exactly the agendas of the session, each once.
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    PlannerPlaylistReorderRequest:
+      type: object
+      description: >-
+        `ids` must be exactly the songs of the project, each once.
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    PlannerRundownTemplateRequest:
+      type: object
+      description: >-
+        Both fields are optional: no body means `append`.
+      properties:
+        mode:
+          type: string
+          enum: [append, replace_template]
+          description: >-
+            `append` (default) adds what is missing. `replace_template` (agendas only) puts the template agendas that have not started back to the template, in place.
+        confirm:
+          type: boolean
+          description: Must be true when `replace_template` resets agendas (the changes of the user to them are overwritten).
+    PlannerRundownTemplateResult:
+      type: object
+      description: >-
+        `warnings`: `scope_missing` (agendas of a session that was deleted were skipped; `count` is how many).
+      required: [created, skipped, reset, kept, warnings]
+      properties:
+        created:
+          type: integer
+        skipped:
+          type: integer
+        reset:
+          type: integer
+          description: Template agendas that had not started and were put back to the template (`replace_template`).
+        kept:
+          type: integer
+          description: Template agendas that are running or done and were not touched (`replace_template`).
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerNotice'
+    PlannerWAExport:
+      type: object
+      description: >-
+        The message built by the server, ready to copy into WhatsApp.
+      required: [text]
+      properties:
+        text:
+          type: string
+    PlannerPlaylistAgenda:
+      type: object
+      description: >-
+        The agenda a song is tied to, so the list needs no second request.
+      required: [id, activity_name, session_name, start_time]
+      properties:
+        id:
+          type: string
+          format: uuid
+        activity_name:
+          type: string
+        session_name:
+          type: string
+        start_time:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          example: "07:46"
+        end_time:
+          type: string
+          pattern: '^[0-9]{2}:[0-9]{2}$'
+          example: "07:46"
+    PlannerPlaylist:
+      type: object
+      description: >-
+        Optional keys are left out when empty; there is no `null`.
+      required: [id, song_title, artist, moment_tag, audio_format, status, sort_order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        rundown_id:
+          type: string
+          format: uuid
+        agenda:
+          $ref: '#/components/schemas/PlannerPlaylistAgenda'
+        song_title:
+          type: string
+        artist:
+          type: string
+        moment_tag:
+          type: string
+          description: Free text; the registry only suggests (`GET /event-types`, `moment_tags`).
+        audio_format:
+          type: string
+          enum: [digital_playback, live_band, acoustic, sound_fx]
+        spotify_url:
+          type: string
+        youtube_url:
+          type: string
+        audio_cue_notes:
+          type: string
+          description: Start point, fade, ducking, volume level.
+        status:
+          type: string
+          enum: [ready, needs_review, missing_file]
+        sort_order:
+          type: integer
+        template_key:
+          type: string
+    PlannerPlaylistFormatCounts:
+      type: object
+      required: [digital_playback, live_band, acoustic, sound_fx]
+      properties:
+        digital_playback:
+          type: integer
+        live_band:
+          type: integer
+        acoustic:
+          type: integer
+        sound_fx:
+          type: integer
+    PlannerPlaylistKPI:
+      type: object
+      description: >-
+        Always the whole playlist.
+      required: [total_tracks, by_format, mapped_moments, ready, needs_review, missing_file]
+      properties:
+        total_tracks:
+          type: integer
+        by_format:
+          $ref: '#/components/schemas/PlannerPlaylistFormatCounts'
+        mapped_moments:
+          type: integer
+          description: Moment tags that have a song, counted as typed ("Penutup" and "penutup" are two).
+        ready:
+          type: integer
+        needs_review:
+          type: integer
+        missing_file:
+          type: integer
+    PlannerPlaylistOverview:
+      type: object
+      description: >-
+        `kpi` always describes the whole playlist; `items` follow the filters.
+      required: [kpi, items]
+      properties:
+        kpi:
+          $ref: '#/components/schemas/PlannerPlaylistKPI'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlannerPlaylist'
+    PlannerPlaylistRequest:
+      type: object
+      description: >-
+        Replaces the song whole. An empty `moment_tag` becomes `Lainnya`, an empty `audio_format` `digital_playback`, an empty `status` `needs_review`; a blank link is no link.
+      properties:
+        rundown_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: An agenda of this project.
+        song_title:
+          type: string
+          maxLength: 255
+        artist:
+          type: string
+          maxLength: 255
+        moment_tag:
+          type: string
+          maxLength: 100
+        audio_format:
+          type: string
+          enum: [digital_playback, live_band, acoustic, sound_fx]
+        spotify_url:
+          type: string
+          description: An `http` or `https` URL of at most 2.000 characters.
+        youtube_url:
+          type: string
+          description: An `http` or `https` URL of at most 2.000 characters.
+        audio_cue_notes:
+          type: string
+          maxLength: 2000
+        status:
+          type: string
+          enum: [ready, needs_review, missing_file]
+
   parameters:
     PlannerTaskId:
       name: taskId
@@ -3217,6 +3673,23 @@ components:
       schema:
         type: string
         format: uuid
+    PlannerRundownId:
+      name: rundownId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown agenda and another project's agenda answer 404.
+      schema:
+        type: string
+        format: uuid
+    PlannerPlaylistId:
+      name: playlistId
+      in: path
+      required: true
+      description: A canonical UUID; anything else, an unknown song and another project's song answer 404.
+      schema:
+        type: string
+        format: uuid
+
   responses:
     BadRequest:
       description: Invalid input (see `error.code`).
@@ -7217,6 +7690,562 @@ paths:
                     $ref: '#/components/schemas/PlannerGuest'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Rundown]
+      summary: List the agendas of the rundown
+      operationId: plannerListRundowns
+      description: >-
+        The agendas in display order (session, then `sort_order`), with the sessions and the KPI of the whole project.
+        `items` follow `?session_id=`; `sessions` and `kpi` do not.
+      parameters:
+        - name: session_id
+          in: query
+          required: false
+          description: A non-system session of the project; anything else is `400 invalid_scope` (the system session `all` is `400 invalid_input`).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundownOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Rundown]
+      summary: Add an agenda
+      operationId: plannerCreateRundown
+      description: >-
+        The agenda goes last in its session. At most 500 agendas per project (`409 agenda_limit_reached`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownRequest'
+      responses:
+        '201':
+          description: The agenda.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundown'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`agenda_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns/summary:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Rundown]
+      summary: Live status of the rundown
+      operationId: plannerRundownLive
+      description: >-
+        The status of every agenda, the KPI and the sessions, and the server clock. The event-day screen polls it every 5 seconds; it is not rate limited (several tablets may share one account).
+      responses:
+        '200':
+          description: The live status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundownLive'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+
+  /v1/planner/projects/{projectId}/rundowns/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Rundown]
+      summary: Reorder the agendas of a session
+      operationId: plannerReorderRundowns
+      description: >-
+        `ids` must be exactly the agendas of the session, each once; anything else is `400 invalid_input` (`ids`) and changes nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownReorderRequest'
+      responses:
+        '204':
+          description: Reordered.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns/apply-template:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Rundown]
+      summary: Apply the rundown template
+      operationId: plannerApplyRundownTemplate
+      description: >-
+        Every event type has a rundown template in the sessions its registry seeds (the wedding: 11 + 8 + 14 agendas). A session the user has deleted is skipped with the warning `scope_missing`.
+        `append` (default, also what the wizard runs) adds the agendas whose `template_key` is not there yet. `replace_template` puts the template agendas that are still `pending` back to the template, in place (id, vendor, session and linked songs stay); running and done ones are `kept`, agendas of the user are not touched. It needs `confirm: true` when it resets anything (`400 invalid_input`, `confirm`).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownTemplateRequest'
+      responses:
+        '200':
+          description: The result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundownTemplateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`agenda_limit_reached` (nothing is created), `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns/export-wa:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Rundown]
+      summary: The rundown as a WhatsApp message
+      operationId: plannerExportRundownWA
+      description: >-
+        The text of one session (`?session_id=`) or of every session that has agendas: title, date, place, then each agenda with its time, duration, PIC, description and highlights. Limited to 10 requests per minute per user, shared with the playlist briefing. Works on an archived project.
+      parameters:
+        - name: session_id
+          in: query
+          required: false
+          description: A non-system session of the project; anything else is `400 invalid_scope` (the system session `all` is `400 invalid_input`).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The text.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerWAExport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns/{rundownId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerRundownId'
+    get:
+      tags: [Planner Rundown]
+      summary: Get an agenda
+      operationId: plannerGetRundown
+      description: >-
+        One agenda with its vendor and the number of songs tied to it.
+      responses:
+        '200':
+          description: The agenda.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundown'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    put:
+      tags: [Planner Rundown]
+      summary: Replace an agenda
+      operationId: plannerUpdateRundown
+      description: >-
+        Replaces everything but the status, the time stamps and the template key. An agenda moved to another session goes last there.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownRequest'
+      responses:
+        '200':
+          description: The agenda.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundown'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Rundown]
+      summary: Delete an agenda
+      operationId: plannerDeleteRundown
+      description: >-
+        The songs that pointed at the agenda stay, without a link.
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/rundowns/{rundownId}/status:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerRundownId'
+    patch:
+      tags: [Planner Rundown]
+      summary: Move an agenda to a status
+      operationId: plannerSetRundownStatus
+      description: >-
+        One statement writes the status and its time stamps: `pending` clears both; `in_progress` sets `started_at` once and clears `completed_at`; `completed` sets both. Sending the same status again changes no time stamp; reopening a done agenda keeps its start. Several agendas may run at once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownStatusRequest'
+      responses:
+        '200':
+          description: The agenda.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundown'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/playlists:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Rundown]
+      summary: List the songs of the playlist
+      operationId: plannerListPlaylists
+      description: >-
+        Every song in playlist order, with the agenda it is tied to. `kpi` always describes the whole playlist; the filters narrow `items` only. There is no pagination (at most 500 songs) and no search: the client searches.
+      parameters:
+        - name: moment_tag
+          in: query
+          required: false
+          description: Compared as typed, at most 100 characters.
+          schema:
+            type: string
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [digital_playback, live_band, acoustic, sound_fx]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ready, needs_review, missing_file]
+      responses:
+        '200':
+          description: The playlist.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerPlaylistOverview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+    post:
+      tags: [Planner Rundown]
+      summary: Add a song
+      operationId: plannerCreatePlaylist
+      description: >-
+        The song goes last. At most 500 songs per project (`409 playlist_limit_reached`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerPlaylistRequest'
+      responses:
+        '201':
+          description: The song.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerPlaylist'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`playlist_limit_reached`, `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/playlists/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Rundown]
+      summary: Reorder the songs
+      operationId: plannerReorderPlaylists
+      description: >-
+        `ids` must be exactly the songs of the project, each once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerPlaylistReorderRequest'
+      responses:
+        '204':
+          description: Reordered.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/playlists/apply-template:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    post:
+      tags: [Planner Rundown]
+      summary: Apply the playlist template
+      operationId: plannerApplyPlaylistTemplate
+      description: >-
+        Only the wedding has a template (30 songs, each `digital_playback` and `needs_review`, with a suggested moment tag); other types answer `400 invalid_template`. The playlist only appends: `mode: replace_template` is `400 invalid_input` (`mode`), because a reset would overwrite the format, the cue and the status the user filled in.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerRundownTemplateRequest'
+      responses:
+        '200':
+          description: The result (`reset` and `kept` are 0).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerRundownTemplateResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`playlist_limit_reached` (nothing is created), `project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/playlists/export-wa:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+    get:
+      tags: [Planner Rundown]
+      summary: The sound cue briefing as a WhatsApp message
+      operationId: plannerExportPlaylistWA
+      description: >-
+        For the soundman or the band: songs tied to an agenda grouped by session and agenda in clock order, then the songs without an agenda grouped by moment tag, each with its format and cue. Limited to 10 requests per minute per user, shared with the rundown message. Works on an archived project.
+      responses:
+        '200':
+          description: The text.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerWAExport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '429':
+          description: '`rate_limited`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/planner/projects/{projectId}/playlists/{playlistId}:
+    parameters:
+      - $ref: '#/components/parameters/PlannerProjectId'
+      - $ref: '#/components/parameters/PlannerPlaylistId'
+    put:
+      tags: [Planner Rundown]
+      summary: Replace a song
+      operationId: plannerUpdatePlaylist
+      description: >-
+        Replaces everything but the order and the template key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannerPlaylistRequest'
+      responses:
+        '200':
+          description: The song.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PlannerPlaylist'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PlannerNotFound'
+        '409':
+          description: '`project_read_only` (the project is archived), `conflict`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags: [Planner Rundown]
+      summary: Delete a song
+      operationId: plannerDeletePlaylist
+      description: >-
+        Deletes the song.
+      responses:
+        '204':
+          description: Deleted.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':

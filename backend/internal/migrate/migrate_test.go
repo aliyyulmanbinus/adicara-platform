@@ -2,6 +2,7 @@ package migrate
 
 import (
 	"database/sql"
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -280,5 +281,52 @@ func TestPlannerMigrationsRollBackAndReapply(t *testing.T) {
 	assertCurrentSchema(t, db)
 	if n := count(t, db, plannerObjects); n != 15 {
 		t.Fatalf("%d planner objects after re-applying, want 15", n)
+	}
+}
+
+// Menu 06 appends its template with INSERT … ON CONFLICT (project_id, template_key) WHERE template_key IS NOT NULL DO
+// NOTHING, like menus 02-04. That statement needs a unique partial index on each of the two tables; without it Postgres
+// refuses the statement and a repeated key is accepted twice (06 BE 1.1).
+func TestRundownTemplateKeyIndexesMakeAppendIdempotent(t *testing.T) {
+	dsn, db := testDB(t)
+	if err := Up(dsn); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, idx := range []string{"planner_rundowns_template_key_idx", "planner_playlists_template_key_idx"} {
+		var def string
+		if err := db.QueryRow(`SELECT indexdef FROM pg_indexes WHERE schemaname = 'public' AND indexname = $1`, idx).Scan(&def); err != nil {
+			t.Fatalf("%s: %v", idx, err)
+		}
+		if !strings.Contains(def, "UNIQUE") || !strings.Contains(def, "(project_id, template_key)") || !strings.Contains(def, "WHERE (template_key IS NOT NULL)") {
+			t.Errorf("%s = %s", idx, def)
+		}
+	}
+
+	mustExec(t, db, `
+		INSERT INTO users (id, email, password_hash, username) VALUES ('11111111-1111-1111-1111-111111111111', 'a@example.com', 'h', 'ani');
+		INSERT INTO planner_projects (id, user_id, event_type, title, event_date, prep_start_date)
+			VALUES ('44444444-4444-4444-4444-444444444444', '11111111-1111-1111-1111-111111111111', 'wedding', 'Nikah', '2027-03-28', '2026-10-21');
+		INSERT INTO planner_event_sessions (id, project_id, scope_key, name, icon, is_system, sort_order)
+			VALUES ('55555555-5555-5555-5555-555555555555', '44444444-4444-4444-4444-444444444444', 'akad', 'Akad Nikah', 'x', false, 1);`)
+
+	agenda := `INSERT INTO planner_rundowns (id, project_id, session_id, start_time, activity_name, template_key)
+		VALUES (gen_random_uuid(), '44444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555', '07:00', 'Persiapan', %s)
+		ON CONFLICT (project_id, template_key) WHERE template_key IS NOT NULL DO NOTHING`
+	song := `INSERT INTO planner_playlists (id, project_id, song_title, artist, template_key)
+		VALUES (gen_random_uuid(), '44444444-4444-4444-4444-444444444444', 'Akad', 'Payung Teduh', %s)
+		ON CONFLICT (project_id, template_key) WHERE template_key IS NOT NULL DO NOTHING`
+	for table, stmt := range map[string]string{"planner_rundowns": agenda, "planner_playlists": song} {
+		mustExec(t, db, fmt.Sprintf(stmt, `'wedding.x_01'`))
+		mustExec(t, db, fmt.Sprintf(stmt, `'wedding.x_01'`))
+		if n := count(t, db, `SELECT count(*) FROM `+table); n != 1 {
+			t.Errorf("%s: a repeated template_key left %d rows, want 1", table, n)
+		}
+		// rows without a key (made by the user) are never in conflict
+		mustExec(t, db, fmt.Sprintf(stmt, `NULL`))
+		mustExec(t, db, fmt.Sprintf(stmt, `NULL`))
+		if n := count(t, db, `SELECT count(*) FROM `+table); n != 3 {
+			t.Errorf("%s: two rows without a key left %d rows, want 3", table, n)
+		}
 	}
 }

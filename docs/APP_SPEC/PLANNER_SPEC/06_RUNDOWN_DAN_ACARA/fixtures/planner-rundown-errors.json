@@ -1,0 +1,104 @@
+[
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "start_time: must be a time like 07:46 or 07.46",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "end_time: must not be before start_time unless ends_next_day is set",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "end_time: must be earlier than start_time when ends_next_day is set",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "ends_next_day: requires end_time",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_scope",
+    "message": "session_id: must be a session of this project",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "session_id: must not be the system session",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "vendor_id: must be a vendor of this project",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "rundown_id: must be an agenda of this project",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "ids: must list every agenda of the session exactly once",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "mode: must be one of append, replace_template",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "mode: must be append",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "confirm: required",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_input",
+    "message": "spotify_url: must be an http or https URL",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 400,
+    "code": "invalid_template",
+    "message": "playlist: not available for this event type",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 409,
+    "code": "agenda_limit_reached",
+    "message": "at most 500 agendas per project",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 409,
+    "code": "playlist_limit_reached",
+    "message": "at most 500 songs per project",
+    "source": "modul plannerrundown (TestErrorCatalogueMatchesTheServer)"
+  },
+  {
+    "status": 409,
+    "code": "session_in_use",
+    "message": "the session still has rundown agendas",
+    "source": "kode Menu 01 (usecase/session.go)"
+  }
+]

@@ -6,7 +6,7 @@
 > 3. **Fokus Pernikahan**: master data default dan studi kasus terlengkap mengikuti **Wedding_Planner.pdf** (Sheet *Dashboard*, Hal. 1).
 > 4. **Aturan lintas modul** (master sesi, template vs data contoh, uang/zona waktu, kode error, matriks integrasi) hanya ditulis di [00_KONTRAK_BERSAMA](../00_KONTRAK_BERSAMA/README.md).
 >
-> **Status (2026-10-21):** backend Menu 01 sudah diimplementasikan dan diuji ([BE.md](BE.md)); frontend belum dibangun ([FE.md](FE.md) adalah acuannya). Modul 02–06 belum ada, jadi keenam widget Workspace saat ini tampil "Segera hadir".
+> **Status (2026-10-21):** backend Menu 01 sudah diimplementasikan dan diuji ([BE.md](BE.md)); frontend belum dibangun ([FE.md](FE.md) adalah acuannya). Modul 02–06 sudah diimplementasikan di backend (2026-10-31) dan mendaftarkan provider ringkasannya, sehingga `GET …/dashboard` memuat keenam widget; di frontend, yang belum dibangun, widget Workspace tetap "Segera hadir" sampai halamannya ada.
 
 ---
 

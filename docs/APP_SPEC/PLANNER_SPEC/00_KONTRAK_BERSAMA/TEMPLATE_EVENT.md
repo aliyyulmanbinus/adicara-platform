@@ -484,3 +484,5 @@ backend/internal/modules/planner/template/
 ```
 
 Tiap applier (`TemplateApplier.Apply(ctx, projectID, req)`, transaksi dibawa `ctx`) idempoten untuk `append` (melewati `template_key` yang sudah ada) dan mengembalikan `{created, skipped, warnings}`.
+
+**Kunci template agenda non-pernikahan** (06): `<kunci jenis>.agenda_<NN>`, `NN` = urutan baris pada tabel "Agenda bawaan" jenis itu (dua digit, mulai `01`; mis. `seminar.agenda_03`). Kunci diturunkan dari urutan, bukan judul, karena judul tidak unik: PDF pernikahan memakai "Pembukaan acara", "Doa bersama", dan "Sesi foto" masing-masing dua kali, dan "Penutupan" ada di dua jenis. Pernikahan memakai `wedding.lamaran_NN`, `wedding.rundown_NN`, dan `wedding.lagu_NN` ([06 BE bab 5](../06_RUNDOWN_DAN_ACARA/BE.md#5-master-data)).

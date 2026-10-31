@@ -15,6 +15,7 @@ Backend dibangun menggunakan Golang dengan pola **Module-Based Clean Architectur
 - [Planner menu 03: keuangan dan anggaran](planner/2026-10-21-planner-menu-03.md)
 - [Planner menu 04: vendor dan belanja kebutuhan](planner/2026-10-23-planner-menu-04.md)
 - [Planner menu 05: buku tamu, RSVP, dan meja resepsionis](planner/2026-10-25-planner-menu-05.md)
+- [Planner menu 06: rundown dan acara](planner/2026-10-31-planner-menu-06.md)
 - [Migrasi 005–012: skema Planner](migrations/2026-10-21-planner-migrations-005-012.md)
 - [Changelog](CHANGELOG.md)
 

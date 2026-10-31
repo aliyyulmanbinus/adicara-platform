@@ -1,0 +1,220 @@
+{
+  "live": {
+    "kpi": {
+      "sessions": 3,
+      "total_agendas": 33,
+      "completed": 15,
+      "in_progress": 1,
+      "pending": 17,
+      "total_span_minutes": 445,
+      "distinct_pics": 17
+    },
+    "sessions": [
+      {
+        "id": "b4e5a87d-6b35-5eb4-8402-14cc61192ee1",
+        "scope_key": "lamaran",
+        "name": "Lamaran",
+        "icon": "💍",
+        "date": "2026-10-15",
+        "agenda_count": 11,
+        "completed": 11,
+        "in_progress": 0,
+        "span_minutes": 100,
+        "first_start": "09:00",
+        "last_end": "10:40"
+      },
+      {
+        "id": "1c1cb4b5-cb2c-5100-bbd1-0c1b01ff20a5",
+        "scope_key": "akad",
+        "name": "Akad Nikah",
+        "icon": "📜",
+        "date": "2027-03-28",
+        "agenda_count": 8,
+        "completed": 4,
+        "in_progress": 1,
+        "span_minutes": 120,
+        "first_start": "07:00",
+        "last_end": "09:00"
+      },
+      {
+        "id": "78b5f458-8ea6-5bc2-981d-950170cc696c",
+        "scope_key": "resepsi",
+        "name": "Resepsi",
+        "icon": "🏛️",
+        "date": "2027-03-28",
+        "agenda_count": 14,
+        "completed": 0,
+        "in_progress": 0,
+        "span_minutes": 225,
+        "first_start": "09:15",
+        "last_end": "13:00"
+      }
+    ],
+    "items": [
+      {
+        "id": "b1c787b7-4513-5e6b-9fc4-6dff9ce5cf6d",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "7bfa536f-0a4e-51b8-af4e-34b5c115831f",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "245f84f5-0678-5d88-bcee-944fc14ac174",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "d685eda4-58e0-50ca-9de7-29b442db4249",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "7b132321-51e0-5ba6-83b8-d3969b34005b",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "4f4c4571-d1b7-5b06-89de-0f8a863e092a",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "53ca1796-802c-5acf-9435-728588d98480",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "ff21ab7c-7d79-58de-a289-679fb7214e03",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "b0cb3c7f-4c8f-5b9f-8f40-76fccf6380c3",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "f42a7b71-2cf3-55c9-b8c4-2dc15d45cb62",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "e78c05b7-45ea-5b5d-88cf-d66dbfa654db",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "976195f8-f7e5-57f0-8da8-c0630b0109a6",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "7a8448e7-5d16-5855-a442-100d708dd62b",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "9caa8b95-ad7f-51ac-81ff-f05fbe398f95",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "bc6b1d06-87ae-5f69-8a61-31d1a8c0b5a0",
+        "status": "completed",
+        "started_at": "2027-03-28T00:00:00Z",
+        "completed_at": "2027-03-28T00:20:00Z"
+      },
+      {
+        "id": "a66010c0-6455-542c-bc06-c4ecdf26b5b5",
+        "status": "in_progress",
+        "started_at": "2027-03-28T00:46:00Z"
+      },
+      {
+        "id": "a9ec3cb8-53bf-535d-b2ed-7e44b8843f41",
+        "status": "pending"
+      },
+      {
+        "id": "64a173c4-7e0d-5516-8f88-a7c9af19ad49",
+        "status": "pending"
+      },
+      {
+        "id": "fa1c25e2-158e-5668-be4e-b5924ff35ffa",
+        "status": "pending"
+      },
+      {
+        "id": "b512013e-2df3-588d-b57c-87138c9277ef",
+        "status": "pending"
+      },
+      {
+        "id": "a2748226-1f77-50da-a1fc-83fb38db11e6",
+        "status": "pending"
+      },
+      {
+        "id": "691514ac-6f32-59ad-b9ed-e1cce303420e",
+        "status": "pending"
+      },
+      {
+        "id": "4c064bfc-91a1-5aaa-8ee3-86c14401c934",
+        "status": "pending"
+      },
+      {
+        "id": "bda2f163-4250-5ee8-8ce0-2ef2621a91e4",
+        "status": "pending"
+      },
+      {
+        "id": "64918971-ea58-5746-8e94-10d2c32ec707",
+        "status": "pending"
+      },
+      {
+        "id": "b42fb5c8-9e1b-5ace-8f90-b55244adf178",
+        "status": "pending"
+      },
+      {
+        "id": "65161f40-2ec2-5626-8712-9181a866791b",
+        "status": "pending"
+      },
+      {
+        "id": "3ee33e2b-0238-5b31-bffb-458ddf2afe73",
+        "status": "pending"
+      },
+      {
+        "id": "c18054e4-3302-5e99-a797-104f882ca812",
+        "status": "pending"
+      },
+      {
+        "id": "56ce9553-c1d6-5314-bbd1-a354b15bf2ad",
+        "status": "pending"
+      },
+      {
+        "id": "842a6ed8-18e2-53d5-bd8c-1ea901888946",
+        "status": "pending"
+      },
+      {
+        "id": "53fb9d36-7968-5eef-b711-2d17f03cf7d0",
+        "status": "pending"
+      },
+      {
+        "id": "7aedefba-f00b-5480-9381-ff9aeb50e0a0",
+        "status": "pending"
+      }
+    ],
+    "server_time": "2027-03-28T00:48:00Z"
+  }
+}

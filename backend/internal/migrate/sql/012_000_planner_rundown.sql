@@ -34,6 +34,7 @@ CREATE TABLE planner_rundowns (
 CREATE INDEX planner_rundowns_session_sort_idx ON planner_rundowns (session_id, sort_order);
 CREATE INDEX planner_rundowns_project_status_idx ON planner_rundowns (project_id, status);
 CREATE INDEX planner_rundowns_vendor_idx ON planner_rundowns (vendor_id) WHERE vendor_id IS NOT NULL;
+CREATE UNIQUE INDEX planner_rundowns_template_key_idx ON planner_rundowns (project_id, template_key) WHERE template_key IS NOT NULL;
 
 CREATE TABLE planner_playlists (
     id UUID PRIMARY KEY,
@@ -57,6 +58,7 @@ CREATE TABLE planner_playlists (
 
 CREATE INDEX planner_playlists_project_sort_idx ON planner_playlists (project_id, sort_order);
 CREATE INDEX planner_playlists_rundown_idx ON planner_playlists (rundown_id) WHERE rundown_id IS NOT NULL;
+CREATE UNIQUE INDEX planner_playlists_template_key_idx ON planner_playlists (project_id, template_key) WHERE template_key IS NOT NULL;
 
 -- +goose Down
 DROP TABLE IF EXISTS planner_playlists;

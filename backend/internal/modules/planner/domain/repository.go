@@ -84,13 +84,20 @@ type SummaryProvider interface {
 	Summarize(ctx context.Context, p Project) (any, error)
 }
 
-// ApplyMode: only append exists so far (skip template_keys that are already there).
+// ApplyMode: append skips the template_keys that are already there; replace_template redoes the template rows of the
+// project (what that means is the owning module's rule: menu 06 resets the agendas that have not started, in place).
 type ApplyMode string
 
-const ModeAppend ApplyMode = "append"
+const (
+	ModeAppend          ApplyMode = "append"
+	ModeReplaceTemplate ApplyMode = "replace_template"
+)
 
 type ApplyRequest struct {
-	Mode                ApplyMode
+	Mode ApplyMode
+	// Confirm is the user's yes to a replace_template that overwrites their changes. The wizard only appends and
+	// never sets it.
+	Confirm             bool
 	Project             Project
 	TimelinePreset      *string
 	IncludeAdicaraTasks bool
