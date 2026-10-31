@@ -49,8 +49,8 @@ func TestPlaylistKPIAndFilter(t *testing.T) {
 		want int
 	}{
 		"none": {SongFilter{}, 4}, "tag": {SongFilter{MomentTag: "Akad Khidmat"}, 2}, "tag is case sensitive": {SongFilter{MomentTag: "PENUTUP"}, 0},
-		"format": {SongFilter{Format: FormatLiveBand}, 1}, "status": {SongFilter{Status: AudioReady}, 2},
-		"all three": {SongFilter{MomentTag: "Akad Khidmat", Format: FormatLiveBand, Status: AudioReady}, 1},
+		"format": {SongFilter{AudioFormat: FormatLiveBand}, 1}, "status": {SongFilter{Status: AudioReady}, 2},
+		"all three": {SongFilter{MomentTag: "Akad Khidmat", AudioFormat: FormatLiveBand, Status: AudioReady}, 1},
 		"no match":  {SongFilter{MomentTag: "Akad Khidmat", Status: AudioMissingFile}, 0},
 	} {
 		if n := keep(c.f); n != c.want {

@@ -335,7 +335,7 @@ Daftar lagu **tidak berpaginasi** (batas 500, bab 2.9) dan tidak punya parameter
 ### 3.2 Playlist (7 endpoint)
 | Method | Endpoint | Keterangan |
 |---|---|---|
-| `GET` | `/playlists?moment_tag=&format=&status=` | `PlaylistOverview`. |
+| `GET` | `/playlists?moment_tag=&audio_format=&status=` | `PlaylistOverview`. |
 | `POST` | `/playlists` | Tambah lagu (`201 Playlist`). |
 | `PUT` / `DELETE` | `/playlists/:playlist_id` | Ganti penuh (`Playlist`) / `204`. |
 | `POST` | `/playlists/reorder` | Bab 2.5 (`204`). |

@@ -96,8 +96,8 @@ func TestPlaylistUpdateFilterAndKPI(t *testing.T) {
 
 	// the filters narrow the items and leave the KPI whole
 	for query, want := range map[string]int{
-		"?moment_tag=Kirab / Entrance": 2, "?moment_tag=kirab / entrance": 0, "?format=live_band": 1, "?status=needs_review": 2,
-		"?moment_tag=Kirab / Entrance&status=ready": 1, "?format=sound_fx&status=ready": 0,
+		"?moment_tag=Kirab / Entrance": 2, "?moment_tag=kirab / entrance": 0, "?audio_format=live_band": 1, "?status=needs_review": 2,
+		"?moment_tag=Kirab / Entrance&status=ready": 1, "?audio_format=sound_fx&status=ready": 0,
 	} {
 		got := get(e, tok, base(id)+"/playlists"+strings.ReplaceAll(query, " ", "%20"))
 		if n := len(list(got["items"])); n != want {
@@ -107,7 +107,7 @@ func TestPlaylistUpdateFilterAndKPI(t *testing.T) {
 			t.Errorf("%s: the KPI follows the filter: %v", query, got["kpi"])
 		}
 	}
-	wantError(t, e.do(tok, "GET", base(id)+"/playlists?format=vinyl", nil), 400, "invalid_input", "format: must be one of digital_playback, live_band, acoustic, sound_fx")
+	wantError(t, e.do(tok, "GET", base(id)+"/playlists?audio_format=vinyl", nil), 400, "invalid_input", "audio_format: must be one of digital_playback, live_band, acoustic, sound_fx")
 	wantError(t, e.do(tok, "GET", base(id)+"/playlists?status=x", nil), 400, "invalid_input", "status: must be one of ready, needs_review, missing_file")
 	wantError(t, e.do(tok, "GET", base(id)+"/playlists?moment_tag="+strings.Repeat("a", 101), nil), 400, "invalid_input", "moment_tag: must be at most 100 characters")
 

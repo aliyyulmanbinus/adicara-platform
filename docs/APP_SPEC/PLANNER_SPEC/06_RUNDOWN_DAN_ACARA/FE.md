@@ -119,7 +119,7 @@ Sesi (tab, dropdown, header) berasal dari `RundownOverview.sessions` (sudah tanp
 | `session` | `scope_key` sesi | sesi terpilih pada mode *Satu sesi*; tidak ada atau tidak dikenal → sesi pertama yang punya agenda |
 | `show` | `one` (bawaan) · `all` | *Satu sesi* atau *Semua* (tabel ditumpuk per sesi; untuk dicetak sebagai "Master Event Rundown Book") |
 | `view` | `table` (bawaan) · `timeline` | tampilan |
-| `momen`, `format`, `status` | filter Tab 2 | diteruskan ke `GET playlists` (`moment_tag`, `format`, `status`) |
+| `momen`, `format`, `status` | filter Tab 2 | diteruskan ke `GET playlists` (`moment_tag`, `audio_format`, `status`) |
 | `q` | teks | pencarian lagu di klien (judul, penyanyi, cue) |
 
 Nilai tak dikenal diabaikan (bukan galat). Pilihan tampilan terakhir boleh diingat di `localStorage` (dibungkus `try/catch`, halaman benar tanpanya); URL selalu menang.
@@ -273,7 +273,7 @@ Semua di bawah `projects/:id/` lewat BFF; semua penulisan juga mungkin menjawab 
 | Hapus agenda | `deleteRundown` | `DELETE rundowns/:rid` | – | `204` | `404` (dianggap sukses) |
 | Terapkan template | `applyRundownTemplate` | `POST rundowns/apply-template` | `{ mode?, confirm? }` | `200 TemplateResult` | `400 invalid_input: confirm` (dialog), `409 agenda_limit_reached` |
 | Salin WA | `rundownWA` | `GET rundowns/export-wa[?session_id=]` | – | `200 WAExport` | `429` (10/menit) |
-| Muat playlist | `listPlaylists` | `GET playlists[?moment_tag=&format=&status=]` | – | `200 PlaylistOverview` | `400 invalid_input` (URL diketik tangan) |
+| Muat playlist | `listPlaylists` | `GET playlists[?moment_tag=&audio_format=&status=]` | – | `200 PlaylistOverview` | `400 invalid_input` (URL diketik tangan) |
 | Tambah lagu | `createSong` | `POST playlists` | `CreatePlaylistRequest` | `201 Playlist` | `409 playlist_limit_reached`, `400 invalid_input` |
 | Ubah lagu | `updateSong` | `PUT playlists/:sid` | `UpdatePlaylistRequest` | `200 Playlist` | seperti POST; `404` |
 | Hapus lagu | `deleteSong` | `DELETE playlists/:sid` | – | `204` | `404` (dianggap sukses) |
@@ -467,7 +467,7 @@ const uuid = (v: string): string => {
   return v;
 };
 
-export interface SongQuery { momentTag?: string; format?: AudioFormat | ''; status?: AudioStatus | '' }
+export interface SongQuery { momentTag?: string; audioFormat?: AudioFormat | ''; status?: AudioStatus | '' }
 
 /** Satu fungsi per aksi UI (kolom "Fungsi" di bab 4.4). `plannerFetch` disuntikkan agar modul teruji tanpa peramban. */
 export function rundownApi(call: PlannerFetch, projectId: string) {
@@ -497,7 +497,7 @@ export function rundownApi(call: PlannerFetch, projectId: string) {
     listPlaylists: (f: SongQuery = {}) => {
       const query: Record<string, string> = {};
       if (f.momentTag) query.moment_tag = f.momentTag;
-      if (f.format) query.format = f.format;
+      if (f.audioFormat) query.audio_format = f.audioFormat;
       if (f.status) query.status = f.status;
       return call<PlaylistOverview>(s, Object.keys(query).length > 0 ? { query } : undefined);
     },

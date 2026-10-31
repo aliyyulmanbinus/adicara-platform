@@ -154,7 +154,7 @@ func (h *Handler) ExportRundownWA(c *gin.Context) {
 
 func (h *Handler) ListPlaylists(c *gin.Context) {
 	out, err := h.svc.ListPlaylists(c.Request.Context(), plannerhttp.CurrentProject(c), usecase.SongFilter{
-		MomentTag: c.Query("moment_tag"), Format: c.Query("format"), Status: c.Query("status"),
+		MomentTag: c.Query("moment_tag"), AudioFormat: c.Query("audio_format"), Status: c.Query("status"),
 	})
 	respond(c, http.StatusOK, out, err)
 }

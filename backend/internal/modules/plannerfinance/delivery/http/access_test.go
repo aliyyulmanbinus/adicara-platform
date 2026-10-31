@@ -300,7 +300,7 @@ func TestExportParametersAndRateLimit(t *testing.T) {
 	tok := e.login("owner")
 	id := createProject(e, tok, nil)
 
-	wantError(t, e.do(tok, "GET", base(id)+"/budget/export", nil), 400, "invalid_input", "format: must be xlsx")
+	wantError(t, e.do(tok, "GET", base(id)+"/budget/export?format=pdf", nil), 400, "invalid_input", "format: must be xlsx")
 	wantError(t, e.do(tok, "GET", base(id)+"/budget/export?format=csv", nil), 400, "invalid_input", "format: must be xlsx")
 
 	// 10 exports a minute per user; another user is not affected.

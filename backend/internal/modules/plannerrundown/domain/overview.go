@@ -49,15 +49,15 @@ func PlaylistKPIOf(items []Playlist) PlaylistKPI {
 
 // SongFilter is the query of GET /playlists; an empty field does not filter.
 type SongFilter struct {
-	MomentTag string
-	Format    AudioFormat
-	Status    AudioStatus
+	MomentTag   string
+	AudioFormat AudioFormat
+	Status      AudioStatus
 }
 
 // Keep reports whether a song passes the filter. The moment tag is compared as typed, like the KPI counts it.
 func (f SongFilter) Keep(s Playlist) bool {
 	return (f.MomentTag == "" || s.MomentTag == f.MomentTag) &&
-		(f.Format == "" || s.AudioFormat == f.Format) &&
+		(f.AudioFormat == "" || s.AudioFormat == f.AudioFormat) &&
 		(f.Status == "" || s.Status == f.Status)
 }
 

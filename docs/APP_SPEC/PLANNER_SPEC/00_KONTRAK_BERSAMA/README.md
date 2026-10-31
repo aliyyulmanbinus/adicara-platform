@@ -2,7 +2,7 @@
 
 Dokumen ini adalah **satu-satunya tempat** aturan yang berlaku untuk semua modul Planner: posisi di arsitektur Adicara yang sudah ada, master sesi bersama, kebijakan template vs data contoh, konvensi data, kode error, dan matriks integrasi. README/FE/BE tiap modul merujuk ke sini dan tidak mengulang aturan ini.
 
-> **Status:** per 2026-10-31 **backend menu 01, 02, 03, 04, 05, dan 06** sudah menjadi kode (modul `planner`, migrasi 005–012, `plannertimeline`, `plannerfinance`, `plannervendor`, `plannerguest`, dan `plannerrundown`; dokumen [menu 01](../../../backend/planner/2026-10-21-planner-menu-01.md), [menu 02](../../../backend/planner/2026-10-21-planner-menu-02.md), [menu 03](../../../backend/planner/2026-10-21-planner-menu-03.md), [menu 04](../../../backend/planner/2026-10-23-planner-menu-04.md), [menu 05](../../../backend/planner/2026-10-25-planner-menu-05.md), dan [menu 06](../../../backend/planner/2026-10-31-planner-menu-06.md)). Seluruh frontend `/dashboard/planner` masih berupa spesifikasi. Spesifikasi Menu 06 diaudit dan ditulis ulang 2026-10-31 (BE.md, FE.md, README, fixture), lalu dibangun pada hari yang sama dan dicocokkan: respons HTTP asli sama dengan fixture ([bab 10](#10-validasi-spesifikasi)). Tidak ada klaim "sudah berjalan" di folder ini; hasil validasi yang tercatat di sini hanya yang benar-benar dijalankan (lihat [Validasi](#10-validasi-spesifikasi)).
+> **Status:** per 2026-10-31 **backend menu 01, 02, 03, 04, 05, dan 06** sudah menjadi kode (modul `planner`, migrasi 005–012, `plannertimeline`, `plannerfinance`, `plannervendor`, `plannerguest`, dan `plannerrundown`; dokumen [menu 01](../../../backend/planner/2026-10-21-planner-menu-01.md), [menu 02](../../../backend/planner/2026-10-21-planner-menu-02.md), [menu 03](../../../backend/planner/2026-10-21-planner-menu-03.md), [menu 04](../../../backend/planner/2026-10-23-planner-menu-04.md), [menu 05](../../../backend/planner/2026-10-25-planner-menu-05.md), dan [menu 06](../../../backend/planner/2026-10-31-planner-menu-06.md)). Seluruh frontend `/dashboard/planner` masih berupa spesifikasi. Spesifikasi Menu 06 diaudit dan ditulis ulang 2026-10-31 (BE.md, FE.md, README, fixture), lalu dibangun pada hari yang sama dan dicocokkan: respons HTTP asli sama dengan fixture ([bab 10](#10-validasi-spesifikasi)). Audit lintas menu 2026-10-31 menjalankan `app.Build` yang asli dan menambah `internal/app/build_test.go`, yang mengikat pemasangan di `app.go` (rute, provider, applier, overlay) ke kontrak ini. Tidak ada klaim "sudah berjalan" di folder ini; hasil validasi yang tercatat di sini hanya yang benar-benar dijalankan (lihat [Validasi](#10-validasi-spesifikasi)).
 
 Data per jenis acara (registry, template non-pernikahan) ada di [TEMPLATE_EVENT.md](TEMPLATE_EVENT.md). Perubahan terhadap versi spesifikasi sebelumnya dicatat di [../CHANGELOG.md](../CHANGELOG.md).
 
@@ -35,16 +35,24 @@ Aturan ketergantungan: modul 02–06 boleh mengimpor `planner/domain` dan `plann
 Pemasangan di `internal/app/app.go` (komposisi akar yang sudah ada):
 
 ```go
-plannerSvc := plannerusecase.New(plannerrepo.NewPostgresRepository(pool), plannerrepo.NewTxManager(pool), domain.DefaultRegistry() /* bab 3 */, plannerusecase.Options{MaxProjects: cfg.PlannerMaxProjects})
+registry := domain.DefaultRegistry() // bab 3
+plannerTx := plannerrepo.NewTxManager(pool)
+plannerSvc := plannerusecase.New(plannerrepo.NewPostgresRepository(pool), plannerTx, registry, plannerusecase.Options{MaxProjects: cfg.PlannerMaxProjects})
+timelineSvc := timelineusecase.New(timelinerepo.NewPostgresRepository(pool), plannerTx, registry, timelineusecase.Options{}) // dst. untuk finance, vendor, guest, rundown
+
+// Tiap modul mendaftarkan perannya ke menu 01; satu kunci satu peran, kunci kembar atau tak dikenal membuat start gagal (panic).
+plannerSvc.RegisterSummary(timelineSvc.TimelineProvider(), timelineSvc.AdminDocsProvider(), financeSvc.Provider(), vendorSvc.Provider(), guestSvc.Provider(), rundownSvc.Provider()) // widget dashboard (bab 7)
+plannerSvc.RegisterTemplateAppliers(timelineSvc.TimelineApplier(), timelineSvc.AdminDocsApplier(), financeSvc.Applier(), vendorSvc.Applier(), rundownSvc.RundownApplier(), rundownSvc.PlaylistApplier()) // template wizard (bab 1.1.1)
+plannerSvc.RegisterSampleOverlays(timelineSvc.TimelineOverlay(), timelineSvc.AdminDocsOverlay(), financeSvc.Overlay(), vendorSvc.VendorsOverlay(), vendorSvc.ShoppingOverlay(), guestSvc.GuestsOverlay()) // dataset PDF di Proyek Contoh (01 BE §4.5)
+
 plannerhttp.RegisterRoutes(ginEngine, idn, plannerSvc)
 timelinehttp.RegisterRoutes(ginEngine, idn, plannerSvc, timelineSvc)   // dst. untuk finance, vendor, guest, rundown
-plannerSvc.RegisterSummary(timelineSvc, financeSvc, vendorSvc, guestSvc, rundownSvc)             // widget dashboard (bab 7)
-plannerSvc.RegisterTemplateAppliers(timelineSvc, financeSvc, vendorSvc, rundownSvc)              // template wizard (bab 1.1.1)
-plannerSvc.RegisterSampleOverlays(financeSvc, vendorSvc, guestSvc /* … */)                       // dataset PDF di Proyek Contoh (01 BE §4.5)
 
 // app.go memakai http.ServeMux eksplisit; tanpa baris ini semua /v1/planner/* menjawab 404.
 mux.Handle("/v1/planner/", ginEngine)
 ```
+
+Urutan kerja host saat membuat proyek: sesi bawaan → **applier** menurut `TemplateKeys` (`timeline`, `admin_docs`, `budget`, `shopping`, `rundown`, `playlist`; bukan urutan pendaftaran) → untuk Proyek Contoh, **overlay** menurut urutan pendaftaran. Overlay hanya mengisi baris yang sudah dibuat applier, jadi tidak saling bergantung (menukar overlay `finance` dan `vendors` tidak mengubah satu tabel pun; diuji 2026-10-31). `internal/app/build_test.go` memasang aplikasi lewat `Build` dan memastikan setiap operasi `/v1/planner` di openapi terpasang, wizard sembilan jenis acara mengisi keenam widget sesuai registry, dan Proyek Contoh menampilkan angka PDF.
 
 Setiap router modul memakai rantai middleware yang sama (pola `profile`):
 
@@ -94,7 +102,7 @@ Format file mengikuti `002_000_users.sql`: `-- +goose Up/Down`, `UUID PRIMARY KE
 | `011_000_planner_guests.sql` | `planner_guests` | [05 BE](../05_BUKU_TAMU/BE.md#1-skema-database) |
 | `012_000_planner_rundown.sql` | `planner_rundowns`, `planner_playlists` | [06 BE](../06_RUNDOWN_DAN_ACARA/BE.md#1-skema-database) |
 
-Ketergantungan satu arah: `vendors ← tasks, budget_items, shopping_items, rundowns`; `admin_docs ← budget_items`; `budget_items ← shopping_items`. Tidak ada FK dua arah (siklus `budget_items ↔ vendors` tidak bisa dimigrasikan dalam urutan mana pun).
+Ketergantungan satu arah: `vendors ← tasks, budget_items, shopping_items, rundowns`; `admin_docs ← budget_items`; `budget_items ← shopping_items`; `rundowns ← playlists`. Tidak ada FK dua arah (siklus `budget_items ↔ vendors` tidak bisa dimigrasikan dalam urutan mana pun).
 
 Semua DDL pada dokumen BE telah dijalankan di PostgreSQL 16 (bab 10). Migrasi 005–012 sudah ada sebagai file di `backend/internal/migrate/sql/` (006–012 disalin otomatis dari blok DDL spec modul masing-masing, karena SQL menu 01 membaca tabel-tabel itu). FK komposit dengan `ON DELETE SET NULL (kolom)` membutuhkan PostgreSQL ≥ 15 (Compose memakai 18). Migrasi 005 juga membuat fungsi/pemicu `planner_check_timezone` (blok `-- +goose StatementBegin/End`); `Down` menghapusnya.
 
@@ -136,7 +144,7 @@ Semua DDL pada dokumen BE telah dijalankan di PostgreSQL 16 (bab 10). Migrasi 00
 3. **Pertahanan berlapis:** setiap query repository tetap memfilter `project_id`, dan id anak dari URL selalu dicari dengan `WHERE id = $x AND project_id = $y`. Di basis data, **FK komposit** `(x_id, project_id)` mencegah baris proyek A menunjuk vendor, kontributor, pos, atau dokumen proyek B (terverifikasi, bab 10).
 4. Tautan dari pengguna (`receipt_url`, `portfolio_url`, `spotify_url`, `youtube_url`) divalidasi skema `http`/`https` saat disimpan dan dirender dengan `rel="noopener noreferrer"`. `purchase_location` (Menu 04) adalah teks bebas (URL marketplace atau nama toko dan alamat): server hanya membatasi panjangnya, dan klien menjadikannya tautan hanya bila `safeHref` menerimanya (`http`/`https` yang sah).
 5. Sel ekspor `.xlsx` yang diawali `=`, `+`, `-`, `@` diberi awalan `'` (mencegah formula injection dari nama tamu/vendor). Teks pengguna ditulis dengan `SetCellStr`. Prototipe Menu 02 menunjukkan `excelize` menyimpan string berawalan `=` sebagai string bersama (tidak pernah formula), jadi awalan ini adalah pertahanan berlapis dan **tampak sebagai karakter `'`** di sel ([02 BE §4.4](../02_TIMELINE_DAN_TUGAS/BE.md#44-ekspor-xlsx), keputusan di 02 BE bab 8 butir 12).
-6. Nama berkas ekspor (`Content-Disposition`) dibuat dari slug ASCII judul proyek + tanggal (`pernikahan-sinta-arif-2026-10-21.xlsx`), tidak pernah dari judul mentah, supaya judul dengan emoji, tanda kutip, atau baris baru tidak merusak header.
+6. Nama berkas ekspor (`Content-Disposition`) dibuat dari awalan modul + slug ASCII judul proyek + tanggal (`jadwal-pernikahan-sinta-arif-2026-10-21.xlsx`), tidak pernah dari judul mentah, supaya judul dengan emoji, tanda kutip, atau baris baru tidak merusak header. Semua unduhan `.xlsx` mengirim `Cache-Control: no-store` (rencana, uang, dan kontak adalah data pribadi). Keduanya dikerjakan satu fungsi bersama, `ginutil.SendXLSX`; aturan parameter dan rute ada di bab 6 ("Unduhan berkas").
 7. Data tamu (nama, telepon) bersifat pribadi: hanya pemilik proyek yang bisa membacanya; tidak ada endpoint publik di modul Planner. Kebijakan retensi/penghapusan akun mengikuti [docs/database.md](../../../database.md#data-pribadi).
 
 ---
@@ -148,10 +156,9 @@ Sembilan jenis acara Adicara didefinisikan **sekali** di `planner/domain/eventty
 ```go
 type Option struct{ Key, Label string }
 
-// Implementasi menu 01 (planner/domain/eventtype.go) baru memuat: Key, Label, Icon, LeadTimeDays, Sessions
-// (SessionSeed dengan ScopeKey eksplisit), MetadataFields, Labels, dan Templates. Bidang yang dimiliki modul lain
-// (kategori vendor/belanja, sisi dan kategori tamu, peran, subjek dokumen, panduan, moment tag) ditambahkan
-// modul itu saat dibangun; datanya ada di TEMPLATE_EVENT.
+// Semua bidang di bawah sudah ada di planner/domain/eventtype.go (menu 01–06); bidang yang dimiliki modul lain
+// (kategori vendor/belanja, sisi dan kategori tamu, peran, subjek dokumen, panduan, moment tag) ditambahkan modul
+// itu saat dibangun; datanya ada di TEMPLATE_EVENT. Satu jenis acara boleh punya daftar kosong (mis. `GuestSides`).
 type EventTypeSpec struct {
     Key, Label, Icon   string
     LeadTimeDays       int            // horizon baku template jadwal
@@ -218,9 +225,9 @@ Seed "bawaan" yang berisi DP yang sudah dibayar, setoran Rp 47,5 jt, vendor fikt
 | Isi | struktur + estimasi acuan; **nol** pembayaran, nol setoran, nol vendor/tamu | dataset PDF lengkap (pembayaran, tabungan, vendor, tamu, status) |
 | Lokasi | kode Go (`//go:embed`/struct), per jenis acara, kunci `template_key` | kode yang sama + overlay dataset |
 | Dibuat | hanya atas pilihan pengguna (wizard langkah 3 atau tombol "Terapkan template") | `POST /v1/planner/projects/sample` |
-| Efek pada proyek nyata | tidak pernah menimpa data pengguna: mode `append` (lewati `template_key` yang sudah ada) atau `replace` dengan konfirmasi | proyek terpisah bertanda `is_sample = true`, badge "Contoh", boleh dihapus |
+| Efek pada proyek nyata | tidak pernah menimpa data pengguna: mode `append` (lewati `template_key` yang sudah ada) atau `replace_template` dengan `confirm` bila pekerjaan pengguna akan hilang (bab 6, "Template ulang") | proyek terpisah bertanda `is_sample = true`, badge "Contoh", boleh dihapus |
 
-- **`template_key`** (mis. `wedding.pertemuan_keluarga_1`) menjadi dasar mode `append`/`reset`. Pencocokan berdasarkan judul rapuh karena PDF punya judul berulang ("Pertemuan keluarga" ×5).
+- **`template_key`** (mis. `wedding.pertemuan_keluarga_1`) menjadi dasar mode `append` dan `replace_template`. Pencocokan berdasarkan judul rapuh karena PDF punya judul berulang ("Pertemuan keluarga" ×5).
 - **`origin`** pada tugas dan dokumen: `pdf` (disalin dari PDF), `adicara` (tambahan kami), `custom` (buatan pengguna). Tampilan menandai tambahan Adicara agar jelas mana yang dari acuan.
 - Template menyalin **nama dan harga acuan PDF** tetapi tidak menyalin tautan produk pribadi pembuat PDF, nama orang, atau nomor telepon.
 - **Proyek Contoh:** wedding "Contoh: Pernikahan Sinta & Arif", `event_date = hari ini + 175 hari` (meniru "Towards the Day: 175 Days" di PDF), `hero_title = "Bismillah Nikah"`, semua template yang appliernya terdaftar diterapkan lalu overlay dataset PDF (sebuah modul yang appliernya atau overlay-nya belum terdaftar tidak mengisi bagiannya; menu 06 hanya punya template, tanpa overlay). Maksimal satu per pengguna (indeks unik parsial `planner_projects_sample_idx`; `POST .../sample` idempoten: `201` bila baru dibuat, `200` dengan proyek yang sudah ada, termasuk saat dua klik berbalapan), dikeluarkan dari metrik portofolio (total pagu, jumlah acara aktif), dan menjadi **fixture uji emas** (bab 9).
@@ -239,7 +246,9 @@ Seed "bawaan" yang berisi DP yang sudah dibayar, setoran Rp 47,5 jt, vendor fikt
 | **Pembaruan sebagian** | `PATCH` mengubah hanya field yang dikirim. `metadata` memakai JSON Merge Patch: kunci yang ada ditimpa, `null` menghapus, kunci yang tidak disebut dibiarkan (dua tab yang mengedit kolom berbeda tidak saling menimpa). `PUT` mengganti penuh; field opsional yang tidak dikirim dikosongkan, sehingga formulir harus mengirim semua field. |
 | **Pesan validasi** | Untuk `invalid_input`, `invalid_metadata`, `invalid_date`, dan `invalid_timezone`, `message` berbentuk `<field>: <alasan>` (Inggris) supaya formulir dapat menandai kolom yang salah; `code` tetap satu-satunya yang dipetakan ke teks Indonesia. |
 | **Urutan** | Endpoint `reorder` menerima daftar id lengkap; usecase memeriksa semuanya milik proyek dan menulis `sort_order = indeks` dalam satu `UPDATE ... FROM (VALUES ...)`. |
-| **Paginasi** | Daftar kecil (tugas, pos, vendor, agenda) tanpa paginasi. Daftar tamu: `limit` (default 100, maks 500) dan `offset`; meja resepsionis `limit` (default 50, maks 200); KPI/counter dihitung terpisah dari halaman. |
+| **Paginasi** | Daftar kecil (tugas, pos, vendor, agenda) tanpa paginasi. Daftar tamu: `limit` (default 100, maks 500) dan `offset`; meja resepsionis `limit` (default 50, maks 200); `limit` di luar rentang (nol atau di atas maks) `400 invalid_input`, tidak dipotong diam-diam; KPI/counter dihitung terpisah dari halaman. |
+| **Unduhan berkas** | Tujuh rute mengirim `.xlsx`: `GET /tasks/export-spreadsheet`, `/budget/export`, `/vendors/export-contacts`, `/shopping-items/export-shopping-list`, `/guests/export`, `/guests/export-attendance`, `/guests/import-template`. Semuanya membaca `?format` dengan satu fungsi (`ginutil.XLSXFormat`): **boleh dihilangkan**, bawaan dan satu-satunya nilai `xlsx`; nilai lain (`pdf`, `csv`, `XLSX`) dijawab `400 invalid_input: format: must be xlsx` (pustaka PDF belum disetujui, bab 1.4). Semuanya dijawab dengan `Content-Type` `.xlsx`, `Content-Disposition: attachment` bernama `<awalan>-<slug judul>-<tanggal>.xlsx`, dan `Cache-Control: no-store` (`ginutil.SendXLSX`; bab 2 butir 6), boleh dipakai pada proyek `archived`, dan dibatasi 10/menit/pengguna (satu penghitung per modul; tiga unduhan tamu bersama). Dua teks WhatsApp (`rundowns/export-wa`, `playlists/export-wa`) bukan berkas: keduanya JSON `{"data": …}`. Nama rute berbeda menurut isinya dan tidak diseragamkan. Dijaga `TestBuildEverySpreadsheetRouteTakesFormatTheSameWay`. |
+| **Template ulang** | Enam rute menerapkan template pada proyek yang sudah ada: `POST /tasks/generate-defaults`, `/admin-docs/apply-template`, `/budget/apply-template`, `/shopping-items/apply-template`, `/rundowns/apply-template`, `/playlists/apply-template`. `mode` bawaan `append` (menambah baris yang `template_key`-nya belum ada; idempoten; tidak pernah meminta `confirm`). `replace_template` mengganti baris template dan membiarkan buatan pengguna; **`confirm: true` hanya diminta bila ada pekerjaan pengguna yang akan hilang**, selain itu `400 invalid_input: confirm: required`. Ambangnya: tugas bila ada tugas template yang sudah berjalan; dokumen bila ada yang selesai atau tertaut ke pos; pos anggaran bila ada yang berisi estimasi, vendor, dokumen, atau tautan belanja (pos yang sudah dibayar tetap ada); belanja bila ada barang bernilai status, harga aktual, tautan, atau tanda souvenir; rundown bila ada agenda template yang akan direset (direset di tempat: id, vendor, dan tautan lagu tetap). Hanya tugas yang punya `replace_all` (mengganti semuanya; `confirm` bila sudah ada tugas). Playlist hanya `append` (`replace_template` dijawab `400 invalid_input: mode: must be append`). Hasilnya `{created, skipped, warnings[]}` ditambah `deleted` (tugas, dokumen, pos, belanja) atau `reset` dan `kept` (rundown dan playlist: agenda direset di tempat dan yang sedang atau sudah berjalan dibiarkan, bukan dihapus). Wizard memanggil semua applier dengan `append`. |
 | **Enum** | `CHECK` di DB + konstanta Go bertipe string. Kunci berasal dari registry (sesi, peran, kategori); nilai kustom diperbolehkan untuk kategori, tidak untuk status. |
 | **Polling (pengganti SSE)** | Dashboard 30 dtk, daftar tamu 30 dtk, meja resepsionis 5 dtk, tracker live rundown 5 dtk; hanya saat tab aktif (`document.visibilityState`). Endpoint ringan khusus: `.../guests/summary`, `.../rundowns/summary`. |
 | **Hapus proyek** | `DELETE` menghapus semua data anak (CASCADE) dan butuh `?confirm=<judul proyek>` dari klien (cegah salah tekan). |
@@ -279,7 +288,7 @@ Usecase dashboard menjalankan provider terdaftar paralel dengan aturan berikut (
 3. **Batas waktu** `context.WithTimeout(ctx, 3*time.Second)` untuk seluruh dashboard; provider yang melewatinya → `{"error": "timeout"}`. Pembatalan konteks klien (tab ditutup) membatalkan kueri yang berjalan.
 4. **Batas laju** `GET .../dashboard` 60 permintaan/menit/pengguna (pola `ratelimit.go`). Polling FE 30 detik ditambah jitter ±5 detik, berhenti saat tab tersembunyi, dan mundur ke 60 detik setelah galat.
 
-Provider yang gagal menghasilkan `{"error": "<code>"}` pada widgetnya saja; widget lain tetap tampil. Modul yang belum dibangun tidak terdaftar, sehingga widgetnya `null` dan FE menampilkan kartu "Segera hadir". Target latensi p95 < 100 ms pada data 10 kali ukuran proyek contoh **belum diukur**; diukur saat implementasi dan dicatat di CHANGELOG.
+Provider yang gagal menghasilkan `{"error": "<code>"}` pada widgetnya saja; widget lain tetap tampil. Modul yang belum dibangun tidak terdaftar, sehingga widgetnya `null` dan FE menampilkan kartu "Segera hadir". Target latensi p95 < 100 ms pada data 10 kali ukuran proyek contoh **belum diukur**. Yang terukur (2026-10-31, PostgreSQL 16.2, pool 10, data Proyek Contoh): 160 dashboard serentak dari empat pengguna semuanya `200`, rata-rata 86 ms dan terlama 111 ms.
 
 ---
 
@@ -370,4 +379,4 @@ Audit menu 06 (2026-10-31, PostgreSQL 16.2, database sementara `adicara_audit06_
 
 Menu 06 dibangun 2026-10-31 dan hasilnya dicatat di [06 BE bab 7.3](../06_RUNDOWN_DAN_ACARA/BE.md#73-hasil-implementasi): respons HTTP asli sama dengan fixture FE (dua fixture dikoreksi: `date` pada sesi Lamaran dan `sort_order` per sesi), 17 galat katalog dihasilkan server dengan status, kode, dan pesan yang tertulis, dan migrasi 012 mendapat dua indeks unik `template_key`.
 
-Belum dijalankan: frontend dan BFF Planner, ekspor PDF, ekspor `.xlsx` yang dibuka di Excel/Numbers/LibreOffice, teks WhatsApp yang dibuka di WhatsApp, pengukuran latensi dashboard dan daftar 500 agenda dengan data besar, image Docker sebenarnya (Docker tidak terpasang).
+Belum dijalankan: frontend dan BFF Planner, ekspor PDF, ekspor `.xlsx` yang dibuka di Excel/Numbers/LibreOffice, teks WhatsApp yang dibuka di WhatsApp, pengukuran latensi dashboard pada data 10 kali ukuran Proyek Contoh dan daftar 500 agenda, image Docker sebenarnya (Docker tidak terpasang).

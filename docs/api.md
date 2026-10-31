@@ -22,7 +22,7 @@ Kontrak yang berlaku adalah [`backend/docs/openapi.yaml`](../backend/docs/openap
 | `GET/POST .../sessions` · `POST .../sessions/reorder` · `PUT/DELETE .../sessions/:session_id` | Bearer | Master sesi bersama. |
 | `GET/POST /v1/planner/projects/:id/tasks` · `PATCH/DELETE .../tasks/:task_id` · `PATCH .../tasks/:task_id/status` | Bearer | Menu 02: tugas persiapan (saring `status`, `category`, `scope`, `phase`; `summary` seluruh proyek). Maks 500 per proyek. |
 | `POST .../tasks/reorder` · `POST .../tasks/shift` · `POST .../tasks/generate-defaults` | Bearer | Urut ulang (daftar lengkap), geser manual tugas template yang belum selesai, dan buat jadwal dari template (`append`, `replace_template`, `replace_all` + `confirm`). |
-| `GET .../tasks/export-spreadsheet` | Bearer | `.xlsx` semua tugas + Gantt mingguan; 10/menit/pengguna. |
+| `GET .../tasks/export-spreadsheet` | Bearer | `.xlsx` semua tugas + Gantt mingguan; 10/menit/pengguna. Seperti ketujuh unduhan `.xlsx` Planner: `?format` boleh dihilangkan (bawaan `xlsx`, nilai lain `400`) dan jawabannya `Cache-Control: no-store` ([kontrak bab 6](APP_SPEC/PLANNER_SPEC/00_KONTRAK_BERSAMA/README.md#6-konvensi-data)). |
 | `GET/POST .../admin-docs` · `PATCH/DELETE .../admin-docs/:doc_id` · `PATCH .../admin-docs/:doc_id/status` · `POST .../admin-docs/reorder` | Bearer | Menu 02: dokumen legalitas/perizinan. Maks 200 per proyek. |
 | `POST .../admin-docs/apply-template` · `POST .../admin-docs/:doc_id/sync-budget` | Bearer | Berkas standar jenis acara; salin biaya berkas ke pos anggaran (idempoten, `201` bila pos baru). |
 | `GET/POST .../scenarios` · `GET/PUT/DELETE .../scenarios/:scenario_id` · `POST .../scenarios/:scenario_id/clone` · `POST .../scenarios/:scenario_id/load-preset` | Bearer | Menu 03: skenario anggaran (maks 3 per proyek), salinan, dan penggantian item dengan paket preset (`confirm` bila sudah ada item). |
@@ -47,7 +47,7 @@ Kontrak yang berlaku adalah [`backend/docs/openapi.yaml`](../backend/docs/openap
 | `GET/POST .../rundowns` · `GET/PUT/DELETE .../rundowns/:rundown_id` · `POST .../rundowns/reorder` | Bearer | Menu 06: agenda rundown (maks 500 per proyek, `409 agenda_limit_reached`). `GET` memuat `sessions` (rentang menit per sesi) dan `kpi` seluruh proyek; hanya `items` yang mengikuti `?session_id=`. Jam `07.46`/`7:46` disimpan `07:46`; agenda terbuka tanpa `end_time`; `ends_next_day` untuk acara lewat tengah malam. `PUT` tidak menyentuh status. Urut ulang harus memuat tepat semua agenda sesi itu. |
 | `PATCH .../rundowns/:rundown_id/status` · `GET .../rundowns/summary` | Bearer | Satu pernyataan menulis status dan cap `started_at`/`completed_at`; semua perpindahan boleh. `summary` (polling 5 detik hari-H) memuat status tiap agenda, KPI, sesi, dan `server_time` UTC; tidak dibatasi laju. |
 | `POST .../rundowns/apply-template` · `POST .../playlists/apply-template` | Bearer | Template agenda tiap jenis acara (pernikahan 33) dan 30 lagu pernikahan. `append` idempoten; `replace_template` (agenda saja) mengembalikan agenda `pending` ke template di tempat dan butuh `confirm` bila ada yang di-reset; lagu hanya `append`. |
-| `GET/POST .../playlists` · `PUT/DELETE .../playlists/:playlist_id` · `POST .../playlists/reorder` | Bearer | Menu 06: playlist (maks 500 lagu, `409 playlist_limit_reached`). `GET` memuat `kpi` seluruh playlist dan `items` yang disaring `moment_tag`, `format`, `status`; tanpa paginasi dan pencarian. |
+| `GET/POST .../playlists` · `PUT/DELETE .../playlists/:playlist_id` · `POST .../playlists/reorder` | Bearer | Menu 06: playlist (maks 500 lagu, `409 playlist_limit_reached`). `GET` memuat `kpi` seluruh playlist dan `items` yang disaring `moment_tag`, `audio_format`, `status`; tanpa paginasi dan pencarian. |
 | `GET .../rundowns/export-wa?session_id=` · `GET .../playlists/export-wa` | Bearer | Teks WhatsApp rundown dan briefing sound cue, disusun server (`{"data":{"text":…}}`); 10/menit/pengguna untuk keduanya. Tanpa ekspor PDF. |
 
 Path backend tidak memakai prefix `/api`. Lewat Nginx (origin tunggal) path yang sama tersedia sebagai `/api/v1/...`: Nginx membuang `/api` sebelum meneruskan, jadi `/api/v1/auth/login` sampai ke backend sebagai `/v1/auth/login`. Hanya `/api/v1/*` yang diteruskan; `/healthz` tetap di root. Aturan input dan detail mekanisme ada di [Session & JWT Authentication](backend/authentication/session-authentication.md).
@@ -73,11 +73,12 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 
 | Status | Kode |
 |---|---|
-| 400 | `invalid_json`, `invalid_input`, `invalid_email`, `invalid_username`, `weak_password`, `password_too_long`, `invalid_metadata`, `invalid_scope`, `invalid_date`, `invalid_timezone`, `invalid_template` (Planner) |
+| 400 | `invalid_json`, `invalid_input`, `invalid_email`, `invalid_username`, `weak_password`, `password_too_long`, `invalid_metadata`, `invalid_scope`, `invalid_date`, `invalid_timezone`, `invalid_template`, `invalid_stage` (Menu 03), `invalid_phone` (Menu 04 dan 05), `invalid_file` (Menu 05, impor tamu) (Planner) |
 | 401 | `unauthorized` (kredensial/token salah atau tidak ada; juga akun nonaktif atau terhapus pada rute terlindungi dan refresh, serta token yang terbit sebelum ganti password) |
 | 403 | `account_inactive` |
 | 404 | `not_found` |
-| 409 | `email_taken`, `username_taken`, `project_read_only`, `project_limit_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `task_limit_reached`, `admin_doc_limit_reached`, `conflict` (Planner) |
+| 409 | `email_taken`, `username_taken`, `project_read_only`, `project_limit_reached`, `session_in_use`, `session_name_taken`, `session_limit_reached`, `task_limit_reached`, `admin_doc_limit_reached`, `max_scenarios_reached`, `scenario_item_limit_reached`, `budget_item_limit_reached`, `contributor_limit_reached`, `savings_entry_limit_reached`, `contributor_in_use`, `vendor_already_linked`, `rollup_locked`, `vendor_limit_reached`, `shopping_item_limit_reached`, `rollup_conflict`, `guest_limit_reached`, `already_checked_in`, `agenda_limit_reached`, `playlist_limit_reached`, `conflict` (Planner) |
+| 413 | `file_too_large` (Menu 05: berkas impor tamu melewati 5 MiB setelah didekode) |
 | 429 | `rate_limited` |
 | 500 | `internal` |
 | 503 | `database_unavailable` |
@@ -86,7 +87,7 @@ Browser tidak memanggil API ini langsung. Server Astro memanggilnya (`API_BASE_U
 
 `/v1/auth/{register,login,refresh,logout}` dibatasi `AUTH_RATE_LIMIT` percobaan per IP klien per menit (default 10). IP klien dibaca dari `X-Real-IP`, hanya jika koneksi berasal dari proxy di `TRUSTED_PROXIES`. Server perantara (Astro) wajib meneruskan header itu, jika tidak semua pengguna berbagi satu bucket. Nginx menambah batas sendiri di depan backend untuk `/auth/{login,register}` (form web) dan `/api/v1/auth/{login,register}` (5 per menit per IP klien, burst 10) dan menjawab `429` dengan body error API yang sama; IP klien di Nginx diambil dari `X-Forwarded-For` bila koneksi datang dari proxy privat/loopback ([Nginx](devops/nginx.md)).
 
-Planner membatasi per **pengguna** (bukan IP): `POST /v1/planner/projects` 10 per menit, `GET .../dashboard` 60 per menit, dan `GET .../tasks/export-spreadsheet` 10 per menit, dihitung di memori tiap proses.
+Planner membatasi per **pengguna** (bukan IP), dihitung di memori tiap proses: `POST /v1/planner/projects` 10 per menit, `GET .../dashboard` 60 per menit, dan semua unduhan 10 per menit (satu penghitung per modul: `tasks/export-spreadsheet`; `budget/export`; `vendors/export-contacts` bersama `shopping-items/export-shopping-list`; `rundowns/export-wa` bersama `playlists/export-wa`; `guests/export`, `guests/export-attendance`, dan `guests/import-template` bersama). Di modul tamu, `POST .../guests/scan-qr` 120 per menit dan `POST .../guests/bulk-import` 5 per menit. Polling hari-H (`rundowns/summary`, `guests/reception-overview`, `guests/summary`) sengaja tidak dibatasi per pengguna: beberapa tablet panitia dapat memakai satu akun.
 
 ## CORS
 

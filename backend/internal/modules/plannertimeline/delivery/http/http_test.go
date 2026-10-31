@@ -1342,9 +1342,15 @@ func TestExportSpreadsheet(t *testing.T) {
 	if cd := res.header.Get("Content-Disposition"); cd != `attachment; filename="jadwal-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"` {
 		t.Fatalf("Content-Disposition = %q", cd)
 	}
+	if cc := res.header.Get("Cache-Control"); cc != "no-store" {
+		t.Fatalf("Cache-Control = %q, a workbook of the user's plans is never cached", cc)
+	}
 	if !bytes.HasPrefix(res.body, []byte("PK")) || len(res.body) < 5000 {
 		t.Fatalf("not a zip: %d bytes", len(res.body))
 	}
+	// ?format is optional like on every other spreadsheet route; xlsx is the default and the only format.
+	mustStatus(t, e.do(tok, "GET", base(id)+"/tasks/export-spreadsheet?format=xlsx", nil), 200)
+	wantError(t, e.do(tok, "GET", base(id)+"/tasks/export-spreadsheet?format=pdf", nil), 400, "invalid_input", "format: must be xlsx")
 	// The cell content is checked in export_test.go; here: all 51 tasks are in the file.
 	if n := bytes.Count(res.body, []byte("PK\x03\x04")); n < 5 {
 		t.Fatalf("%d parts in the workbook", n)

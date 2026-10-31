@@ -2,6 +2,18 @@
 
 Riwayat revisi folder `docs/APP_SPEC/PLANNER_SPEC`. Hasil validasi hanya dicatat setelah dijalankan.
 
+## 2026-10-31 (audit lintas menu, backend) — Planner 01–06 dicek sebagai satu sistem lewat `app.Build`
+
+Permintaan: apakah Planner sudah jelas, universal, dan terintegrasi (fokus backend). Hasil: **ya**; kode dan kontrak cocok, dan dua kalimat spesifikasi dikoreksi. Rincian pengujian, tes baru `internal/app/build_test.go`, dan hal yang sengaja tidak diubah ada di [changelog backend](../../backend/CHANGELOG.md).
+
+| # | Temuan | Koreksi |
+|---|---|---|
+| ✔ 1 | **03 BE bab 3.12 dan 04 BE bab 5 menyebut urutan overlay `finance` → `vendors` "penting"/syarat.** Menukar keduanya menghasilkan isi yang sama pada semua tabel Proyek Contoh (md5 per tabel): pos anggaran dan tugas yang ditautkan dibuat *template* (applier), yang selalu berjalan sebelum overlay | kedua kalimat memakai "urutan terdaftar" dan menyebut alasan sebenarnya; kode tidak berubah |
+| ✔ 2 | **Katalog kode galat lintas menu tertinggal**: `docs/api.md` kehilangan 19 kode dan `Error.code` di openapi 9 kode (menu 02, 05, 06) | dilengkapi; baris `413 file_too_large` dan daftar rate limit per pengguna ditambahkan |
+| ✔ 3 | **Ekspor tidak seragam**: `/tasks/export-spreadsheet` tanpa `format`, menu 03–05 wajib `?format=xlsx`; ekspor jadwal dan anggaran tanpa `Cache-Control: no-store`. Dan filter playlist `format` bentrok artinya dengan `format` ekspor | `format` opsional di ketujuh unduhan (bawaan `xlsx`), semua `no-store`; filter playlist menjadi `audio_format`; kontrak bab 6 mendapat baris "Unduhan berkas" dan "Template ulang"; 02–06 BE, 06 FE, `docs/api.md`, dan openapi disesuaikan |
+| ✔ 4 | **Kontrak (bab 1.1, 2, 3, 5, 7) tertinggal dari kode**: potongan `app.go` memakai tanda tangan yang tidak ada, `EventTypeSpec` ditulis "baru memuat" sebagian, mode `reset` (kode: `replace_template`), contoh nama berkas tanpa awalan, `rundowns ← playlists` tidak ada di daftar ketergantungan FK | dikoreksi; kode galat (43) dan notice (12) dicocokkan dengan kode dua arah tanpa selisih, tujuh nama tes yang dirujuk ada, aturan sesi, `invalid_scope` di lima modul, dan batas paginasi dijalankan |
+| ○ 5 | Tidak diubah: Nginx masih `camera=()`; `PUBLIC_BASE_URL` belum dibaca; `origin/development` memuat migrasi 012 lama (dibiarkan: belum ada pengembang lain) | tercatat di changelog backend |
+
 ## 2026-10-31 (audit kejelasan) — README, FE.md, dan BE.md menu 06 dicek terhadap kode, jenis acara lain, dan menu 01–05
 
 Permintaan: apakah FE.md, BE.md (dengan implementasinya), dan README menu 06 sudah jelas, universal untuk acara lain, dan saling terintegrasi. Hasil: **ya untuk kode dan kontraknya; dokumennya perlu 12 koreksi karena beberapa kalimat tertinggal dari keadaan sesudah modul dibangun, dan satu klaim integrasi tidak punya mekanisme.** Yang dijalankan: seluruh suite backend pada database sementara (520 tes tingkat atas lulus, 0 gagal, 0 di-skip, sebelum dan sesudah perubahan); blok DTO Go di BE bab 4 dibandingkan dengan `domain/entity.go` (20 struct, nol selisih nama, tipe, dan tag JSON); kesembilan jenis acara dijalankan melewati `replace_template`, kedua teks WhatsApp, lagu dengan setiap moment tag registry, dan widget dashboard.

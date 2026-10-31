@@ -71,12 +71,16 @@ components:
                 Planner codes: invalid_metadata, invalid_scope, invalid_date, invalid_timezone,
                 invalid_template (400); project_read_only, project_limit_reached,
                 session_in_use, session_name_taken, session_limit_reached, conflict (409).
+                Timeline codes: task_limit_reached, admin_doc_limit_reached (409).
                 Finance codes: invalid_stage (400); max_scenarios_reached, scenario_item_limit_reached,
                 budget_item_limit_reached, contributor_limit_reached, savings_entry_limit_reached,
                 contributor_in_use, vendor_already_linked, rollup_locked (409).
                 Vendor codes: invalid_phone (400); vendor_limit_reached, shopping_item_limit_reached,
                 rollup_conflict (409); lock-deal and the rollup also answer budget_item_limit_reached when a
                 new line would pass the limit of menu 03.
+                Guest codes: invalid_phone, invalid_file (400); file_too_large (413); guest_limit_reached,
+                already_checked_in (409).
+                Rundown codes: agenda_limit_reached, playlist_limit_reached (409).
               example: weak_password
             message:
               type: string
@@ -4834,6 +4838,17 @@ paths:
         All tasks of the project (not a filtered list) and a weekly Gantt matrix. Text that
         starts with `=`, `+`, `-` or `@` is prefixed with an apostrophe. Limited to 10 per minute
         per user. Works on an archived project.
+      parameters:
+        - name: format
+          in: query
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
+          schema:
+            type: string
+            enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -4842,11 +4857,17 @@ paths:
               schema:
                 type: string
                 example: attachment; filename="jadwal-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 type: string
                 format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -6190,10 +6211,14 @@ paths:
       parameters:
         - name: format
           in: query
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -6202,6 +6227,10 @@ paths:
               schema:
                 type: string
                 example: 'attachment; filename="keuangan-contoh-pernikahan-sinta-arif-2026-10-04.xlsx"'
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
@@ -6321,11 +6350,14 @@ paths:
       parameters:
         - name: format
           in: query
-          description: 'Only `xlsx`.'
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -6747,11 +6779,14 @@ paths:
       parameters:
         - name: format
           in: query
-          description: 'Only `xlsx`.'
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -7078,11 +7113,14 @@ paths:
       parameters:
         - name: format
           in: query
-          description: 'Only `xlsx`.'
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -7127,11 +7165,14 @@ paths:
       parameters:
         - name: format
           in: query
-          description: 'Only `xlsx`.'
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -7311,11 +7352,14 @@ paths:
       parameters:
         - name: format
           in: query
-          description: 'Only `xlsx`.'
-          required: true
+          description: >-
+            Optional. `xlsx` is the default and the only format; any other value answers
+            `400 invalid_input` (`format: must be xlsx`).
+          required: false
           schema:
             type: string
             enum: [xlsx]
+            default: xlsx
       responses:
         '200':
           description: The workbook.
@@ -8037,7 +8081,7 @@ paths:
           description: Compared as typed, at most 100 characters.
           schema:
             type: string
-        - name: format
+        - name: audio_format
           in: query
           required: false
           schema:

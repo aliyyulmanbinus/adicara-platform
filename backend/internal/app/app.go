@@ -99,17 +99,18 @@ func Build(ctx context.Context) (*App, error) {
 	timelineSvc := timelineusecase.New(timelinerepo.NewPostgresRepository(pool), plannerTx, registry, timelineusecase.Options{})
 
 	// Menu 03: finance (scenarios, savings, budget lines; one key each: finance, budget, finance).
-	// Its overlay must run after menu 02's (the Lamaran session date feeds the milestones) and
-	// before the vendor module's (it links vendors to the lines this overlay fills).
+	// Its overlay only fills lines the budget applier already made, so it needs no other overlay first.
 	financeSvc := financeusecase.New(financerepo.NewPostgresRepository(pool), plannerTx, registry, financeusecase.Options{})
 
 	// Menu 04: vendors and the shopping list (provider vendors, applier shopping, overlays vendors and shopping).
-	// Its overlays run last: they point sample budget lines and one sample task at the vendors, and the shopping
-	// overlay needs the items its applier made. The shopping applier runs after the budget one (TemplateKeys order).
+	// Its overlays point sample budget lines and one sample task at the vendors, and the shopping overlay needs the items
+	// its applier made. Those rows come from the appliers, which the host runs before any overlay, so the overlays need no
+	// order among themselves (swapping the finance and vendor overlays leaves every sample table unchanged; checked
+	// 2026-10-31). The shopping applier does run after the budget one, by TemplateKeys order.
 	vendorSvc := vendorusecase.New(vendorrepo.NewPostgresRepository(pool), plannerTx, registry, vendorusecase.Options{})
 
 	// Menu 05: guests, RSVP and the reception desk (provider guests, overlay guests; no template: the wizard creates no
-	// guests). Its overlay depends on no other and runs last. Options.Invitations stays empty until the invitation module
+	// guests). Its overlay depends on no other. Options.Invitations stays empty until the invitation module
 	// exists, so no guest has a personal link yet (05 BE 5); that module will also take guestSvc.RSVPWriter().
 	guestSvc := guestusecase.New(guestrepo.NewPostgresRepository(pool), plannerTx, registry, guestusecase.Options{})
 

@@ -12,15 +12,15 @@ import (
 )
 
 // SongFilter is the query of GET /playlists; an empty field does not filter.
-type SongFilter struct{ MomentTag, Format, Status string }
+type SongFilter struct{ MomentTag, AudioFormat, Status string }
 
 func (f SongFilter) parse() (domain.SongFilter, error) {
-	out := domain.SongFilter{MomentTag: strings.TrimSpace(f.MomentTag), Format: domain.AudioFormat(f.Format), Status: domain.AudioStatus(f.Status)}
+	out := domain.SongFilter{MomentTag: strings.TrimSpace(f.MomentTag), AudioFormat: domain.AudioFormat(f.AudioFormat), Status: domain.AudioStatus(f.Status)}
 	if utf8.RuneCountInString(out.MomentTag) > maxMomentRunes {
 		return out, invalidInput("moment_tag", "must be at most 100 characters")
 	}
-	if out.Format != "" && !out.Format.Valid() {
-		return out, invalidInput("format", "must be one of digital_playback, live_band, acoustic, sound_fx")
+	if out.AudioFormat != "" && !out.AudioFormat.Valid() {
+		return out, invalidInput("audio_format", "must be one of digital_playback, live_band, acoustic, sound_fx")
 	}
 	if out.Status != "" && !out.Status.Valid() {
 		return out, invalidInput("status", "must be one of ready, needs_review, missing_file")

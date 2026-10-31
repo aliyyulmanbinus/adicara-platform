@@ -137,12 +137,12 @@ func TestShoppingSheetOfTheSampleProject(t *testing.T) {
 	}
 }
 
-func TestExportNeedsAFormatAndIsRateLimited(t *testing.T) {
+func TestExportRejectsOtherFormatsAndIsRateLimited(t *testing.T) {
 	e := newEnv(t)
 	tok := e.login("owner")
 	id := createSample(e, tok)
 
-	for _, path := range []string{"/vendors/export-contacts", "/vendors/export-contacts?format=pdf", "/shopping-items/export-shopping-list?format=csv", "/shopping-items/export-shopping-list?format="} {
+	for _, path := range []string{"/vendors/export-contacts?format=pdf", "/vendors/export-contacts?format=XLSX", "/shopping-items/export-shopping-list?format=csv", "/shopping-items/export-shopping-list?format=pdf"} {
 		wantError(t, e.do(tok, "GET", base(id)+path, nil), 400, "invalid_input", "format: must be xlsx")
 	}
 

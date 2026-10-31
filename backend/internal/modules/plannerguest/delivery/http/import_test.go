@@ -423,12 +423,12 @@ func TestGuestExports(t *testing.T) {
 	}
 }
 
-func TestExportNeedsAFormat(t *testing.T) {
+func TestExportsRejectOtherFormats(t *testing.T) {
 	e := newEnv(t)
 	tok := e.login("owner")
 	id := createProject(e, tok, nil)
 	for _, path := range []string{"/export", "/export-attendance", "/import-template"} {
-		for _, q := range []string{"", "?format=pdf", "?format=XLSX", "?format=csv"} {
+		for _, q := range []string{"?format=pdf", "?format=XLSX", "?format=csv"} {
 			wantError(t, e.do(tok, "GET", guests(id)+path+q, nil), 400, "invalid_input", "format: must be xlsx")
 		}
 	}

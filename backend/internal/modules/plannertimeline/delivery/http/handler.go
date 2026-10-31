@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -20,8 +19,6 @@ import (
 // maxBodyBytes bounds every JSON body; the largest legitimate one is a reorder
 // list of 500 UUIDs (about 20 kB).
 const maxBodyBytes = 64 << 10
-
-const xlsxContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 type Handler struct {
 	svc *usecase.Service
@@ -198,6 +195,9 @@ func (h *Handler) GenerateDefaults(c *gin.Context) {
 // ExportSpreadsheet streams all tasks of the project as .xlsx. The file name
 // comes from a slug of the title and the date, never from the raw title.
 func (h *Handler) ExportSpreadsheet(c *gin.Context) {
+	if !ginutil.XLSXFormat(c) {
+		return
+	}
 	data, err := h.svc.Export(c.Request.Context(), plannerhttp.CurrentProject(c))
 	if err != nil {
 		ginutil.Error(c, err)
@@ -216,9 +216,7 @@ func (h *Handler) ExportSpreadsheet(c *gin.Context) {
 		return
 	}
 
-	name := fmt.Sprintf("jadwal-%s-%s.xlsx", ginutil.Slug(data.Project.Title), data.Today.Format("2006-01-02"))
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, name))
-	c.Data(http.StatusOK, xlsxContentType, buf.Bytes())
+	ginutil.SendXLSX(c, "jadwal", data.Project.Title, data.Today, buf.Bytes())
 }
 
 // ---------- documents ----------

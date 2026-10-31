@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +15,6 @@ import (
 
 // maxBodyBytes bounds every JSON body; the largest legitimate one is a link-to-budget with 1.000 item ids (about 40 kB).
 const maxBodyBytes = 64 << 10
-
-const xlsxContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 type Handler struct {
 	svc *usecase.Service
@@ -137,7 +134,7 @@ func (h *Handler) DeleteVendor(c *gin.Context) {
 // ExportContacts streams the contact sheet of the fixed vendors as .xlsx. The file name comes from a slug of the title and
 // the date, never from the raw title.
 func (h *Handler) ExportContacts(c *gin.Context) {
-	if !xlsxRequested(c) {
+	if !ginutil.XLSXFormat(c) {
 		return
 	}
 	data, err := h.svc.ExportContacts(c.Request.Context(), plannerhttp.CurrentProject(c))
@@ -150,7 +147,7 @@ func (h *Handler) ExportContacts(c *gin.Context) {
 		ginutil.Error(c, err)
 		return
 	}
-	sendWorkbook(c, fmt.Sprintf("vendor-%s-%s.xlsx", ginutil.Slug(data.Project.Title), data.Today.Format("2006-01-02")), buf)
+	ginutil.SendXLSX(c, "vendor", data.Project.Title, data.Today, buf)
 }
 
 // ---------- shopping ----------
@@ -233,7 +230,7 @@ func (h *Handler) UnlinkFromBudget(c *gin.Context) {
 
 // ExportShopping streams the whole shopping list as .xlsx.
 func (h *Handler) ExportShopping(c *gin.Context) {
-	if !xlsxRequested(c) {
+	if !ginutil.XLSXFormat(c) {
 		return
 	}
 	data, err := h.svc.ExportShopping(c.Request.Context(), plannerhttp.CurrentProject(c))
@@ -246,22 +243,5 @@ func (h *Handler) ExportShopping(c *gin.Context) {
 		ginutil.Error(c, err)
 		return
 	}
-	sendWorkbook(c, fmt.Sprintf("belanja-%s-%s.xlsx", ginutil.Slug(data.Project.Title), data.Today.Format("2006-01-02")), buf)
-}
-
-// xlsxRequested answers 400 unless ?format=xlsx (the only format; the PDF library is not approved, 04 BE 2.7).
-func xlsxRequested(c *gin.Context) bool {
-	if c.Query("format") != "xlsx" {
-		ginutil.Error(c, apierr.BadRequest("invalid_input", "format: must be xlsx"))
-		return false
-	}
-
-	return true
-}
-
-// Personal data (phone numbers, addresses): never cached.
-func sendWorkbook(c *gin.Context, name string, body []byte) {
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, name))
-	c.Header("Cache-Control", "no-store")
-	c.Data(http.StatusOK, xlsxContentType, body)
+	ginutil.SendXLSX(c, "belanja", data.Project.Title, data.Today, buf)
 }

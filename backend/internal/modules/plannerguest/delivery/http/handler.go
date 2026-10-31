@@ -2,9 +2,7 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -22,8 +20,6 @@ const (
 	maxBodyBytes = 64 << 10
 	// maxImportBodyBytes bounds the body of bulk-import: a 5 MiB file is about 6.7 MiB of base64 (05 BE 2.6).
 	maxImportBodyBytes = 7<<20 + 512<<10
-
-	xlsxContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
 type Handler struct {
@@ -292,27 +288,8 @@ func uploadError(err error) error {
 
 // ---------- files ----------
 
-// xlsxRequested answers 400 unless ?format=xlsx (the only format; the PDF library is not approved, 05 BE 2.6).
-func xlsxRequested(c *gin.Context) bool {
-	if c.Query("format") != "xlsx" {
-		ginutil.Error(c, apierr.BadRequest("invalid_input", "format: must be xlsx"))
-		return false
-	}
-
-	return true
-}
-
-// Personal data (names, phone numbers, ticket codes): never cached. The file name comes from a slug of the title and the
-// date, never from the raw title.
-func sendWorkbook(c *gin.Context, prefix, title string, day time.Time, body []byte) {
-	name := fmt.Sprintf("%s-%s-%s.xlsx", prefix, ginutil.Slug(title), day.Format("2006-01-02"))
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, name))
-	c.Header("Cache-Control", "no-store")
-	c.Data(http.StatusOK, xlsxContentType, body)
-}
-
 func (h *Handler) ExportGuests(c *gin.Context) {
-	if !xlsxRequested(c) {
+	if !ginutil.XLSXFormat(c) {
 		return
 	}
 	data, err := h.svc.ExportGuests(c.Request.Context(), plannerhttp.CurrentProject(c))
@@ -325,11 +302,11 @@ func (h *Handler) ExportGuests(c *gin.Context) {
 		ginutil.Error(c, err)
 		return
 	}
-	sendWorkbook(c, "tamu", data.Project.Title, data.Today, buf)
+	ginutil.SendXLSX(c, "tamu", data.Project.Title, data.Today, buf)
 }
 
 func (h *Handler) ExportAttendance(c *gin.Context) {
-	if !xlsxRequested(c) {
+	if !ginutil.XLSXFormat(c) {
 		return
 	}
 	data, err := h.svc.ExportAttendance(c.Request.Context(), plannerhttp.CurrentProject(c))
@@ -342,11 +319,11 @@ func (h *Handler) ExportAttendance(c *gin.Context) {
 		ginutil.Error(c, err)
 		return
 	}
-	sendWorkbook(c, "kehadiran", data.Project.Title, data.Today, buf)
+	ginutil.SendXLSX(c, "kehadiran", data.Project.Title, data.Today, buf)
 }
 
 func (h *Handler) ImportTemplate(c *gin.Context) {
-	if !xlsxRequested(c) {
+	if !ginutil.XLSXFormat(c) {
 		return
 	}
 	data, err := h.svc.ImportTemplate(c.Request.Context(), plannerhttp.CurrentProject(c))
@@ -359,5 +336,5 @@ func (h *Handler) ImportTemplate(c *gin.Context) {
 		ginutil.Error(c, err)
 		return
 	}
-	sendWorkbook(c, "templat-tamu", data.Project.Title, data.Today, buf)
+	ginutil.SendXLSX(c, "templat-tamu", data.Project.Title, data.Today, buf)
 }

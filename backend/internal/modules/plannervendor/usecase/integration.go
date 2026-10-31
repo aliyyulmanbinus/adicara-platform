@@ -11,7 +11,7 @@ import (
 )
 
 // The module sits on four of menu 01's plug-in points. Each key of the host belongs to one role, so every role is a
-// small type that wraps the Service (as in menu 02). Register them in internal/app/app.go, the overlays after menu 03's:
+// small type that wraps the Service (as in menu 02). Register them in internal/app/app.go:
 //
 //	provider   "vendors"   the dashboard widget
 //	applier    "shopping"  the wizard template (the wedding's 37 seserahan items)
@@ -66,8 +66,8 @@ type vendorsOverlay struct{ s *Service }
 
 func (vendorsOverlay) Key() string { return "vendors" }
 
-// ApplySample writes the 10 vendors of 04 BE 5.2 and points two budget lines and one task at them. It must run after the
-// finance and timeline overlays (the lines and the task have to exist). It does not run lock-deal: Wedding Organizer
+// ApplySample writes the 10 vendors of 04 BE 5.2 and points two budget lines and one task at them. It needs the budget
+// lines and the task that the budget and timeline appliers made, which the host runs before any overlay. It does not run lock-deal: Wedding Organizer
 // would make a 15th line and change the total of the PDF; the two lines it links already hold the deal as estimate.
 func (o vendorsOverlay) ApplySample(ctx context.Context, p pd.Project) error {
 	s := o.s

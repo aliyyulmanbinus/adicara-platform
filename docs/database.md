@@ -66,4 +66,4 @@ Tabel undangan, tamu, dan RSVP dari versi sebelumnya sudah tidak dipakai dan aka
 
 ## Data pribadi
 
-Skema saat ini menyimpan email, username, nama opsional, dan hash password, serta judul dan atribut acara di `planner_projects`. Tabel `planner_guests` (nama dan telepon tamu) sudah ada tetapi belum ada kode yang mengisinya. Kebijakan retensi dan penghapusan akun masih perlu ditetapkan sebelum produksi publik. Data tamu dan RSVP, bila modul undangan kembali, hanya boleh tersedia pada endpoint pemilik.
+Skema saat ini menyimpan email, username, nama opsional, dan hash password, serta judul dan atribut acara di `planner_projects`. Tabel `planner_guests` (nama dan telepon tamu, diisi modul `plannerguest`) dan `planner_vendors` (nama dan telepon vendor, diisi modul `plannervendor`) juga menyimpan data pribadi pihak ketiga yang dimasukkan pemilik proyek. Kebijakan retensi dan penghapusan akun masih perlu ditetapkan sebelum produksi publik. Data tamu dan RSVP, bila modul undangan kembali, hanya boleh tersedia pada endpoint pemilik.

@@ -69,7 +69,7 @@ go build ./cmd/api
 ## Struktur utama
 
 - `frontend/` — Astro, design system, halaman marketing, template undangan, dan alur login (endpoint `/auth/*`, middleware `/dashboard`).
-- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`, `planner`, `plannertimeline`, `plannerfinance`, `plannervendor`, `plannerguest`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
+- `backend/` — Go API (Gin, Module-Based Clean Architecture: `auth`, `profile`, `health`, `planner`, `plannertimeline`, `plannerfinance`, `plannervendor`, `plannerguest`, `plannerrundown`), migrasi goose, dan kontrak aktif di `backend/docs/openapi.yaml`.
 - `contracts/openapi.yaml` — **backup** kontrak API versi lama (cookie session + undangan); tidak sesuai backend dan tidak di-lint CI. Kontrak yang berlaku dan di-lint: `backend/docs/openapi.yaml`.
 - `deploy/` — Nginx dan Compose produksi.
 - `docs/` — arsitektur, operasi, dan catatan perubahan.

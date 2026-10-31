@@ -43,8 +43,8 @@ type guestsOverlay struct{ s *Service }
 
 func (guestsOverlay) Key() string { return "guests" }
 
-// ApplySample writes the 20 guests of 05 BE 6 in table order (sort_order = position). It depends on no other overlay
-// and runs last. Attending guests get pax_actual = pax_count; an invitation that was sent and an answer that was given
+// ApplySample writes the 20 guests of 05 BE 6 in table order (sort_order = position). It depends on no other overlay.
+// Attending guests get pax_actual = pax_count; an invitation that was sent and an answer that was given
 // are stamped with the creation time of the project.
 func (o guestsOverlay) ApplySample(ctx context.Context, p pd.Project) error {
 	s := o.s

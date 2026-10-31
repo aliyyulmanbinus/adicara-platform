@@ -299,7 +299,7 @@ Semua di bawah `BearerAuth` + `ProjectGuard` + `WriteGuard` (`/v1/planner/projec
 | `POST` | `/tasks/reorder` | `ReorderRequest`; harus memuat **semua** id proyek tepat sekali (`400 invalid_input: ids` bila ada yang asing, ganda, atau hilang). Menulis `sort_order = 1…n` menurut urutan daftar (§4.2). |
 | `POST` | `/tasks/shift` | `ShiftTasksRequest`: geser tugas template yang belum selesai sebanyak `days` (aturan pemilihan tugas: [01 BE §4.3](../01_DASHBOARD/BE.md#43-ubah-tanggal-acara-dan-geser-jadwal)). Aksi manual dari layar Timeline, **tidak idempoten** (setiap panggilan menggeser lagi); perubahan tanggal Hari-H memakai `PATCH /projects/:id` dengan `shift_tasks` yang atomik, bukan endpoint ini. |
 | `POST` | `/tasks/generate-defaults` | `GenerateTimelineRequest` → `GenerateResult`. |
-| `GET` | `/tasks/export-spreadsheet` | `.xlsx` bergaya dokumen acuan (§4.4). |
+| `GET` | `/tasks/export-spreadsheet[?format=xlsx]` | `.xlsx` bergaya dokumen acuan (§4.4). `format` boleh dihilangkan; nilai selain `xlsx` `400 invalid_input: format` ([kontrak bab 6](../00_KONTRAK_BERSAMA/README.md#6-konvensi-data)). |
 
 ### 3.2 Dokumen & Legalitas
 
@@ -325,7 +325,7 @@ Semua di bawah `BearerAuth` + `ProjectGuard` + `WriteGuard` (`/v1/planner/projec
 | `POST /tasks/reorder` | `TaskList` urutan baru |
 | `POST /tasks/shift` | `{shifted, warnings[]}` |
 | `POST /tasks/generate-defaults`, `POST /admin-docs/apply-template` | `{created, skipped, deleted, warnings[]}` |
-| `GET /tasks/export-spreadsheet` | berkas (bukan JSON): `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `Content-Disposition: attachment; filename="jadwal-<slug>-<tanggal>.xlsx"` (slug ASCII, [kontrak bab 2](../00_KONTRAK_BERSAMA/README.md#2-isolasi-data-dan-keamanan)) |
+| `GET /tasks/export-spreadsheet` | berkas (bukan JSON): `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `Content-Disposition: attachment; filename="jadwal-<slug>-<tanggal>.xlsx"` (slug ASCII, [kontrak bab 2](../00_KONTRAK_BERSAMA/README.md#2-isolasi-data-dan-keamanan)), `Cache-Control: no-store` |
 | `GET /admin-docs`, `POST /admin-docs/reorder` | `AdminDocList` `{docs[], summary{total,completed}}` |
 | `POST /admin-docs` | `AdminDoc` (`201`) |
 | `PATCH /admin-docs/:id`, `PATCH /admin-docs/:id/status` | `AdminDoc` |
